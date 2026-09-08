@@ -552,7 +552,7 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'yellow',
       description: 'Moderate morning drizzle, cloudy skies'
     },
-    description: 'City baseline operational signals across Karol Bagh, Connaught Place, and Rohini.'
+    description: '08:00 — City baseline operational telemetry across Karol Bagh, Connaught Place, and Rohini.'
   },
   {
     stepIndex: 1,
@@ -563,72 +563,150 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'yellow',
       description: 'Rain intensity increasing in Eastern Sub-city'
     },
-    description: 'First isolated report of pooling water at Sector 15 Metro Pillar 42.'
+    description: '08:15 — First waterlogging signal pooling near Sector 15 metro pillar 42.'
   },
   {
     stepIndex: 2,
-    simulatedTime: '08:45 AM',
+    simulatedTime: '08:30 AM',
     signalsAdded: [SECTOR_15_SIMULATION_SIGNALS[1]],
     weatherCondition: {
       rainfallMmPerHour: 24.0,
       alertLevel: 'yellow',
       description: 'Sustained rain over Ward 15'
     },
-    description: 'Hinglish warning on X about two-wheeler skidding in underpass incline.'
+    description: '08:30 — Social X signal in Hinglish: two-wheeler skidding in underpass incline.'
   },
   {
     stepIndex: 3,
-    simulatedTime: '09:10 AM',
+    simulatedTime: '08:45 AM',
     signalsAdded: [SECTOR_15_SIMULATION_SIGNALS[2]],
     weatherCondition: {
-      rainfallMmPerHour: 32.0,
+      rainfallMmPerHour: 28.0,
       alertLevel: 'orange',
-      description: 'IMD issues Orange Alert: heavy downpour active'
+      description: 'IMD Orange Alert issued'
     },
-    description: 'Devanagari Hindi grievance filed reporting stormwater trunk drain overflowing.'
+    description: '08:45 — Multilingual complaint: Devanagari Hindi grievance reporting trunk drain overflow.'
   },
   {
     stepIndex: 4,
-    simulatedTime: '09:30 AM',
-    signalsAdded: [SECTOR_15_SIMULATION_SIGNALS[3]],
+    simulatedTime: '09:00 AM',
+    signalsAdded: [],
     weatherCondition: {
-      rainfallMmPerHour: 40.0,
+      rainfallMmPerHour: 35.0,
       alertLevel: 'orange',
-      description: 'Severe torrential rainfall (40 mm/hr)'
+      description: 'Rainfall increases (35 mm/hr)'
     },
-    description: 'Knee-deep water submerged subway approach road. Traffic halted.'
+    description: '09:00 — Heavy rainfall surge over Ward 15 low-lying subway basin.'
   },
   {
     stepIndex: 5,
-    simulatedTime: '09:45 AM',
+    simulatedTime: '09:15 AM',
+    signalsAdded: [SECTOR_15_SIMULATION_SIGNALS[3]],
+    weatherCondition: {
+      rainfallMmPerHour: 38.0,
+      alertLevel: 'orange',
+      description: 'Torrential rain active'
+    },
+    description: '09:15 — Signal velocity rises: knee-deep water on subway approach road.'
+  },
+  {
+    stepIndex: 6,
+    simulatedTime: '09:30 AM',
     signalsAdded: [SECTOR_15_SIMULATION_SIGNALS[4]],
     weatherCondition: {
       rainfallMmPerHour: 42.5,
       alertLevel: 'orange',
-      description: 'Torrential downpour peak'
+      description: 'Peak downpour'
     },
-    description: '🚨 CRITICAL ASSET ALERT: St. Jude Primary School yellow van with 15 children trapped in rising floodwater!'
+    description: '09:30 — Critical asset exposure detected: St. Jude Primary School van trapped in underpass dip!'
   },
   {
-    stepIndex: 6,
-    simulatedTime: '10:00 - 11:00 AM',
+    stepIndex: 7,
+    simulatedTime: '09:45 AM',
+    signalsAdded: [],
+    weatherCondition: {
+      rainfallMmPerHour: 44.0,
+      alertLevel: 'red',
+      description: 'IMD Red Alert'
+    },
+    description: '09:45 — AI creates emerging incident: Severe Waterlogging & Submerged Subway — Sector 15.'
+  },
+  {
+    stepIndex: 8,
+    simulatedTime: '10:00 AM',
     signalsAdded: SECTOR_15_SIMULATION_SIGNALS.slice(5, 17),
     weatherCondition: {
       rainfallMmPerHour: 45.0,
       alertLevel: 'red',
-      description: 'Monsoon flash waterlogging emergency'
+      description: 'Monsoon flash flood emergency'
     },
-    description: '⚡ VELOCITY SURGE (+280%): Multi-channel signal storm. Priority reaches 94/100 Red Alert!'
+    description: '10:00 — Priority reaches critical (94/100 P1 Red Alert) (+280% velocity surge).'
   },
   {
-    stepIndex: 7,
-    simulatedTime: '12:30 PM',
+    stepIndex: 9,
+    simulatedTime: '10:05 AM',
+    signalsAdded: [],
+    weatherCondition: {
+      rainfallMmPerHour: 40.0,
+      alertLevel: 'red',
+      description: 'Emergency response active'
+    },
+    description: '10:05 — Response plan generated (SOP Dewatering & Traffic Diversion staged).'
+  },
+  {
+    stepIndex: 10,
+    simulatedTime: '10:10 AM',
+    signalsAdded: [],
+    weatherCondition: {
+      rainfallMmPerHour: 35.0,
+      alertLevel: 'orange',
+      description: 'Rain intensity easing'
+    },
+    description: '10:10 — Officer approves response plan (Municipal Commander authorization logged).'
+  },
+  {
+    stepIndex: 11,
+    simulatedTime: '10:20 AM',
+    signalsAdded: [],
+    weatherCondition: {
+      rainfallMmPerHour: 28.0,
+      alertLevel: 'orange',
+      description: 'Crews en route'
+    },
+    description: '10:20 — Dispatch executed: Mobile dewatering pumps & emergency units en route.'
+  },
+  {
+    stepIndex: 12,
+    simulatedTime: '11:00 AM',
+    signalsAdded: [],
+    weatherCondition: {
+      rainfallMmPerHour: 15.0,
+      alertLevel: 'yellow',
+      description: 'Light rain'
+    },
+    description: '11:00 — Field team on site: Heavy pumps operational, clearing choked drain inlets.'
+  },
+  {
+    stepIndex: 13,
+    simulatedTime: '12:00 PM',
     signalsAdded: SECTOR_15_SIMULATION_SIGNALS.slice(17),
     weatherCondition: {
-      rainfallMmPerHour: 6.0,
+      rainfallMmPerHour: 5.0,
       alertLevel: 'none',
-      description: 'Rain cleared, clear skies returning'
+      description: 'Rain cleared, skies opening'
     },
-    description: '✅ Resolution verification: Mobile pumps deployed, subway cleared, traffic and hospital corridor restored.'
+    description: '12:00 — Issue resolved: Water receded, subway reopened, traffic & hospital corridor clear.'
+  },
+  {
+    stepIndex: 14,
+    simulatedTime: '12:15 PM',
+    signalsAdded: [],
+    weatherCondition: {
+      rainfallMmPerHour: 2.0,
+      alertLevel: 'none',
+      description: 'Normal clear weather'
+    },
+    description: '12:15 — AI verification: 8-Step resolution protocol passed (91% confidence, VERIFIED).'
   }
 ];
+

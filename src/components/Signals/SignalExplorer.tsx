@@ -145,11 +145,11 @@ export const SignalExplorer: React.FC = () => {
             <span>Upload Dataset (CSV/JSON)</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-surface)', padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <Sparkles size={14} color="var(--cyan-400)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-surface)', padding: '0.3rem 0.6rem', borderRadius: '6px', border: geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid var(--border-subtle)' }}>
+            <Sparkles size={14} color={geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? '#34d399' : 'var(--cyan-400)'} />
             <input
               type="password"
-              placeholder="Optional Gemini Key..."
+              placeholder="Google Gemini Key..."
               value={geminiApiKey}
               onChange={e => setGeminiApiKey(e.target.value)}
               style={{
@@ -158,11 +158,20 @@ export const SignalExplorer: React.FC = () => {
                 color: '#fff',
                 fontSize: '0.74rem',
                 outline: 'none',
-                width: '130px',
+                width: '140px',
                 fontFamily: 'var(--font-mono)'
               }}
               title="Enter Google Gemini API Key for live multimodal NLP parsing"
             />
+            {geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? (
+              <span style={{ fontSize: '0.62rem', color: '#34d399', fontWeight: 800, fontFamily: 'var(--font-mono)', background: 'rgba(16, 185, 129, 0.2)', padding: '1px 5px', borderRadius: '3px' }}>
+                LIVE
+              </span>
+            ) : (
+              <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontWeight: 800, fontFamily: 'var(--font-mono)', background: 'rgba(245, 158, 11, 0.2)', padding: '1px 5px', borderRadius: '3px' }}>
+                RULE ENGINE
+              </span>
+            )}
           </div>
 
           <button

@@ -129,6 +129,28 @@ export const AgentTraceDrawer: React.FC<AgentTraceDrawerProps> = ({ trace, onClo
         </div>
       </div>
 
+      {/* API Key Error / Fallback Status Banner */}
+      {trace.fallbackUsed && (
+        <div
+          style={{
+            padding: '0.65rem 1.5rem',
+            background: 'rgba(245, 158, 11, 0.12)',
+            borderBottom: '1px solid rgba(245, 158, 11, 0.3)',
+            color: '#fbbf24',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontFamily: 'var(--font-mono)'
+          }}
+        >
+          <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+          <div>
+            <strong>Fallback Notice:</strong> {trace.apiError || 'Using deterministic rule parser engine because no active Gemini API key was provided.'}
+          </div>
+        </div>
+      )}
+
       {/* Navigation Tabs */}
       <div
         style={{

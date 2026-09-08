@@ -134,8 +134,8 @@ export class SignalAnalystAgent {
     const traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const toolsConsulted = ['Gemini 2.0 Flash Multi-lingual Vision Engine', 'Delhi NCR Ward Topography DB', 'Zod Schema Validator'];
 
-    // If no API key provided, automatically fallback to deterministic NLP
-    if (!apiKey || apiKey.trim().length < 10) {
+    // If no API key provided or placeholder, automatically fallback to deterministic NLP
+    if (!apiKey || apiKey.trim().length < 10 || apiKey === 'your_gemini_api_key_here') {
       const fallbackOutput = this.buildFallbackOutput(text);
       const trace: AgentTrace = {
         id: traceId,
@@ -146,7 +146,8 @@ export class SignalAnalystAgent {
         confidence: fallbackOutput.confidence,
         model: 'deterministic-rule-engine-v1',
         latencyMs: Date.now() - startTime,
-        fallbackUsed: true
+        fallbackUsed: true,
+        apiError: !apiKey ? 'No Gemini API Key provided.' : 'Gemini API key is set to placeholder "your_gemini_api_key_here".'
       };
       return { output: fallbackOutput, trace };
     }
@@ -197,7 +198,9 @@ export class SignalAnalystAgent {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          throw new Error(`Gemini API returned status ${response.status}: ${response.statusText}`);
+          const errBody = await response.json().catch(() => null);
+          const detailMsg = errBody?.error?.message || response.statusText;
+          throw new Error(`Gemini API HTTP ${response.status}: ${detailMsg}`);
         }
 
         const data = await response.json();
@@ -236,8 +239,32 @@ export class SignalAnalystAgent {
       }
     }
 
-    // If retries fail, fallback to deterministic parser cleanly
-    console.warn(`[SignalAnalystAgent] All retries exhausted. Falling back to deterministic NLP.`);
+    // If retries fail, attempt local mock JSON before deterministic parser
+    console.warn(`[SignalAnalystAgent] Gemini API retries exhausted (${lastError}). Attempting local JSON mock fallback...`);
+
+    try {
+      const mockRes = await fetch('/mock/gemini_mock.json');
+      if (mockRes.ok) {
+        const mockJson = await mockRes.json();
+        const validatedOutput = SignalAnalystOutputSchema.parse(mockJson);
+        const trace: AgentTrace = {
+          id: traceId,
+          timestamp: new Date().toISOString(),
+          input: { text, imageUrl, channel },
+          toolsOrDataConsulted: ['Local Mock JSON Repository', 'NagarBodh Schema Engine'],
+          structuredOutput: validatedOutput,
+          confidence: validatedOutput.confidence,
+          model: 'local-json-mock-provider',
+          latencyMs: Date.now() - startTime,
+          fallbackUsed: true,
+          apiError: `Live Gemini API failed (${lastError}). Fallback to local JSON mock.`
+        };
+        return { output: validatedOutput, trace };
+      }
+    } catch {
+      // Ignore mock fetch error and fall through to deterministic parser
+    }
+
     const fallbackOutput = this.buildFallbackOutput(text);
 
     const trace: AgentTrace = {

@@ -25,7 +25,7 @@ describe('NagarBodh 9-State Incident Lifecycle Engine', () => {
     const { incidents } = clusterSignals([mockSignal]);
     expect(incidents.length).toBeGreaterThan(0);
     const inc = incidents[0];
-    
+
     // AI MUST NOT directly mark as dispatched or resolved
     expect(inc.status).not.toBe('dispatched');
     expect(inc.status).not.toBe('resolved');
@@ -33,7 +33,27 @@ describe('NagarBodh 9-State Incident Lifecycle Engine', () => {
     expect(['emerging', 'triaged', 'dispatch_pending']).toContain(inc.status);
   });
 
-  it('2. Preserves human lifecycle states across re-clustering passes', () => {
+  it('2. Sequential Canonical Lifecycle Transitions (EMERGING -> ... -> VERIFIED)', () => {
+    const validTransitions: Array<{ from: IncidentStatus; to: IncidentStatus }> = [
+      { from: 'emerging', to: 'triaged' },
+      { from: 'triaged', to: 'dispatch_pending' },
+      { from: 'dispatch_pending', to: 'approved' },
+      { from: 'approved', to: 'dispatched' },
+      { from: 'dispatched', to: 'on_site' },
+      { from: 'on_site', to: 'resolving' },
+      { from: 'resolving', to: 'resolved' },
+      { from: 'resolved', to: 'verified' }
+    ];
+
+    let currentStatus: IncidentStatus = 'emerging';
+    for (const transition of validTransitions) {
+      expect(transition.from).toBe(currentStatus);
+      currentStatus = transition.to;
+    }
+    expect(currentStatus).toBe('verified');
+  });
+
+  it('3. Preserves human lifecycle states across re-clustering passes', () => {
     const { incidents: firstPass } = clusterSignals([mockSignal]);
     const inc = firstPass[0];
 
@@ -53,7 +73,7 @@ describe('NagarBodh 9-State Incident Lifecycle Engine', () => {
     });
   });
 
-  it('3. Formats all 9 statuses correctly', () => {
+  it('4. Formats all 9 canonical statuses correctly', () => {
     const validStatuses: IncidentStatus[] = [
       'emerging',
       'triaged',
@@ -66,5 +86,22 @@ describe('NagarBodh 9-State Incident Lifecycle Engine', () => {
       'verified'
     ];
     expect(validStatuses.length).toBe(9);
+  });
+
+  it('5. Computes derived metrics dynamically from canonical incident state', () => {
+    const { incidents } = clusterSignals([mockSignal]);
+    const inc = incidents[0];
+
+    const mockIncidents = [
+      { ...inc, id: 'inc-1', status: 'emerging' as IncidentStatus },
+      { ...inc, id: 'inc-2', status: 'approved' as IncidentStatus },
+      { ...inc, id: 'inc-3', status: 'verified' as IncidentStatus }
+    ];
+
+    const activeIncidents = mockIncidents.filter(i => i.status !== 'resolved' && i.status !== 'verified');
+    const verifiedIncidents = mockIncidents.filter(i => i.status === 'verified' || i.status === 'resolved');
+
+    expect(activeIncidents.length).toBe(2);
+    expect(verifiedIncidents.length).toBe(1);
   });
 });

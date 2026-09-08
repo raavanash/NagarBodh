@@ -123,6 +123,17 @@ interface CivicContextType {
   openApprovalModal: (incidentId?: string) => void;
   closeApprovalModal: () => void;
 
+  // Scripted Demo Command Center Orchestration Handlers
+  startLiveDemo: () => void;
+  pauseDemo: () => void;
+  resetDemo: () => void;
+  fastForwardDemo: () => void;
+  triggerEmergencyDemo: () => void;
+  approveResponseDemo: () => void;
+  simulateFieldArrivalDemo: () => void;
+  simulateResolutionDemo: () => void;
+  verifyResolutionDemo: () => void;
+
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
 }
@@ -180,8 +191,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectedCategory: 'all'
   });
 
-  // Gemini API Key (optional live integration)
-  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => localStorage.getItem('nagar_bodh_gemini_key') || '');
+  // Gemini API Key (optional live integration - reads from localStorage or VITE_GEMINI_API_KEY env)
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
+    const local = localStorage.getItem('nagar_bodh_gemini_key');
+    if (local && local !== 'your_gemini_api_key_here') return local;
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (envKey && envKey !== 'your_gemini_api_key_here') return envKey;
+    return '';
+  });
 
   // Audit Log History
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([
@@ -463,6 +480,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentStepIndex(0);
     setSignals([...SIMULATION_STEPS[0].signalsAdded]);
     setActionPlans({});
+    setLifecycleMap({});
     setSelectedIncidentId(null);
     prevIncidentsRef.current = [];
     appendAuditLog({
@@ -476,6 +494,51 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const play = useCallback(() => setIsPlaying(true), []);
   const pause = useCallback(() => setIsPlaying(false), []);
+
+  // Scripted Demo Command Handlers
+  const startLiveDemo = useCallback(() => {
+    setPlaybackSpeed(1);
+    setIsPlaying(true);
+  }, []);
+
+  const pauseDemo = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  const resetDemo = useCallback(() => {
+    resetSimulation();
+  }, [resetSimulation]);
+
+  const fastForwardDemo = useCallback(() => {
+    setIsPlaying(false);
+    if (currentStepIndex < SIMULATION_STEPS.length - 1) {
+      stepForwardFn(currentStepIndex, signals);
+    }
+  }, [currentStepIndex, signals, stepForwardFn]);
+
+  const triggerEmergencyDemo = useCallback(() => {
+    setIsPlaying(false);
+    setCurrentStepIndex(8); // 10:00 AM Emergency Surge
+
+    const allSurgeSignals: CivicSignal[] = [];
+    for (let i = 0; i <= 8; i++) {
+      allSurgeSignals.push(...(SIMULATION_STEPS[i]?.signalsAdded || []));
+    }
+    const uniqueMap = new Map<string, CivicSignal>();
+    allSurgeSignals.forEach(s => uniqueMap.set(s.id, s));
+    setSignals(Array.from(uniqueMap.values()));
+
+    const targetId = 'incident-ward-15-central-sub-city-waterlogging';
+    setSelectedIncidentId(targetId);
+
+    appendAuditLog({
+      timeLabel: '10:00 AM',
+      type: 'priority_spike',
+      title: '⚡ Demo Emergency Triggered: Sector 15 Critical Inundation',
+      description: 'Ingested 31 multi-channel signals (+280% velocity surge). Priority calculated at 94/100 Red Alert.',
+      actor: 'Demo Command Center'
+    });
+  }, [appendAuditLog]);
 
   // Core NagarBodh 9-State Transition Engine
   const transitionIncidentState = useCallback((
@@ -679,6 +742,37 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     aiVerifyIncident(incidentId, verifiedBy, 'Manual field verification override completed.');
   }, [aiVerifyIncident]);
 
+  // Demo Action Button Implementations
+  const approveResponseDemo = useCallback(() => {
+    const targetId = selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
+    approveDispatch(targetId, 'Authorized via Demo Command Center by Operations Commander.');
+  }, [selectedIncidentId, approveDispatch]);
+
+  const simulateFieldArrivalDemo = useCallback(() => {
+    const targetId = selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
+    dispatchUnits(targetId, 'Control Room Dispatcher', 'Deployed heavy dewatering pumps & mobile response units.');
+    markOnSite(targetId, 'Field Response Unit Alpha', 'Arrived at Sector 15 underpass dip; established safety perimeter.');
+  }, [selectedIncidentId, dispatchUnits, markOnSite]);
+
+  const simulateResolutionDemo = useCallback(() => {
+    const targetId = selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
+    if (SIMULATION_STEPS[13]) {
+      const posSignals = SIMULATION_STEPS[13].signalsAdded;
+      setSignals(prev => {
+        const map = new Map<string, CivicSignal>(prev.map(s => [s.id, s]));
+        posSignals.forEach(s => map.set(s.id, s));
+        return Array.from(map.values());
+      });
+    }
+    markResolving(targetId, 'Engineering Operations Crew', 'High-capacity dewatering pumps operational; drain choked points cleared.');
+    resolveIncident(targetId, 'Field Supervisor (Badge #FS-07)', 'Floodwaters receded; subway approach reopened; traffic flowing normal.');
+  }, [selectedIncidentId, markResolving, resolveIncident]);
+
+  const verifyResolutionDemo = useCallback(() => {
+    const targetId = selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
+    aiVerifyIncident(targetId, 'NagarBodh AI Verification Engine', '8-Step resolution verification audit complete. -87% signal reduction verified.');
+  }, [selectedIncidentId, aiVerifyIncident]);
+
   // Ingestion Service Instance
   const ingestionServiceRef = useRef<SignalIngestionService>(new SignalIngestionService(signals as any));
   const [ingestionStats, setIngestionStats] = useState<IngestionStats>(() => ingestionServiceRef.current.getStats());
@@ -839,6 +933,15 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isApprovalModalOpen,
         openApprovalModal,
         closeApprovalModal,
+        startLiveDemo,
+        pauseDemo,
+        resetDemo,
+        fastForwardDemo,
+        triggerEmergencyDemo,
+        approveResponseDemo,
+        simulateFieldArrivalDemo,
+        simulateResolutionDemo,
+        verifyResolutionDemo,
         geminiApiKey,
         civicContextDataLayer: civicContextDataLayerInstance,
         setGeminiApiKey: key => {

@@ -71,20 +71,13 @@ export const LiveMap: React.FC = () => {
       zoomControl: false
     });
 
-    // OpenFreeMap vector basemap style via MapLibre GL Leaflet plugin
-    let tileLayer: L.Layer;
-    if (typeof (L as any).maplibreGL === 'function') {
-      tileLayer = (L as any).maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/dark',
-        attribution: '&copy; <a href="https://openfreemap.org" target="_blank" style="color: #38bdf8;">OpenFreeMap</a> &copy; OpenStreetMap'
-      });
-    } else {
-      tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      });
-    }
+    // Reliable, 100% public OpenStreetMap raster tiles with dark theme CSS filter (Zero watermarks, Zero API key errors)
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      subdomains: 'abc',
+      maxZoom: 19,
+      className: 'dark-map-tiles'
+    });
     tileLayer.addTo(map);
 
     L.control.zoom({ position: 'topright' }).addTo(map);

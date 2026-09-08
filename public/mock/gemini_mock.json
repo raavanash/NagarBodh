@@ -1,0 +1,34 @@
+{
+  "category": "waterlogging",
+  "severity": "critical",
+  "confidence": 0.98,
+  "language": "hinglish",
+  "translation": "SOS!! St. Jude primary school yellow van trapped in underpass floodwater! 15 children trapped inside, water reaching window sill!",
+  "locationClues": ["Sector 15 Underpass", "St. Jude Primary School"],
+  "keyEntities": ["Sector 15 Underpass", "St. Jude School Van", "15 Children Trapped"],
+  "incidentIndicators": ["waterlogging", "trapped children", "emergency"],
+  "safetyIndicators": ["Immediate Rescuers Required"],
+  "affectedPeopleClues": ["15 primary school children"],
+  "civicRelevance": true,
+  "spamOrDuplicateLikelihood": 0.02,
+  "locationConfidence": 0.95,
+  "locationCandidates": [
+    { "name": "Sector 15 Underpass", "type": "underpass", "confidence": 0.95 }
+  ],
+  "factSeparation": {
+    "OBSERVED": {
+      "verbatimQuotes": ["school ki van phans gayi", "15 bache andar hain"],
+      "visualEvidence": ["Yellow school bus partially submerged near underpass dip"],
+      "reportedLocation": "Sector 15 Underpass"
+    },
+    "INFERRED": {
+      "riskAssessment": "Extreme threat to child safety due to rapid rainwater accumulation",
+      "estimatedUrgency": "CRITICAL EMERGENCY",
+      "inferredRootCause": "Choked storm drain inlets and disabled drainage pump"
+    },
+    "RECOMMENDED": {
+      "initialActions": ["Dispatch Emergency Rescue Squad", "Deploy 2x High-Capacity Dewatering Pumps"],
+      "suggestedDepartment": "Municipal Emergency Management & Drainage Division"
+    }
+  }
+}

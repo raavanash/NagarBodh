@@ -92,6 +92,18 @@ export interface EvidenceLink {
   snippet?: string;
 }
 
+export interface EvidenceItem {
+  id: string;
+  source: string;              // e.g. "Citizen signal #sig-s15-05 (@Parent_PoojaG)"
+  type: string;                // e.g. "X/public signal", "Telemetry sensor", "Critical asset proximity"
+  timestamp: string;           // e.g. "10:14 AM"
+  location: string;            // e.g. "Sector 15 Underpass"
+  dataFreshness: string;       // e.g. "< 2 mins ago", "Live Stream"
+  usedFor: string;             // e.g. "Used for incident detection", "Used for environmental risk"
+  snippet?: string;
+  confidence?: number;
+}
+
 export interface PriorityBreakdown {
   overallScore: number; // 0 - 100
   level: SeverityLevel;
@@ -108,6 +120,7 @@ export interface PriorityBreakdown {
     evidenceLink: EvidenceLink;
   }>;
   formulaExplanation: string;
+  evidenceChain?: EvidenceItem[];
 }
 
 export interface IncidentExplanation {
@@ -272,12 +285,19 @@ export interface ClusteredIncident {
   velocityPerHour: number;
   velocitySurgePercent: number;
   ward: string;
+  locationName?: string;
+  location?: {
+    name: string;
+    lat: number;
+    lng: number;
+  };
   priority: PriorityBreakdown;
   auditableInsight: AuditableInsight;
   actionPlan?: DispatchActionPlan;
   resolutionConfirmedSignals?: string[];
   statusHistory?: StateTransitionRecord[];
   resolutionVerification?: ResolutionVerificationData;
+  evidenceChain?: EvidenceItem[];
   verifiedAt?: string;
   verifiedBy?: string;
 }

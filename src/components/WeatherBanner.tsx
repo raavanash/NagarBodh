@@ -23,12 +23,12 @@ export const WeatherBanner: React.FC = () => {
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
         {isAlert ? <AlertCircle size={15} color="#f87171" /> : <CloudRain size={15} color="#38bdf8" />}
-        <span style={{ fontWeight: 700, letterSpacing: '0.02em' }}>
+        <span style={{ fontWeight: 700, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
           {weather.alertLevel === 'red'
-            ? 'IMD RED ALERT: Flash Waterlogging & Convective Cloudburst Active'
+            ? 'IMD RED ALERT: Flash Waterlogging'
             : weather.alertLevel === 'orange'
-            ? 'IMD ORANGE WARNING: Heavy Monsoon Downpour Active'
-            : 'METEOROLOGICAL TELEMETRY: Standard Precipitation Monitoring'}
+            ? 'IMD ORANGE WARNING: Heavy Downpour'
+            : 'IMD WEATHER UPDATE'}
         </span>
         <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.74rem' }}>
           — {weather.description}

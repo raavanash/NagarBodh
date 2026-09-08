@@ -27,6 +27,7 @@ import { useCivic } from '../../context/CivicContext';
 import { ActionItemRecommendation, DynamicResponsePlan, OperationalResourceItem } from '../../types/civic';
 import { IncidentLifecycleStepper } from './IncidentLifecycleStepper';
 import { ResolutionVerificationPanel } from '../Verification/ResolutionVerificationPanel';
+import { ExpandableEvidenceUI } from '../Evidence/ExpandableEvidenceUI';
 
 export const ResponsePlannerView: React.FC = () => {
   const {
@@ -288,6 +289,11 @@ export const ResponsePlannerView: React.FC = () => {
                       "{currentIncident.auditableInsight.observedData.rawExcerpts[0]?.original || 'Knee-deep water trapped school bus under subway'}"
                     </div>
                   </div>
+                </div>
+
+                {/* NagarBodh Expandable Evidence & Provenance Section */}
+                <div style={{ marginTop: '1rem' }}>
+                  <ExpandableEvidenceUI incident={currentIncident} />
                 </div>
               </div>
 

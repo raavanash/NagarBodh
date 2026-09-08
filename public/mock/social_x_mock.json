@@ -1,0 +1,35 @@
+[
+  {
+    "id": "x-mock-101",
+    "text": "Sector 15 metro station underpass me paani bohot bhar gaya hai, cars unable to pass! @DelhiTrafficPol #DelhiRains",
+    "sourceChannel": "social_x",
+    "authorHandle": "@NCR_Commuter",
+    "timestamp": "2026-09-07T08:30:00Z",
+    "lat": 28.5833,
+    "lng": 77.3185,
+    "category": "waterlogging",
+    "severity": "critical"
+  },
+  {
+    "id": "x-mock-102",
+    "text": "Huge garbage heap overflowing near Ajmal Khan Road market gate #3. Stray cattle gathering. @MCD_Delhi",
+    "sourceChannel": "social_x",
+    "authorHandle": "@DelhiLiveUpdates",
+    "timestamp": "2026-09-07T08:35:00Z",
+    "lat": 28.6508,
+    "lng": 77.1895,
+    "category": "garbage",
+    "severity": "high"
+  },
+  {
+    "id": "x-mock-103",
+    "text": "Inner circle block B traffic light blinking yellow continuously since morning. Heavy jam starting.",
+    "sourceChannel": "social_x",
+    "authorHandle": "@DelhiCommuter99",
+    "timestamp": "2026-09-07T08:40:00Z",
+    "lat": 28.6315,
+    "lng": 77.2185,
+    "category": "traffic",
+    "severity": "medium"
+  }
+]

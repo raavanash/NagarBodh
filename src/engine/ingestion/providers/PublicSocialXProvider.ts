@@ -59,8 +59,19 @@ export class PublicSocialXProvider implements SignalProvider {
           }
         }
       } catch (err) {
-        console.warn('X API Live Stream fetch failed, falling back to cached simulation feed:', err);
+        console.warn('X API Live Stream fetch failed (CORS/Network), attempting local JSON mock fallback:', err);
       }
+    }
+
+    // Local JSON Mock Stream Fallback
+    try {
+      const mockRes = await fetch('/mock/social_x_mock.json');
+      if (mockRes.ok) {
+        const mockData = await mockRes.json();
+        return mockData;
+      }
+    } catch {
+      // Ignore fallback fetch error and proceed to bundled array
     }
 
     // Default simulation / replay fallback stream
