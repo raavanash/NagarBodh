@@ -71,12 +71,13 @@ export class HistoricalIncidentContextProvider implements IHistoricalIncidentCon
       this.cache.set(cacheKey, data);
       return {
         data,
-        source: 'Delhi Municipal Grievance Redressal Warehouse (Live Analytics Pipeline)',
+        source: 'Municipal Historical Incident Baseline (Simulated Dataset)',
         timestamp: nowISO,
         location: { name: `${wardId} - ${category.toUpperCase()}` },
-        dataFreshness: 'Live OLAP Aggregation (< 5 seconds ago)',
-        confidence: 0.96,
-        mode: 'live',
+        dataFreshness: 'Simulated Historical Analytics',
+        confidence: 0.88,
+        mode: 'simulation',
+        fallbackUsed: true,
         fetchDurationMs: Math.round(performance.now() - startTime)
       };
     }

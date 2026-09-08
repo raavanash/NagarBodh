@@ -77,12 +77,13 @@ export class GeospatialRiskContextProvider implements IGeospatialRiskContextProv
       this.cache.set(cacheKey, data);
       return {
         data,
-        source: 'ISRO-Bhuvan / Survey of India Digital Elevation Model (Live Grid)',
+        source: 'ISRO-Bhuvan / Survey of India Topography Baseline (Simulated Model)',
         timestamp: nowISO,
         location: { lat, lng, name: isSector15 ? 'Sector 15 Low-Lying Depression' : 'NCR Elevation Grid' },
-        dataFreshness: 'Live GIS Terrain Stream (Real-Time Hydrological Raster)',
-        confidence: 0.97,
-        mode: 'live',
+        dataFreshness: 'Simulated Topographic Model (Static Reference)',
+        confidence: 0.90,
+        mode: 'simulation',
+        fallbackUsed: true,
         fetchDurationMs: Math.round(performance.now() - startTime)
       };
     }

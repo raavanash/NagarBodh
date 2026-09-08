@@ -130,11 +130,13 @@ export class CriticalAssetContextProvider implements ICriticalAssetContextProvid
     };
 
     let source = 'NagarBodh Asset Master Registry (Schools DB)';
-    let freshness = 'Demo Fallback Data';
+    let freshness = 'Simulated School Asset Baseline';
+    let resolvedMode: ProviderMode = activeMode;
 
     if (activeMode === 'live') {
-      source = 'Delhi Directorate of Education Live Infrastructure API';
-      freshness = 'Live Spatial Query (< 1m ago)';
+      source = 'Delhi Educational Infrastructure Master (Static Registry)';
+      freshness = 'Simulated School Asset Baseline';
+      resolvedMode = 'simulation';
     } else if (activeMode === 'cached') {
       source = 'Municipal Educational Asset Cache';
       freshness = 'Cached Asset Index (TTL 12h)';
@@ -146,8 +148,9 @@ export class CriticalAssetContextProvider implements ICriticalAssetContextProvid
       timestamp: nowISO,
       location: { lat, lng, name: nearest ? nearest.name : 'Target Area' },
       dataFreshness: freshness,
-      confidence: activeMode === 'live' ? 0.98 : activeMode === 'cached' ? 0.94 : 0.88,
-      mode: activeMode,
+      confidence: 0.90,
+      mode: resolvedMode,
+      fallbackUsed: activeMode === 'live',
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }
@@ -188,11 +191,13 @@ export class CriticalAssetContextProvider implements ICriticalAssetContextProvid
     };
 
     let source = 'NagarBodh Healthcare Infrastructure Database';
-    let freshness = 'Demo Fallback Data';
+    let freshness = 'Simulated Hospital Asset Baseline';
+    let resolvedMode: ProviderMode = activeMode;
 
     if (activeMode === 'live') {
-      source = 'Delhi Health Department Emergency Telemetry (Live Stream)';
-      freshness = 'Live Hospital ER Telemetry';
+      source = 'Delhi Health Department Emergency Infrastructure (Static Registry)';
+      freshness = 'Simulated Hospital Asset Baseline';
+      resolvedMode = 'simulation';
     } else if (activeMode === 'cached') {
       source = 'Delhi Emergency Services Spatial Cache';
       freshness = 'Cached ER Location Index';
@@ -204,8 +209,9 @@ export class CriticalAssetContextProvider implements ICriticalAssetContextProvid
       timestamp: nowISO,
       location: { lat, lng, name: nearest ? nearest.name : 'Target Area' },
       dataFreshness: freshness,
-      confidence: activeMode === 'live' ? 0.99 : activeMode === 'cached' ? 0.95 : 0.90,
-      mode: activeMode,
+      confidence: 0.90,
+      mode: resolvedMode,
+      fallbackUsed: activeMode === 'live',
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }
@@ -247,12 +253,14 @@ export class CriticalAssetContextProvider implements ICriticalAssetContextProvid
       items
     };
 
-    let source = 'DMRC & Delhi Traffic Command Center API';
-    let freshness = 'Demo Fallback Data';
+    let source = 'DMRC & Delhi Traffic Command Center Registry';
+    let freshness = 'Simulated Transit Infrastructure Baseline';
+    let resolvedMode: ProviderMode = activeMode;
 
     if (activeMode === 'live') {
-      source = 'DMRC & Traffic Telemetry Sensor Grid (Live Feeds)';
-      freshness = 'Live Transit Telemetry (< 15s ago)';
+      source = 'DMRC & Traffic Corridor Registry (Static Model)';
+      freshness = 'Simulated Transit Infrastructure Baseline';
+      resolvedMode = 'simulation';
     } else if (activeMode === 'cached') {
       source = 'Delhi Transport Infrastructure Cache';
       freshness = 'Cached Transit Corridor Map';
@@ -264,8 +272,9 @@ export class CriticalAssetContextProvider implements ICriticalAssetContextProvid
       timestamp: nowISO,
       location: { lat, lng, name: nearestTransport ? nearestTransport.name : 'Transport Corridor' },
       dataFreshness: freshness,
-      confidence: activeMode === 'live' ? 0.97 : activeMode === 'cached' ? 0.93 : 0.86,
-      mode: activeMode,
+      confidence: 0.90,
+      mode: resolvedMode,
+      fallbackUsed: activeMode === 'live',
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }

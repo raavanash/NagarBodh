@@ -98,7 +98,7 @@ describe('Civic Context Data Layer', () => {
     const provider = new AdminBoundaryContextProvider('live');
     const adminEnv = await provider.getAdminBoundary(28.5832, 77.3188);
     
-    expect(adminEnv.mode).toBe('live');
+    expect(adminEnv.mode).toBe('simulation');
     expect(adminEnv.data.zone).toContain('East Zone');
     expect(adminEnv.data.district).toContain('East Delhi');
     expect(adminEnv.data.jurisdictionalAuthority).toBeDefined();
@@ -139,7 +139,7 @@ describe('Civic Context Data Layer', () => {
     const provider = new GeospatialRiskContextProvider('live');
     const geoEnv = await provider.getGeospatialRisk(28.5832, 77.3188);
 
-    expect(geoEnv.mode).toBe('live');
+    expect(geoEnv.mode).toBe('simulation');
     expect(geoEnv.data.elevationMeters).toBeLessThan(200);
     expect(geoEnv.data.drainageBottleneckPercent).toBeGreaterThan(70);
     expect(geoEnv.data.yamunaFloodplainDistanceMeters).toBeGreaterThan(0);

@@ -33,145 +33,155 @@ export class WeatherContextProvider implements IWeatherContextProvider {
     const nowISO = new Date().toISOString();
 
     if (activeMode === 'live') {
+      console.log('[ NAGARBODH WEATHER DEBUG ]', {
+        mode: activeMode,
+        provider: 'WeatherContextProvider',
+        apiEndpoint: `/api/weather?lat=${lat}&lng=${lng}`,
+        fetchStarted: nowISO
+      });
+
       try {
-        const apiKey = import.meta.env?.VITE_OPENWEATHER_API_KEY || '';
-        let liveData: WeatherData;
-        let liveRainfall: RainfallData;
+        const endpoint = typeof window !== 'undefined'
+          ? `/api/weather?lat=${lat}&lng=${lng}`
+          : `http://localhost:5173/api/weather?lat=${lat}&lng=${lng}`;
 
-        if (apiKey && apiKey !== 'your_openweather_api_key_here') {
-          const response = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`
-          );
-          if (response.ok) {
-            const json = await response.json();
-            const temp = json.main?.temp ?? 28.0;
-            const humidity = json.main?.humidity ?? 75;
-            const wind = Math.round((json.wind?.speed ?? 4.0) * 3.6);
-            const conditionText = json.weather?.[0]?.description
-              ? json.weather[0].description.charAt(0).toUpperCase() + json.weather[0].description.slice(1)
-              : 'Monsoon Overcast';
-            const rainMm = json.rain?.['1h'] ?? (json.weather?.[0]?.main?.toLowerCase().includes('rain') ? 18.0 : 0.0);
-            const station = `OpenWeather Station (${json.name || 'Gurugram / NCR Region'})`;
+        let apiRes = await fetch(endpoint).catch((err) => {
+          console.warn('[ NAGARBODH WEATHER DEBUG ] Proxy fetch network error:', err);
+          return null;
+        });
+        let apiJson: any = null;
 
-            let alertLevel: 'none' | 'yellow' | 'orange' | 'red' = 'none';
-            if (rainMm > 50) alertLevel = 'red';
-            else if (rainMm > 30) alertLevel = 'orange';
-            else if (rainMm > 10 || json.weather?.[0]?.main?.toLowerCase().includes('rain')) alertLevel = 'yellow';
+        if (apiRes && apiRes.ok) {
+          const body = await apiRes.json().catch(() => null);
+          if (body && body.ok && body.data) {
+            apiJson = body.data;
+            console.log('[ NAGARBODH WEATHER DEBUG ] OpenWeather Live Proxy Fetch SUCCESS (HTTP 200):', {
+              temp: apiJson.main?.temp,
+              humidity: apiJson.main?.humidity,
+              windSpeed: apiJson.wind?.speed,
+              condition: apiJson.weather?.[0]?.main,
+              station: apiJson.name
+            });
+          }
+        } else if (apiRes) {
+          const errBody = await apiRes.json().catch(() => null);
+          console.warn('[ NAGARBODH WEATHER DEBUG ] Proxy fetch returned HTTP status:', apiRes.status, errBody);
+        }
 
-            liveData = {
-              temperatureCelsius: temp,
-              humidityPercent: humidity,
-              windSpeedKmh: wind,
-              condition: conditionText,
-              alertLevel,
-              alertDescription: alertLevel !== 'none'
-                ? `Live OpenWeather Alert: Active precipitation (${rainMm} mm/hr) across ${json.name || 'NCR'}`
-                : `Live OpenWeather Watch: Normal atmospheric conditions across ${json.name || 'NCR'}`,
-              stationName: station
-            };
-
-            liveRainfall = {
-              rainfallMmPerHour: rainMm,
-              accumulation24hMm: Math.round(rainMm * 4.5),
-              intensityCategory: rainMm > 40 ? 'torrential' : rainMm > 15 ? 'heavy' : rainMm > 5 ? 'moderate' : 'light',
-              floodMultiplier: rainMm > 30 ? 1.8 : 1.1,
-              stationLocation: station
-            };
-          } else {
-            console.warn(`OpenWeather API returned ${response.status}, attempting local JSON mock fallback...`);
-            const mockRes = await fetch('/mock/weather_mock.json').catch(() => null);
-            if (mockRes && mockRes.ok) {
-              const mockJson = await mockRes.json();
-              liveData = {
-                temperatureCelsius: mockJson.main?.temp ?? 28.5,
-                humidityPercent: mockJson.main?.humidity ?? 88,
-                windSpeedKmh: Math.round((mockJson.wind?.speed ?? 6.8) * 3.6),
-                condition: mockJson.weather?.[0]?.description || 'Heavy Rain',
-                alertLevel: mockJson.alertLevel || 'orange',
-                alertDescription: mockJson.description || 'IMD Weather Warning Active',
-                stationName: mockJson.name || 'Local NCR Weather Station'
-              };
-              liveRainfall = {
-                rainfallMmPerHour: mockJson.rainfallMmPerHour || 42.5,
-                accumulation24hMm: 110,
-                intensityCategory: 'heavy',
-                floodMultiplier: 1.6,
-                stationLocation: liveData.stationName
-              };
-            } else {
-              throw new Error(`OpenWeather API returned status ${response.status}`);
+        // Direct browser fallback if VITE_OPENWEATHER_API_KEY is present
+        if (!apiJson) {
+          const apiKey = import.meta.env?.VITE_OPENWEATHER_API_KEY || '';
+          if (apiKey && apiKey !== 'your_openweather_api_key_here') {
+            const directRes = await fetch(
+              `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`
+            ).catch(() => null);
+            if (directRes && directRes.ok) {
+              apiJson = await directRes.json().catch(() => null);
             }
           }
-        } else {
-          // Simulation fallback for live telemetry
-          const isSector15 = Math.abs(lat - 28.583) < 0.05 && Math.abs(lng - 77.318) < 0.05;
-          const temp = isSector15 ? 27.5 : 29.0;
-          const humidity = isSector15 ? 88 : 72;
-          const wind = isSector15 ? 22 : 14;
-          const alertLevel = isSector15 ? 'orange' : 'yellow';
+        }
 
-          liveData = {
+        if (apiJson) {
+          const temp = apiJson.main?.temp ?? 28.0;
+          const feelsLike = apiJson.main?.feels_like ?? temp;
+          const humidity = apiJson.main?.humidity ?? 75;
+          const pressure = apiJson.main?.pressure ?? 1013;
+          const windSpeed = Math.round((apiJson.wind?.speed ?? 4.0) * 3.6);
+          const windDeg = apiJson.wind?.deg;
+          const visibility = apiJson.visibility;
+          const conditionMain = apiJson.weather?.[0]?.main || 'Overcast';
+          const descriptionText = apiJson.weather?.[0]?.description
+            ? apiJson.weather[0].description.charAt(0).toUpperCase() + apiJson.weather[0].description.slice(1)
+            : 'Monsoon Overcast';
+          const rainMm = apiJson.rain?.['1h'] ?? (conditionMain.toLowerCase().includes('rain') ? 18.0 : 0.0);
+          const station = `OpenWeather Station (${apiJson.name || 'Gurugram / NCR Region'})`;
+
+          let alertLevel: 'none' | 'yellow' | 'orange' | 'red' = 'none';
+          if (rainMm > 50) alertLevel = 'red';
+          else if (rainMm > 30) alertLevel = 'orange';
+          else if (rainMm > 10 || conditionMain.toLowerCase().includes('rain')) alertLevel = 'yellow';
+
+          const liveData: WeatherData = {
             temperatureCelsius: temp,
+            feelsLikeCelsius: feelsLike,
             humidityPercent: humidity,
-            windSpeedKmh: wind,
-            condition: isSector15 ? 'Heavy Monsoonal Rain' : 'Overcast with Moderate Rain',
+            pressureHpa: pressure,
+            windSpeedKmh: windSpeed,
+            windDirectionDeg: windDeg,
+            visibilityMeters: visibility,
+            precipitationMmPerHour: rainMm,
+            condition: conditionMain,
+            description: descriptionText,
             alertLevel,
-            alertDescription: isSector15
-              ? 'IMD Orange Warning: Severe monsoon downpour active over East Delhi/Gurugram corridor'
-              : 'IMD Yellow Watch: Isolated heavy showers across Delhi NCR',
-            stationName: isSector15 ? 'AWS-DEL-EAST-15 (Mayur Vihar Station)' : 'AWS-GGN-CYBER-01 (Gurugram Cyber City AWS)'
+            alertDescription: alertLevel !== 'none'
+              ? `Live OpenWeather Alert: Active precipitation (${rainMm} mm/hr) across ${apiJson.name || 'NCR'}`
+              : `Live OpenWeather Watch: Normal atmospheric conditions across ${apiJson.name || 'NCR'}`,
+            stationName: station
           };
 
-          liveRainfall = {
-            rainfallMmPerHour: isSector15 ? 68 : 18,
-            accumulation24hMm: isSector15 ? 112 : 34,
-            intensityCategory: isSector15 ? 'torrential' : 'moderate',
-            floodMultiplier: isSector15 ? 1.85 : 1.15,
-            stationLocation: liveData.stationName
+          const liveRainfall: RainfallData = {
+            rainfallMmPerHour: rainMm,
+            accumulation24hMm: Math.round(rainMm * 4.5),
+            intensityCategory: rainMm > 40 ? 'torrential' : rainMm > 15 ? 'heavy' : rainMm > 5 ? 'moderate' : rainMm > 0 ? 'light' : 'none',
+            floodMultiplier: rainMm > 30 ? 1.8 : 1.1,
+            stationLocation: station
+          };
+
+          const fetchDurationMs = Math.round(performance.now() - startTime);
+
+          this.cache.set(cacheKey, {
+            data: liveData,
+            rainfall: liveRainfall,
+            cachedAt: Date.now()
+          });
+
+          return {
+            data: liveData,
+            source: 'OpenWeatherMap Live API (https://api.openweathermap.org)',
+            timestamp: nowISO,
+            location: { lat, lng, name: liveData.stationName },
+            dataFreshness: 'Live OpenWeather Feed (< 5 seconds ago)',
+            confidence: 0.98,
+            mode: 'live',
+            fallbackUsed: false,
+            fetchedAt: nowISO,
+            freshnessSeconds: 0,
+            fetchDurationMs
           };
         }
 
-        const fetchDurationMs = Math.round(performance.now() - startTime);
-
-        // Update internal cache
-        this.cache.set(cacheKey, {
-          data: liveData,
-          rainfall: liveRainfall,
-          cachedAt: Date.now()
-        });
+        // API Call Failed in LIVE Mode - return explicit error mode, do NOT label fake data as LIVE
+        const errMessage = 'OpenWeather API Key missing or HTTP fetch failed.';
+        const base = this.generateBaselineWeather(lat, lng);
 
         return {
-          data: liveData,
-          source: 'OpenWeatherMap Live API (https://api.openweathermap.org)',
+          data: base.weather,
+          source: 'OpenWeatherMap Live API',
           timestamp: nowISO,
-          location: { lat, lng, name: liveData.stationName },
-          dataFreshness: 'Live Feed (< 5 seconds ago)',
-          confidence: 0.98,
-          mode: 'live',
-          fetchDurationMs
+          location: { lat, lng, name: 'NCR Weather Station' },
+          dataFreshness: 'Error: Live API fetch failed',
+          confidence: 0.0,
+          mode: 'error',
+          error: errMessage,
+          fallbackUsed: false,
+          fetchedAt: nowISO,
+          freshnessSeconds: 0,
+          fetchDurationMs: Math.round(performance.now() - startTime)
         };
-      } catch {
-        // Fallback to simulated live telemetry if remote fetch fails
-        const isSector15 = Math.abs(lat - 28.583) < 0.05 && Math.abs(lng - 77.318) < 0.05;
-        const liveData: WeatherData = {
-          temperatureCelsius: isSector15 ? 27.5 : 29.0,
-          humidityPercent: isSector15 ? 88 : 72,
-          windSpeedKmh: isSector15 ? 22 : 14,
-          condition: isSector15 ? 'Heavy Monsoonal Rain' : 'Overcast with Moderate Rain',
-          alertLevel: isSector15 ? 'orange' : 'yellow',
-          alertDescription: isSector15
-            ? 'IMD Orange Warning: Severe monsoon downpour active over East Delhi/Gurugram corridor'
-            : 'IMD Yellow Watch: Isolated heavy showers across Delhi NCR',
-          stationName: isSector15 ? 'AWS-DEL-EAST-15 (Mayur Vihar Station)' : 'AWS-GGN-CYBER-01 (Gurugram Cyber City AWS)'
-        };
+      } catch (err: any) {
+        const base = this.generateBaselineWeather(lat, lng);
         return {
-          data: liveData,
-          source: 'IMD Automated Weather Station API (AWS-NCR Live)',
+          data: base.weather,
+          source: 'OpenWeatherMap Live API',
           timestamp: nowISO,
-          location: { lat, lng, name: liveData.stationName },
-          dataFreshness: 'Live Feed (< 10 seconds ago)',
-          confidence: 0.96,
-          mode: 'live',
+          location: { lat, lng, name: 'NCR Weather Station' },
+          dataFreshness: 'Error: Exception during API fetch',
+          confidence: 0.0,
+          mode: 'error',
+          error: err?.message || String(err),
+          fallbackUsed: false,
+          fetchedAt: nowISO,
+          freshnessSeconds: 0,
           fetchDurationMs: Math.round(performance.now() - startTime)
         };
       }
@@ -191,16 +201,18 @@ export class WeatherContextProvider implements IWeatherContextProvider {
           dataFreshness: `Cached (${ageMinutes}m ago, TTL 15m)`,
           confidence: 0.90,
           mode: 'cached',
+          fallbackUsed: false,
+          fetchedAt: new Date(cached.cachedAt).toISOString(),
+          freshnessSeconds: ageMinutes * 60,
           fetchDurationMs: Math.round(performance.now() - startTime)
         };
       }
 
-      // Populate cache from static baseline and mark as cached
       const base = this.generateBaselineWeather(lat, lng);
       this.cache.set(cacheKey, {
         data: base.weather,
         rainfall: base.rainfall,
-        cachedAt: Date.now() - 5 * 60 * 1000 // 5m ago
+        cachedAt: Date.now() - 5 * 60 * 1000
       });
 
       return {
@@ -211,11 +223,13 @@ export class WeatherContextProvider implements IWeatherContextProvider {
         dataFreshness: 'Cached (5m ago, TTL 15m)',
         confidence: 0.88,
         mode: 'cached',
+        fallbackUsed: false,
+        freshnessSeconds: 300,
         fetchDurationMs: Math.round(performance.now() - startTime)
       };
     }
 
-    // Demo Fallback Mode
+    // Simulation Mode
     return this.getDemoFallbackWeather(lat, lng, startTime);
   }
 
@@ -230,23 +244,60 @@ export class WeatherContextProvider implements IWeatherContextProvider {
     const nowISO = new Date().toISOString();
 
     if (activeMode === 'live') {
-      const isSector15 = Math.abs(lat - 28.583) < 0.05 && Math.abs(lng - 77.318) < 0.05;
-      const rainfallData: RainfallData = {
-        rainfallMmPerHour: isSector15 ? 72 : 15,
-        accumulation24hMm: isSector15 ? 124 : 28,
-        intensityCategory: isSector15 ? 'torrential' : 'moderate',
-        floodMultiplier: isSector15 ? 2.1 : 1.1,
-        stationLocation: isSector15 ? 'Telemetry Gauge #15B (Mayur Vihar)' : 'Telemetry Gauge #04 (Central Radar)'
-      };
+      const cached = this.cache.get(cacheKey);
+      if (cached && cached.rainfall) {
+        return {
+          data: cached.rainfall,
+          source: 'OpenWeatherMap Live API Hydrological Feed',
+          timestamp: nowISO,
+          location: { lat, lng, name: cached.rainfall.stationLocation },
+          dataFreshness: 'Live Hydrological Stream (< 10s ago)',
+          confidence: 0.96,
+          mode: 'live',
+          fallbackUsed: false,
+          fetchedAt: nowISO,
+          freshnessSeconds: 0,
+          fetchDurationMs: Math.round(performance.now() - startTime)
+        };
+      }
+
+      // If live weather wasn't fetched yet, attempt to fetch it now
+      const weatherResult = await this.getWeather(lat, lng, 'live');
+      if (weatherResult.mode === 'live' && this.cache.has(cacheKey)) {
+        const liveRain = this.cache.get(cacheKey)!.rainfall;
+        return {
+          data: liveRain,
+          source: 'OpenWeatherMap Live API Hydrological Feed',
+          timestamp: nowISO,
+          location: { lat, lng, name: liveRain.stationLocation },
+          dataFreshness: 'Live Hydrological Stream (< 10s ago)',
+          confidence: 0.96,
+          mode: 'live',
+          fallbackUsed: false,
+          fetchedAt: nowISO,
+          freshnessSeconds: 0,
+          fetchDurationMs: Math.round(performance.now() - startTime)
+        };
+      }
 
       return {
-        data: rainfallData,
-        source: 'Delhi Hydro-Telemetry Radar Network (Live Stream)',
+        data: {
+          rainfallMmPerHour: 0,
+          accumulation24hMm: 0,
+          intensityCategory: 'none',
+          floodMultiplier: 1.0,
+          stationLocation: 'OpenWeather Station'
+        },
+        source: 'OpenWeatherMap Live API',
         timestamp: nowISO,
-        location: { lat, lng, name: rainfallData.stationLocation },
-        dataFreshness: 'Live Radar Feed (< 30s ago)',
-        confidence: 0.95,
-        mode: 'live',
+        location: { lat, lng, name: 'NCR Radar Station' },
+        dataFreshness: 'Error: Live API fetch failed',
+        confidence: 0.0,
+        mode: 'error',
+        error: weatherResult.error || 'Live OpenWeather rainfall API unavailable.',
+        fallbackUsed: false,
+        fetchedAt: nowISO,
+        freshnessSeconds: 0,
         fetchDurationMs: Math.round(performance.now() - startTime)
       };
     }
@@ -263,21 +314,25 @@ export class WeatherContextProvider implements IWeatherContextProvider {
           dataFreshness: `Cached (${ageMinutes}m ago)`,
           confidence: 0.89,
           mode: 'cached',
+          fallbackUsed: false,
+          fetchedAt: new Date(cached.cachedAt).toISOString(),
+          freshnessSeconds: ageMinutes * 60,
           fetchDurationMs: Math.round(performance.now() - startTime)
         };
       }
     }
 
-    // Demo Fallback Mode
+    // Demo / Simulation Mode
     const base = this.generateBaselineWeather(lat, lng);
     return {
       data: base.rainfall,
       source: 'NagarBodh Hydrological Static Baseline Dataset',
       timestamp: nowISO,
       location: { lat, lng, name: base.rainfall.stationLocation },
-      dataFreshness: 'Demo Fallback Data (Static Reference)',
-      confidence: 0.80,
-      mode: 'demo_fallback',
+      dataFreshness: 'Simulation Data (Static Baseline)',
+      confidence: 0.85,
+      mode: 'simulation',
+      fallbackUsed: true,
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }
@@ -291,7 +346,8 @@ export class WeatherContextProvider implements IWeatherContextProvider {
       location: { lat, lng, name: base.weather.stationName },
       dataFreshness: 'Demo Fallback Data (Static Baseline)',
       confidence: 0.85,
-      mode: 'demo_fallback',
+      mode: this.mode === 'demo_fallback' ? 'demo_fallback' : 'simulation',
+      fallbackUsed: true,
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }
@@ -300,9 +356,15 @@ export class WeatherContextProvider implements IWeatherContextProvider {
     const isSector15 = Math.abs(lat - 28.583) < 0.05 && Math.abs(lng - 77.318) < 0.05;
     const weather: WeatherData = {
       temperatureCelsius: isSector15 ? 28.0 : 30.5,
+      feelsLikeCelsius: isSector15 ? 32.0 : 34.0,
       humidityPercent: isSector15 ? 85 : 68,
+      pressureHpa: 1008,
       windSpeedKmh: isSector15 ? 18 : 12,
+      windDirectionDeg: 140,
+      visibilityMeters: 4000,
+      precipitationMmPerHour: isSector15 ? 65 : 12,
       condition: isSector15 ? 'Heavy Showers' : 'Partly Cloudy',
+      description: isSector15 ? 'Sector 15 Monsoon Alert: High probability of waterlogging near low-lying drains' : 'NCR General Weather Watch',
       alertLevel: isSector15 ? 'orange' : 'yellow',
       alertDescription: isSector15
         ? 'Sector 15 Monsoon Alert: High probability of waterlogging near low-lying drains'

@@ -39,12 +39,13 @@ export class AdminBoundaryContextProvider implements IAdminBoundaryContextProvid
       this.cache.set(cacheKey, boundary);
       return {
         data: boundary,
-        source: 'Delhi Urban Development GIS Boundary Engine (Live Endpoint)',
+        source: 'Delhi Ward Boundary Local GIS Registry (Static Baseline)',
         timestamp: nowISO,
         location: { lat, lng, name: boundary.wardBoundaryPolygonName },
-        dataFreshness: 'Live GIS Query (Real-time Spatial Index)',
-        confidence: 0.98,
-        mode: 'live',
+        dataFreshness: 'Simulated Administrative Boundaries',
+        confidence: 0.92,
+        mode: 'simulation',
+        fallbackUsed: true,
         fetchDurationMs: Math.round(performance.now() - startTime)
       };
     }
@@ -59,6 +60,7 @@ export class AdminBoundaryContextProvider implements IAdminBoundaryContextProvid
         dataFreshness: 'Cached Spatial Topology (TTL 24h)',
         confidence: 0.95,
         mode: 'cached',
+        fallbackUsed: false,
         fetchDurationMs: Math.round(performance.now() - startTime)
       };
     }
@@ -72,6 +74,7 @@ export class AdminBoundaryContextProvider implements IAdminBoundaryContextProvid
       dataFreshness: 'Demo Fallback Data (Static Reference Geometry)',
       confidence: 0.90,
       mode: 'demo_fallback',
+      fallbackUsed: true,
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }
@@ -101,11 +104,13 @@ export class AdminBoundaryContextProvider implements IAdminBoundaryContextProvid
     };
 
     let source = 'NagarBodh Ward Registry Static Dataset';
-    let freshness = 'Demo Fallback Data';
+    let freshness = 'Simulated Ward Baseline';
+    let resolvedMode: ProviderMode = activeMode;
 
     if (activeMode === 'live') {
-      source = 'Delhi Municipal Portal Live Ward Analytics Stream';
-      freshness = 'Live Synchronized Ward Data';
+      source = 'Delhi Municipal Ward Profile Registry (Static Baseline)';
+      freshness = 'Simulated Ward Baseline';
+      resolvedMode = 'simulation';
     } else if (activeMode === 'cached') {
       source = 'Municipal Ward Profile Cache';
       freshness = 'Cached (1h ago)';
@@ -117,8 +122,9 @@ export class AdminBoundaryContextProvider implements IAdminBoundaryContextProvid
       timestamp: nowISO,
       location: { name: wardData.wardName },
       dataFreshness: freshness,
-      confidence: activeMode === 'live' ? 0.96 : activeMode === 'cached' ? 0.92 : 0.88,
-      mode: activeMode,
+      confidence: 0.90,
+      mode: resolvedMode,
+      fallbackUsed: activeMode === 'live',
       fetchDurationMs: Math.round(performance.now() - startTime)
     };
   }

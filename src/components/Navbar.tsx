@@ -17,7 +17,9 @@ export const Navbar: React.FC = () => {
     activeTab,
     setActiveTab,
     currentStep,
-    incidents
+    incidents,
+    ingestionMode,
+    setIngestionMode
   } = useCivic();
 
   const criticalCount = incidents.filter(i => i.priority.overallScore >= 80).length;
@@ -122,6 +124,63 @@ export const Navbar: React.FC = () => {
 
       {/* Right User & Operational Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        {/* LIVE vs SIMULATION Ingestion Mode Switcher */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '20px',
+            padding: '2px',
+            gap: '2px'
+          }}
+        >
+          <button
+            onClick={() => setIngestionMode('LIVE')}
+            style={{
+              background: ingestionMode === 'LIVE' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
+              color: ingestionMode === 'LIVE' ? '#34d399' : 'var(--text-muted)',
+              border: ingestionMode === 'LIVE' ? '1px solid rgba(16, 185, 129, 0.5)' : 'none',
+              borderRadius: '16px',
+              padding: '0.2rem 0.6rem',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              transition: 'all 0.2s ease'
+            }}
+            title="Fetch real OpenWeather & X API data"
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ingestionMode === 'LIVE' ? '#10b981' : '#6b7280' }} />
+            LIVE API
+          </button>
+
+          <button
+            onClick={() => setIngestionMode('SIMULATION')}
+            style={{
+              background: ingestionMode === 'SIMULATION' ? 'rgba(6, 182, 212, 0.25)' : 'transparent',
+              color: ingestionMode === 'SIMULATION' ? 'var(--cyan-400)' : 'var(--text-muted)',
+              border: ingestionMode === 'SIMULATION' ? '1px solid rgba(6, 182, 212, 0.5)' : 'none',
+              borderRadius: '16px',
+              padding: '0.2rem 0.6rem',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              transition: 'all 0.2s ease'
+            }}
+            title="Use deterministic simulation steps and demo dataset"
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ingestionMode === 'SIMULATION' ? 'var(--cyan-400)' : '#6b7280' }} />
+            SIMULATION
+          </button>
+        </div>
+
         <div className="sim-clock-badge" title="Operational Clock">
           <span style={{
             width: '6px',

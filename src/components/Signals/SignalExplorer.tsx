@@ -501,7 +501,7 @@ export const SignalExplorer: React.FC = () => {
                           }
                         },
                         confidence: sig.confidenceScore,
-                        model: 'gemini-2.0-flash',
+                        model: 'gemini-1.5-flash',
                         latencyMs: 310,
                         fallbackUsed: false
                       };

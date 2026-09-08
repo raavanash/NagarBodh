@@ -1,6 +1,6 @@
 import { CivicCategory, CriticalAsset, WardMetric } from './civic';
 
-export type ProviderMode = 'live' | 'cached' | 'demo_fallback';
+export type ProviderMode = 'live' | 'simulation' | 'cached' | 'error' | 'unavailable' | 'demo_fallback';
 
 export interface ExternalDataPointEnvelope<T> {
   data: T;
@@ -15,13 +15,23 @@ export interface ExternalDataPointEnvelope<T> {
   confidence?: number; // 0.0 - 1.0
   mode: ProviderMode;
   fetchDurationMs?: number;
+  error?: string;
+  fallbackUsed?: boolean;
+  fetchedAt?: string;
+  freshnessSeconds?: number;
 }
 
 export interface WeatherData {
   temperatureCelsius: number;
+  feelsLikeCelsius?: number;
   humidityPercent: number;
+  pressureHpa?: number;
   windSpeedKmh: number;
+  windDirectionDeg?: number;
+  visibilityMeters?: number;
+  precipitationMmPerHour?: number;
   condition: string;
+  description?: string;
   alertLevel: 'none' | 'yellow' | 'orange' | 'red';
   alertDescription: string;
   stationName: string;

@@ -17,6 +17,7 @@ import { SignalIngestionService } from '../engine/ingestion/SignalIngestionServi
 import { IngestedCivicSignal, IngestionMode, IngestionStats, RawSignalPayload } from '../types/ingestion';
 import { AgentTrace } from '../types/agent';
 import { CivicContextDataLayer, civicContextDataLayerInstance } from '../engine/context/CivicContextDataLayer';
+import { ExternalDataPointEnvelope, WeatherData } from '../types/contextDataLayer';
 import { calculateResolutionVerification } from '../engine/resolutionVerificationEngine';
 
 export interface AuditLogEntry {
@@ -92,8 +93,11 @@ interface CivicContextType {
 
   // Ingestion Layer
   ingestionMode: IngestionMode;
+  setIngestionMode: (mode: IngestionMode) => void;
   ingestionStats: IngestionStats;
   ingestFileDataset: (fileContent: string, fileName: string) => Promise<number>;
+  liveWeatherEnvelope: ExternalDataPointEnvelope<WeatherData> | null;
+  refreshWeather: () => Promise<void>;
 
   // Agent Traces & Inspector
   agentTraces: AgentTrace[];
@@ -776,7 +780,88 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Ingestion Service Instance
   const ingestionServiceRef = useRef<SignalIngestionService>(new SignalIngestionService(signals as any));
   const [ingestionStats, setIngestionStats] = useState<IngestionStats>(() => ingestionServiceRef.current.getStats());
-  const [ingestionMode, setIngestionMode] = useState<IngestionMode>('SIMULATION');
+  const [ingestionMode, setIngestionModeState] = useState<IngestionMode>(() => {
+    const saved = localStorage.getItem('nagar_bodh_ingestion_mode') as IngestionMode;
+    return saved || 'LIVE';
+  });
+  const [liveWeatherEnvelope, setLiveWeatherEnvelope] = useState<ExternalDataPointEnvelope<any> | null>(null);
+
+  // Weather Refresh Logic
+  const refreshWeather = useCallback(async () => {
+    try {
+      const mode = ingestionMode === 'LIVE' ? 'live' : 'cached';
+      const envelope = await civicContextDataLayerInstance['weatherProvider'].getWeather(28.5831, 77.3184, mode);
+      setLiveWeatherEnvelope(envelope);
+    } catch (err) {
+      console.warn('[CivicContext] refreshWeather error:', err);
+    }
+  }, [ingestionMode]);
+
+  // Mode Switch Handler (LIVE vs SIMULATION)
+  const setIngestionMode = useCallback(async (newMode: IngestionMode) => {
+    setIngestionModeState(newMode);
+    localStorage.setItem('nagar_bodh_ingestion_mode', newMode);
+    ingestionServiceRef.current.setIngestionMode(newMode);
+
+    if (newMode === 'LIVE') {
+      civicContextDataLayerInstance.setGlobalMode('live');
+      // Trigger immediate live fetches
+      const env = await civicContextDataLayerInstance['weatherProvider'].getWeather(28.5831, 77.3184, 'live');
+      setLiveWeatherEnvelope(env);
+
+      // Trigger live X API fetch
+      const xProvider = ingestionServiceRef.current.getProvider('provider-social-x') as any;
+      if (xProvider) {
+        xProvider.setMode('LIVE');
+        const { normalizedSignals } = await ingestionServiceRef.current.ingest('provider-social-x');
+        if (normalizedSignals.length > 0) {
+          setSignals(prev => [...normalizedSignals, ...prev]);
+        }
+      }
+
+      appendAuditLog({
+        timeLabel: currentStep.simulatedTime,
+        type: 'state_transition',
+        title: '🌐 Switched to LIVE Ingestion Mode',
+        description: 'Activated real OpenWeather and X (Twitter) API endpoints. Context Data Layer set to LIVE.',
+        actor: 'Commander Mode Switcher'
+      });
+    } else {
+      civicContextDataLayerInstance.setGlobalMode('cached');
+      const xProvider = ingestionServiceRef.current.getProvider('provider-social-x') as any;
+      if (xProvider) {
+        xProvider.setMode('SIMULATION');
+      }
+      refreshWeather();
+
+      appendAuditLog({
+        timeLabel: currentStep.simulatedTime,
+        type: 'state_transition',
+        title: '⚡ Switched to SIMULATION Mode',
+        description: 'Reverted to deterministic simulation baseline steps and mock datasets.',
+        actor: 'Commander Mode Switcher'
+      });
+    }
+  }, [currentStep.simulatedTime, appendAuditLog, refreshWeather]);
+
+  // Sync Data Layer mode on mount
+  useEffect(() => {
+    if (ingestionMode === 'LIVE') {
+      civicContextDataLayerInstance.setGlobalMode('live');
+    } else {
+      civicContextDataLayerInstance.setGlobalMode('cached');
+    }
+  }, [ingestionMode]);
+
+  // Auto-refresh weather every 5 minutes in LIVE mode
+  useEffect(() => {
+    refreshWeather();
+    if (ingestionMode !== 'LIVE') return;
+    const interval = setInterval(() => {
+      refreshWeather();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [ingestionMode, refreshWeather]);
 
   // Update ingestion stats whenever signals or incidents change
   useEffect(() => {
@@ -898,8 +983,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         signalFilters,
         wardStats,
         ingestionMode,
+        setIngestionMode,
         ingestionStats,
         ingestFileDataset,
+        liveWeatherEnvelope,
+        refreshWeather,
         agentTraces,
         selectedTrace,
         inspectAgentTrace,

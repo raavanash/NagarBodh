@@ -1,7 +1,7 @@
 import { AgentTrace, SignalAnalystOutput, SignalAnalystOutputSchema } from '../../types/agent';
 import { parseCivicSignalText } from '../nlpParser';
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 const REQUEST_TIMEOUT_MS = 8000;
 const MAX_RETRIES = 2;
 
@@ -134,23 +134,30 @@ export class SignalAnalystAgent {
     const traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const toolsConsulted = ['Gemini 2.0 Flash Multi-lingual Vision Engine', 'Delhi NCR Ward Topography DB', 'Zod Schema Validator'];
 
-    // If no API key provided or placeholder, automatically fallback to deterministic NLP
-    if (!apiKey || apiKey.trim().length < 10 || apiKey === 'your_gemini_api_key_here') {
-      const fallbackOutput = this.buildFallbackOutput(text);
-      const trace: AgentTrace = {
-        id: traceId,
-        timestamp: new Date().toISOString(),
-        input: { text, imageUrl, channel },
-        toolsOrDataConsulted: ['Deterministic Rule-Based NLP Parser', 'Delhi NCR Ward Topography DB'],
-        structuredOutput: fallbackOutput,
-        confidence: fallbackOutput.confidence,
-        model: 'deterministic-rule-engine-v1',
-        latencyMs: Date.now() - startTime,
-        fallbackUsed: true,
-        apiError: !apiKey ? 'No Gemini API Key provided.' : 'Gemini API key is set to placeholder "your_gemini_api_key_here".'
-      };
-      return { output: fallbackOutput, trace };
+    const promptText = `Analyze this citizen civic report:\n"${text}"`;
+    const contents: any[] = [
+      {
+        role: 'user',
+        parts: [{ text: promptText }]
+      }
+    ];
+
+    if (imageUrl && imageUrl.startsWith('data:image/')) {
+      const mimeType = imageUrl.split(';')[0].replace('data:', '');
+      const base64Data = imageUrl.split(',')[1];
+      contents[0].parts.push({
+        inline_data: { mime_type: mimeType, data: base64Data }
+      });
     }
+
+    const payload = {
+      contents,
+      system_instruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
+      generationConfig: {
+        temperature: 0.1,
+        response_mime_type: 'application/json'
+      }
+    };
 
     let lastError: string | undefined;
 
@@ -160,60 +167,55 @@ export class SignalAnalystAgent {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-        const promptText = `Analyze this citizen civic report:\n"${text}"`;
+        let data: any = null;
 
-        const contents: any[] = [
-          {
-            role: 'user',
-            parts: [{ text: promptText }]
+        // Try backend server proxy /api/gemini first
+        const proxyRes = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({ payload, apiKey })
+        }).catch(() => null);
+
+        if (proxyRes && proxyRes.ok) {
+          const body = await proxyRes.json().catch(() => null);
+          if (body && body.ok && body.data) {
+            data = body.data;
           }
-        ];
-
-        // If base64 / inline image provided, attach image part
-        if (imageUrl && imageUrl.startsWith('data:image/')) {
-          const mimeType = imageUrl.split(';')[0].replace('data:', '');
-          const base64Data = imageUrl.split(',')[1];
-          contents[0].parts.push({
-            inline_data: { mime_type: mimeType, data: base64Data }
-          });
         }
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: controller.signal,
-            body: JSON.stringify({
-              contents,
-              system_instruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
-              generationConfig: {
-                temperature: 0.1,
-                response_mime_type: 'application/json'
-              }
-            })
+        // Direct browser API call fallback if apiKey is provided in client
+        if (!data && apiKey && apiKey.trim().length > 10 && apiKey !== 'your_gemini_api_key_here') {
+          const directRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: controller.signal,
+              body: JSON.stringify(payload)
+            }
+          );
+          if (directRes.ok) {
+            data = await directRes.json();
+          } else {
+            const errBody = await directRes.json().catch(() => null);
+            throw new Error(`Gemini API HTTP ${directRes.status}: ${errBody?.error?.message || directRes.statusText}`);
           }
-        );
+        }
 
         clearTimeout(timeoutId);
 
-        if (!response.ok) {
-          const errBody = await response.json().catch(() => null);
-          const detailMsg = errBody?.error?.message || response.statusText;
-          throw new Error(`Gemini API HTTP ${response.status}: ${detailMsg}`);
+        if (!data) {
+          throw new Error('Gemini API fetch returned empty or unconfigured error.');
         }
 
-        const data = await response.json();
         const rawResponseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
         if (!rawResponseText) {
           throw new Error('Gemini API returned empty response candidates.');
         }
 
         // Recover and parse JSON
         const rawJson = this.recoverAndParseJSON(rawResponseText);
-
-        // Validate strictly against Zod Schema
         const validatedOutput = SignalAnalystOutputSchema.parse(rawJson);
 
         const trace: AgentTrace = {
@@ -239,32 +241,6 @@ export class SignalAnalystAgent {
       }
     }
 
-    // If retries fail, attempt local mock JSON before deterministic parser
-    console.warn(`[SignalAnalystAgent] Gemini API retries exhausted (${lastError}). Attempting local JSON mock fallback...`);
-
-    try {
-      const mockRes = await fetch('/mock/gemini_mock.json');
-      if (mockRes.ok) {
-        const mockJson = await mockRes.json();
-        const validatedOutput = SignalAnalystOutputSchema.parse(mockJson);
-        const trace: AgentTrace = {
-          id: traceId,
-          timestamp: new Date().toISOString(),
-          input: { text, imageUrl, channel },
-          toolsOrDataConsulted: ['Local Mock JSON Repository', 'NagarBodh Schema Engine'],
-          structuredOutput: validatedOutput,
-          confidence: validatedOutput.confidence,
-          model: 'local-json-mock-provider',
-          latencyMs: Date.now() - startTime,
-          fallbackUsed: true,
-          apiError: `Live Gemini API failed (${lastError}). Fallback to local JSON mock.`
-        };
-        return { output: validatedOutput, trace };
-      }
-    } catch {
-      // Ignore mock fetch error and fall through to deterministic parser
-    }
-
     const fallbackOutput = this.buildFallbackOutput(text);
 
     const trace: AgentTrace = {
@@ -274,10 +250,10 @@ export class SignalAnalystAgent {
       toolsOrDataConsulted: ['Deterministic Rule-Based NLP Parser'],
       structuredOutput: fallbackOutput,
       confidence: fallbackOutput.confidence,
-      model: 'deterministic-rule-engine-fallback',
+      model: 'deterministic-rule-engine-v1',
       latencyMs: Date.now() - startTime,
       fallbackUsed: true,
-      apiError: lastError
+      apiError: lastError || 'Gemini API call failed.'
     };
 
     return { output: fallbackOutput, trace };
