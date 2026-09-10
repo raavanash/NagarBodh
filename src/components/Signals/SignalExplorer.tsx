@@ -290,7 +290,8 @@ export const SignalExplorer: React.FC = () => {
           >
             <option value="all">All Channels</option>
             <option value="citizen_app">Citizen Mobile App</option>
-            <option value="social_x">Social Media (X / Twitter)</option>
+            <option value="social_bluesky">LIVE • Bluesky Public Social</option>
+            <option value="social_x">Social Media (X / Twitter - Optional)</option>
             <option value="grievance_portal">Civic Grievance Portal</option>
             <option value="helpline_311">155304 / 112 Unified Civic Helpline</option>
           </select>
@@ -345,19 +346,24 @@ export const SignalExplorer: React.FC = () => {
                       borderRadius: '4px',
                       fontSize: '0.68rem',
                       fontWeight: 700,
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      color: 'var(--text-primary)',
+                      background: sig.channel === 'social_bluesky' ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                      color: sig.channel === 'social_bluesky' ? '#0ea5e9' : 'var(--text-primary)',
+                      border: sig.channel === 'social_bluesky' ? '1px solid rgba(14, 165, 233, 0.4)' : 'none',
                       textTransform: 'uppercase'
                     }}
                   >
-                    {sig.channel === 'social_x' ? (
+                    {sig.channel === 'social_bluesky' ? (
+                      <svg width="12" height="12" viewBox="0 0 568 501" fill="currentColor">
+                        <path d="M123.121 33.664C187.857 82.173 251.815 178.618 284 227.098C316.185 178.618 380.143 82.173 444.879 33.664C491.566 -1.272 568 -24.873 568 53.64C568 69.191 559.18 190.728 554.004 209.213C536.012 273.473 438.307 288.947 348 277.404C494.341 306.903 529.742 376.109 462 443.784C333.659 572.012 295.341 371.393 284 316.924C272.659 371.393 234.341 572.012 106 443.784C38.258 376.109 73.659 306.903 220 277.404C129.693 288.947 31.988 273.473 13.996 209.213C8.82 190.728 0 69.191 0 53.64C0 -24.873 76.434 -1.272 123.121 33.664Z" />
+                      </svg>
+                    ) : sig.channel === 'social_x' ? (
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" color="#38bdf8">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                       </svg>
                     ) : (
                       <User size={11} />
                     )}
-                    <span>{sig.channel.replace('_', ' ')}</span>
+                    <span>{sig.channel === 'social_bluesky' ? 'BLUESKY' : sig.channel.replace('_', ' ')}</span>
                   </span>
 
                   <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--cyan-400)' }}>

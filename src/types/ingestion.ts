@@ -1,7 +1,7 @@
 import { CivicCategory, CivicSignal, DetectedLanguage, SeverityLevel, SignalChannel } from './civic';
 
 export type IngestionMode = 'LIVE' | 'REPLAY' | 'SIMULATION';
-export type ProviderType = 'simulation' | 'citizen_app' | 'social_x' | 'govt_grievance' | 'file_import';
+export type ProviderType = 'simulation' | 'citizen_app' | 'social_x' | 'social_bluesky' | 'govt_grievance' | 'file_import';
 
 export interface RawSignalPayload {
   id?: string;

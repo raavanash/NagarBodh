@@ -133,14 +133,58 @@ export class SignalNormalizer {
     // Channel mapping
     let channel: SignalChannel = 'citizen_app';
     const rawChannel = (payload.sourceChannel || payload.channel || 'citizen_app').toString().toLowerCase();
-    if (rawChannel.includes('x') || rawChannel.includes('social')) channel = 'social_x';
+    if (rawChannel.includes('bluesky') || rawChannel.includes('bsky')) channel = 'social_bluesky';
+    else if (rawChannel.includes('x') || rawChannel.includes('social')) channel = 'social_x';
     else if (rawChannel.includes('grievance') || rawChannel.includes('portal') || rawChannel.includes('govt')) channel = 'grievance_portal';
     else if (rawChannel.includes('311') || rawChannel.includes('helpline')) channel = 'helpline_311';
+
+    // Textual Locality & Ward Resolution
+    let matchedLocationName = payload.locationName || payload.location;
+    let matchedWard = payload.ward;
+    let matchedCoords = this.normalizeCoordinates(
+      payload.lat || payload.latitude || payload.coordinates?.lat,
+      payload.lng || payload.longitude || payload.coordinates?.lng
+    );
+
+    const lowerText = rawText.toLowerCase();
+    const KNOWN_NCR_LOCATIONS: Array<{ keywords: string[]; name: string; ward: string; coords: { lat: number; lng: number } }> = [
+      { keywords: ['connaught place', 'cp', 'राजीव चौक'], name: 'Connaught Place', ward: 'Ward 01 - Connaught Place', coords: { lat: 28.6315, lng: 77.2167 } },
+      { keywords: ['karol bagh', 'करोल बाग'], name: 'Karol Bagh', ward: 'Ward 14 - Karol Bagh', coords: { lat: 28.6508, lng: 77.1895 } },
+      { keywords: ['mayur vihar', 'मयूर विहार'], name: 'Mayur Vihar Phase 1', ward: 'Ward 22 - Mayur Vihar', coords: { lat: 28.6085, lng: 77.2942 } },
+      { keywords: ['rohini', 'रोहिणी'], name: 'Rohini Sector', ward: 'Ward 08 - Rohini', coords: { lat: 28.7185, lng: 77.1145 } },
+      { keywords: ['dwarka', 'द्वारका'], name: 'Dwarka Expressway', ward: 'Ward 10 - Dwarka', coords: { lat: 28.5921, lng: 77.0460 } },
+      { keywords: ['saket', 'साकेत'], name: 'Saket South', ward: 'Ward 18 - Saket', coords: { lat: 28.5244, lng: 77.2100 } },
+      { keywords: ['lajpat nagar', 'लाजपत नगर'], name: 'Lajpat Nagar Market', ward: 'Ward 16 - Lajpat Nagar', coords: { lat: 28.5681, lng: 77.2432 } },
+      { keywords: ['sector 15', 'सेक्टर 15'], name: 'Sector 15 Underpass', ward: 'Ward 15 - Central Sub-city', coords: { lat: 28.5833, lng: 77.3185 } },
+      { keywords: ['noida', 'नोएडा'], name: 'Noida Corridor', ward: 'NCR - Noida Sub-region', coords: { lat: 28.5355, lng: 77.3910 } },
+      { keywords: ['gurgaon', 'gurugram', 'गुड़गांव', 'गुरुग्राम'], name: 'Gurugram Expressway', ward: 'NCR - Gurugram Sub-region', coords: { lat: 28.4595, lng: 77.0266 } },
+      { keywords: ['ghaziabad', 'गाजियाबाद'], name: 'Ghaziabad Sector', ward: 'NCR - Ghaziabad Sub-region', coords: { lat: 28.6692, lng: 77.4538 } },
+      { keywords: ['faridabad', 'फरीदाबाद'], name: 'Faridabad Area', ward: 'NCR - Faridabad Sub-region', coords: { lat: 28.4089, lng: 77.3178 } },
+      { keywords: ['delhi', 'new delhi', 'दिल्ली', 'नई दिल्ली'], name: 'Delhi NCR Area', ward: 'Ward 01 - Central Delhi', coords: { lat: 28.6139, lng: 77.2090 } }
+    ];
+
+    for (const loc of KNOWN_NCR_LOCATIONS) {
+      if (loc.keywords.some(kw => lowerText.includes(kw))) {
+        if (!matchedLocationName || matchedLocationName === 'Reported Field Location') {
+          matchedLocationName = loc.name;
+        }
+        if (!matchedWard || matchedWard === 'Ward 15 - Central Sub-city') {
+          matchedWard = loc.ward;
+        }
+        if (!payload.lat && !payload.latitude && !payload.coordinates?.lat) {
+          matchedCoords = loc.coords;
+        }
+        break;
+      }
+    }
 
     // Parse NLP metadata
     const parsedNLP = parseCivicSignalText(rawText);
 
-    const fingerprintHash = this.generateFingerprintHash(rawText, coords.lat, coords.lng);
+    // Fingerprint generation (Use exact payload.id URI if available to guarantee deduplication)
+    const fingerprintHash = payload.id && payload.id.startsWith('at://')
+      ? `bsky-fp-${payload.id.split('/').pop()}`
+      : this.generateFingerprintHash(rawText, matchedCoords.lat, matchedCoords.lng);
 
     const sourceMetadata: SourceMetadata = {
       providerId,
@@ -153,7 +197,9 @@ export class SignalNormalizer {
     };
 
     const signal: IngestedCivicSignal = {
-      id: payload.id && payload.id.startsWith('sig-') ? payload.id : `sig-${providerType}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: payload.id && (payload.id.startsWith('sig-') || payload.id.startsWith('at://'))
+        ? payload.id
+        : `sig-${providerType}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       timestamp: isoTimestamp,
       simulatedTimeLabel: payload.simulatedTimeLabel || timeLabel,
       channel,
@@ -163,9 +209,9 @@ export class SignalNormalizer {
       category: (payload.category as CivicCategory) || parsedNLP.category,
       reportedSeverity: (payload.severity as SeverityLevel) || parsedNLP.reportedSeverity,
       confidenceScore: payload.confidenceScore || parsedNLP.confidenceScore,
-      coordinates: coords,
-      locationName: payload.locationName || payload.location || parsedNLP.extractedLocationName || 'Reported Field Location',
-      ward: payload.ward || 'Ward 15 - Central Sub-city',
+      coordinates: matchedCoords,
+      locationName: matchedLocationName || parsedNLP.extractedLocationName || 'Reported Field Location',
+      ward: matchedWard || 'Ward 15 - Central Sub-city',
       authorHandle: payload.authorHandle || payload.author || '@CitizenReporter',
       upvotes: payload.upvotes || 1,
       imageUrl: payload.imageUrl || payload.mediaUrl,

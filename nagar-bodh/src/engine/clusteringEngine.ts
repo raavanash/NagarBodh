@@ -205,6 +205,7 @@ export function clusterSignals(
     // Channel & Language Distribution
     const sourceDistribution: Record<SignalChannel, number> = {
       citizen_app: 0,
+      social_bluesky: 0,
       social_x: 0,
       grievance_portal: 0,
       helpline_311: 0

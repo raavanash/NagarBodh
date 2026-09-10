@@ -1,4 +1,4 @@
-export type SignalChannel = 'citizen_app' | 'social_x' | 'grievance_portal' | 'helpline_311';
+export type SignalChannel = 'citizen_app' | 'social_x' | 'social_bluesky' | 'grievance_portal' | 'helpline_311';
 export type DetectedLanguage = 'hi' | 'hinglish' | 'en';
 export type CivicCategory = 'waterlogging' | 'road_hazard' | 'drainage' | 'garbage' | 'electricity' | 'traffic';
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';

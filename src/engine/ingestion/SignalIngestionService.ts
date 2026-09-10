@@ -1,5 +1,6 @@
 import { IngestedCivicSignal, IngestionMode, IngestionStats, NormalizationResult, ProviderType, RawSignalPayload, SignalProvider } from '../../types/ingestion';
 import { DuplicateDetector } from './DuplicateDetector';
+import { BlueskySocialProvider } from './providers/BlueskySocialProvider';
 import { CitizenReportProvider } from './providers/CitizenReportProvider';
 import { DemoSimulationProvider } from './providers/DemoSimulationProvider';
 import { FileImportProvider } from './providers/FileImportProvider';
@@ -29,6 +30,7 @@ export class SignalIngestionService {
     // Register built-in providers
     this.registerProvider(new DemoSimulationProvider());
     this.registerProvider(new CitizenReportProvider());
+    this.registerProvider(new BlueskySocialProvider());
     this.registerProvider(new PublicSocialXProvider());
     this.registerProvider(new GovtGrievanceProvider());
     this.registerProvider(new FileImportProvider());

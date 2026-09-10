@@ -820,6 +820,31 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [ingestionMode]);
 
+  // Bluesky Live Ingestion & Polling Handler
+  const fetchBlueskyLiveSignals = useCallback(async () => {
+    try {
+      const bskyProvider = ingestionServiceRef.current.getProvider('provider-social-bluesky') as any;
+      if (bskyProvider) {
+        bskyProvider.setMode('LIVE');
+        const { normalizedSignals, results } = await ingestionServiceRef.current.ingest('provider-social-bluesky');
+        const duplicates = results.filter(r => r.isDuplicate).length;
+
+        console.log(`[Bluesky] Normalized signals: ${normalizedSignals.length}`);
+        console.log(`[Bluesky] Duplicates removed: ${duplicates}`);
+
+        if (normalizedSignals.length > 0) {
+          setSignals(prev => {
+            const existingIds = new Set(prev.map(s => s.id));
+            const fresh = normalizedSignals.filter(s => !existingIds.has(s.id));
+            return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[CivicContext] Exception fetching live Bluesky signals:', err);
+    }
+  }, []);
+
   // Mode Switch Handler (LIVE vs SIMULATION)
   const setIngestionMode = useCallback(async (newMode: IngestionMode) => {
     setIngestionModeState(newMode);
@@ -832,28 +857,21 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const env = await civicContextDataLayerInstance['weatherProvider'].getWeather(28.5831, 77.3184, 'live');
       setLiveWeatherEnvelope(env);
 
-      // Trigger live X API fetch
-      const xProvider = ingestionServiceRef.current.getProvider('provider-social-x') as any;
-      if (xProvider) {
-        xProvider.setMode('LIVE');
-        const { normalizedSignals } = await ingestionServiceRef.current.ingest('provider-social-x');
-        if (normalizedSignals.length > 0) {
-          setSignals(prev => [...normalizedSignals, ...prev]);
-        }
-      }
+      // Trigger live Bluesky API fetch
+      await fetchBlueskyLiveSignals();
 
       appendAuditLog({
         timeLabel: currentStep.simulatedTime,
         type: 'state_transition',
-        title: '🌐 Switched to LIVE Ingestion Mode',
-        description: 'Activated real OpenWeather and X (Twitter) API endpoints. Context Data Layer set to LIVE.',
+        title: '🌐 Switched to LIVE Bluesky Ingestion Mode',
+        description: 'Activated real OpenWeather and Bluesky API search (api.bsky.app). Context Data Layer set to LIVE.',
         actor: 'Commander Mode Switcher'
       });
     } else {
       civicContextDataLayerInstance.setGlobalMode('cached');
-      const xProvider = ingestionServiceRef.current.getProvider('provider-social-x') as any;
-      if (xProvider) {
-        xProvider.setMode('SIMULATION');
+      const bskyProvider = ingestionServiceRef.current.getProvider('provider-social-bluesky') as any;
+      if (bskyProvider) {
+        bskyProvider.setMode('SIMULATION');
       }
       refreshWeather();
 
@@ -865,16 +883,26 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         actor: 'Commander Mode Switcher'
       });
     }
-  }, [currentStep.simulatedTime, appendAuditLog, refreshWeather]);
+  }, [currentStep.simulatedTime, appendAuditLog, refreshWeather, fetchBlueskyLiveSignals]);
 
-  // Sync Data Layer mode on mount
+  // Sync Data Layer mode on mount & trigger initial live fetch if mode is LIVE
   useEffect(() => {
     if (ingestionMode === 'LIVE') {
       civicContextDataLayerInstance.setGlobalMode('live');
+      fetchBlueskyLiveSignals();
     } else {
       civicContextDataLayerInstance.setGlobalMode('cached');
     }
-  }, [ingestionMode]);
+  }, [ingestionMode, fetchBlueskyLiveSignals]);
+
+  // Auto-refresh Bluesky polling every 60 seconds in LIVE mode
+  useEffect(() => {
+    if (ingestionMode !== 'LIVE') return;
+    const interval = setInterval(() => {
+      fetchBlueskyLiveSignals();
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [ingestionMode, fetchBlueskyLiveSignals]);
 
   // Auto-refresh weather every 5 minutes in LIVE mode
   useEffect(() => {

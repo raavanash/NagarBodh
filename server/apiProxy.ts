@@ -170,7 +170,63 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
     return true;
   }
 
-  // 2. Social / X Route: X API v2 -> Simulated Fallback
+  // 2. Bluesky Social Route: https://api.bsky.app/xrpc/app.bsky.feed.searchPosts
+  if (pathname === '/api/social/bluesky') {
+    const query = reqUrl.searchParams.get('query') || reqUrl.searchParams.get('q') || 'waterlogging Delhi';
+    const limit = reqUrl.searchParams.get('limit') || '25';
+    const sort = reqUrl.searchParams.get('sort') || 'latest';
+
+    res.setHeader('Content-Type', 'application/json');
+
+    console.log(`[Bluesky] Query: "${query}" (sort=${sort}, limit=${limit})`);
+
+    try {
+      const bskyUrl = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&sort=${encodeURIComponent(sort)}&limit=${encodeURIComponent(limit)}`;
+      const bskyRes = await fetchUrl(bskyUrl, {
+        headers: {
+          'User-Agent': 'NagarBodh-CivicSignals/1.0',
+          'Accept': 'application/json'
+        }
+      });
+
+      console.log(`[Bluesky] HTTP status: ${bskyRes.status}`);
+
+      if (!bskyRes.ok) {
+        console.warn(`[Bluesky] API error HTTP ${bskyRes.status}:`, bskyRes.data);
+        res.statusCode = 200;
+        res.end(JSON.stringify({
+          ok: false,
+          fallback: true,
+          status: bskyRes.status,
+          error: `Bluesky API returned HTTP ${bskyRes.status}: ${bskyRes.data?.message || bskyRes.data?.error || bskyRes.statusText || 'Search posts failed'}`
+        }));
+        return true;
+      }
+
+      const posts = bskyRes.data?.posts || [];
+      console.log(`[Bluesky] Raw posts: ${posts.length}`);
+
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        ok: true,
+        data: posts,
+        query,
+        count: posts.length
+      }));
+      return true;
+    } catch (err: any) {
+      console.error(`[Bluesky] Network/request exception:`, err);
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        ok: false,
+        fallback: true,
+        error: `Bluesky API network request failed: ${err.message}`
+      }));
+      return true;
+    }
+  }
+
+  // 3. Social / X Route (Optional / Legacy): X API v2 -> Simulated Fallback
   if (pathname === '/api/social') {
     const query = reqUrl.searchParams.get('query') || '(waterlogging OR "drain overflow" OR "paani bhar gaya") (Delhi OR Noida OR Gurgaon)';
     const maxResults = reqUrl.searchParams.get('max_results') || '10';

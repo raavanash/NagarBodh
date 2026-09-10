@@ -60,7 +60,8 @@ export const MapSidebarLeft: React.FC = () => {
   const sources = [
     { id: 'all', label: 'All Channels' },
     { id: 'citizen_app', label: 'Citizen App' },
-    { id: 'social_x', label: 'Social (X)' },
+    { id: 'social_bluesky', label: 'Social (Bluesky Live)' },
+    { id: 'social_x', label: 'Social (X / Twitter - Optional)' },
     { id: 'grievance_portal', label: 'Grievance Portal' },
     { id: 'helpline_311', label: '155304 / 112 Civic Helpline' }
   ];
