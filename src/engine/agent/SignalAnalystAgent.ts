@@ -6,7 +6,7 @@ const REQUEST_TIMEOUT_MS = 8000;
 const MAX_RETRIES = 2;
 
 const AGENT_SYSTEM_PROMPT = `
-You are NagarBodh's Senior AI Signal Analyst Agent, an autonomous intelligence engine for municipal emergency response in Delhi NCR.
+You are NagarBodh's Senior AI Signal Analyst Agent, an AI-powered municipal intelligence and response analysis engine for municipal emergency response in Delhi NCR.
 Analyze incoming citizen reports in English, Devanagari Hindi, or Hinglish (code-mixed Latin script), plus optional visual telemetry.
 
 STRICT INSTRUCTIONS:
@@ -169,12 +169,13 @@ export class SignalAnalystAgent {
 
         let data: any = null;
 
-        // Try backend server proxy /api/gemini first
-        const proxyRes = await fetch('/api/gemini', {
+        // Try backend server proxy /api/gemini (server manages GEMINI_API_KEY securely)
+        const endpoint = typeof window !== 'undefined' ? '/api/gemini' : 'http://localhost:5173/api/gemini';
+        const proxyRes = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
-          body: JSON.stringify({ payload, apiKey })
+          body: JSON.stringify({ payload })
         }).catch(() => null);
 
         if (proxyRes && proxyRes.ok) {
@@ -184,30 +185,12 @@ export class SignalAnalystAgent {
           }
         }
 
-        // Direct browser API call fallback if apiKey is provided in client
-        if (!data && apiKey && apiKey.trim().length > 10 && apiKey !== 'your_gemini_api_key_here') {
-          const directRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              signal: controller.signal,
-              body: JSON.stringify(payload)
-            }
-          );
-          if (directRes.ok) {
-            data = await directRes.json();
-          } else {
-            const errBody = await directRes.json().catch(() => null);
-            throw new Error(`Gemini API HTTP ${directRes.status}: ${errBody?.error?.message || directRes.statusText}`);
-          }
-        }
-
         clearTimeout(timeoutId);
 
         if (!data) {
           throw new Error('Gemini API fetch returned empty or unconfigured error.');
         }
+
 
         const rawResponseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!rawResponseText) {

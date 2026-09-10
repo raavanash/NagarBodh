@@ -36,7 +36,8 @@ export const AgentTraceDrawer: React.FC<AgentTraceDrawerProps> = ({ trace, onClo
         top: 0,
         right: 0,
         bottom: 0,
-        width: 'min(640px, 95vw)',
+        width: 'min(640px, 100vw)',
+        maxWidth: '100vw',
         background: 'var(--bg-surface-elevated)',
         borderLeft: '1px solid var(--border-accent)',
         boxShadow: '-10px 0 30px rgba(0,0,0,0.7)',
@@ -156,7 +157,10 @@ export const AgentTraceDrawer: React.FC<AgentTraceDrawerProps> = ({ trace, onClo
         style={{
           display: 'flex',
           borderBottom: '1px solid var(--border-subtle)',
-          background: 'var(--bg-canvas)'
+          background: 'var(--bg-canvas)',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none'
         }}
       >
         {[
@@ -172,8 +176,8 @@ export const AgentTraceDrawer: React.FC<AgentTraceDrawerProps> = ({ trace, onClo
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               style={{
-                flex: 1,
-                padding: '0.75rem 0.5rem',
+                flex: '0 0 auto',
+                padding: '0.75rem 0.85rem',
                 border: 'none',
                 background: isActive ? 'var(--bg-surface-elevated)' : 'transparent',
                 borderBottom: isActive ? '2px solid var(--cyan-400)' : '2px solid transparent',
@@ -184,7 +188,9 @@ export const AgentTraceDrawer: React.FC<AgentTraceDrawerProps> = ({ trace, onClo
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem'
+                gap: '0.35rem',
+                whiteSpace: 'nowrap',
+                minHeight: '42px'
               }}
             >
               <Icon size={14} />

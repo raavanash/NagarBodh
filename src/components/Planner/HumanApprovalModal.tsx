@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { useCivic } from '../../context/CivicContext';
-import { ActionItemRecommendation, OperationalResourceItem } from '../../types/civic';
+import { ActionItemRecommendation, ClusteredIncident, DispatchActionPlan, OperationalResourceItem } from '../../types/civic';
 
-export const HumanApprovalModal: React.FC = () => {
-  const {
-    isApprovalModalOpen,
-    closeApprovalModal,
-    selectedIncident,
-    approveDispatch,
-    rejectDispatch,
-    dispatchUnits,
-    modifyDispatch
-  } = useCivic();
+interface HumanApprovalModalContentProps {
+  incident: ClusteredIncident;
+  closeApprovalModal: () => void;
+  approveDispatch: (incidentId: string, notes?: string, customPlan?: Partial<DispatchActionPlan>) => void;
+  rejectDispatch: (incidentId: string, reason: string) => void;
+  dispatchUnits: (incidentId: string, actor?: string, notes?: string) => void;
+  modifyDispatch: (incidentId: string, updates: Partial<DispatchActionPlan>) => void;
+}
 
-  if (!isApprovalModalOpen || !selectedIncident) return null;
-
-  const inc = selectedIncident;
+const HumanApprovalModalContent: React.FC<HumanApprovalModalContentProps> = ({
+  incident: inc,
+  closeApprovalModal,
+  approveDispatch,
+  rejectDispatch,
+  dispatchUnits,
+  modifyDispatch
+}) => {
   const plan = inc.actionPlan;
   const insight = inc.auditableInsight;
 
@@ -41,7 +44,7 @@ export const HumanApprovalModal: React.FC = () => {
       },
       {
         id: 'act-3',
-        actionText: 'Issue localized citizen flash alert via 311 app and SMS.',
+        actionText: 'Issue localized citizen flash alert via 155304 Civic app and SMS.',
         department: 'Public Information Cell',
         rationale: 'Warn commuters approaching Sector 15 underpass',
         isSopRule: false,
@@ -136,11 +139,11 @@ export const HumanApprovalModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/80 flex items-start justify-between">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-800 bg-slate-950/80 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 tracking-wide uppercase">
@@ -150,7 +153,7 @@ export const HumanApprovalModal: React.FC = () => {
                 Status: {inc.status.toUpperCase()}
               </span>
             </div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
               <span>{inc.title}</span>
             </h2>
             <p className="text-xs text-slate-400 font-mono mt-0.5">
@@ -160,14 +163,14 @@ export const HumanApprovalModal: React.FC = () => {
 
           <button
             onClick={closeApprovalModal}
-            className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition"
+            className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition min-w-[36px] min-h-[36px] flex items-center justify-center"
           >
             ✕
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
 
           {/* AI Confidence & Governance Notice */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -424,18 +427,18 @@ export const HumanApprovalModal: React.FC = () => {
         </div>
 
         {/* Footer Action Buttons */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => setIsRejecting(!isRejecting)}
-            className="text-xs text-slate-400 hover:text-slate-200 underline font-mono"
+            className="text-xs text-slate-400 hover:text-slate-200 underline font-mono py-2"
           >
             {isRejecting ? '← Back to Approval View' : 'Switch to Reject Mode'}
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={closeApprovalModal}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition min-h-[44px]"
             >
               Cancel
             </button>
@@ -443,14 +446,14 @@ export const HumanApprovalModal: React.FC = () => {
             {isRejecting ? (
               <button
                 onClick={handleReject}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-950/50 transition"
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-950/50 transition min-h-[44px]"
               >
                 Reject Response Plan
               </button>
             ) : (
               <button
                 onClick={handleApprove}
-                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition"
+                className="px-5 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition min-h-[44px]"
               >
                 <span>✅ Grant Approval & Dispatch</span>
               </button>
@@ -460,5 +463,30 @@ export const HumanApprovalModal: React.FC = () => {
 
       </div>
     </div>
+  );
+};
+
+export const HumanApprovalModal: React.FC = () => {
+  const {
+    isApprovalModalOpen,
+    closeApprovalModal,
+    selectedIncident,
+    approveDispatch,
+    rejectDispatch,
+    dispatchUnits,
+    modifyDispatch
+  } = useCivic();
+
+  if (!isApprovalModalOpen || !selectedIncident) return null;
+
+  return (
+    <HumanApprovalModalContent
+      incident={selectedIncident}
+      closeApprovalModal={closeApprovalModal}
+      approveDispatch={approveDispatch}
+      rejectDispatch={rejectDispatch}
+      dispatchUnits={dispatchUnits}
+      modifyDispatch={modifyDispatch}
+    />
   );
 };

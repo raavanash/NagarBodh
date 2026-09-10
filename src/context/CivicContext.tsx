@@ -140,6 +140,11 @@ interface CivicContextType {
 
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
+
+  // Theme State
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
+  toggleTheme: () => void;
 }
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
@@ -195,14 +200,28 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectedCategory: 'all'
   });
 
-  // Gemini API Key (optional live integration - reads from localStorage or VITE_GEMINI_API_KEY env)
-  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
-    const local = localStorage.getItem('nagar_bodh_gemini_key');
-    if (local && local !== 'your_gemini_api_key_here') return local;
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (envKey && envKey !== 'your_gemini_api_key_here') return envKey;
-    return '';
+  // Gemini API Key management (Secured server-side; client stays free of secret credentials)
+  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+
+  // Theme State (Light Gov-Tech default vs Dark Tactical Command)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('nagarbodh_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch {}
+    return 'light';
   });
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('nagarbodh_theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
   // Audit Log History
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([
@@ -345,9 +364,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } as ClusteredIncident;
     });
 
-    prevIncidentsRef.current = merged;
     return { incidents: merged, pendingTransitions: transitions };
-  }, [signals, currentWeather.rainfallMmPerHour, actionPlans]);
+  }, [signals, currentWeather.rainfallMmPerHour, actionPlans, lifecycleMap]);
+
+  // Effect: Keep prevIncidentsRef synchronized outside of render
+  useEffect(() => {
+    prevIncidentsRef.current = incidents;
+  }, [incidents]);
 
   // Effect: Process cluster transitions and emit audit events after component mounts / renders
   useEffect(() => {
@@ -904,7 +927,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     channel: any,
     coords: { lat: number; lng: number } = { lat: 28.5831, lng: 77.3184 }
   ) => {
-    const parsed = await parseSignalWithGemini(text, geminiApiKey);
+    const parsed = await parseSignalWithGemini(text);
 
     if (parsed.agentTrace) {
       setAgentTraces(prev => [parsed.agentTrace!, ...prev]);
@@ -948,7 +971,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         metadata: { category: parsed.category, language: parsed.detectedLanguage, confidence: parsed.confidenceScore, traceId: parsed.agentTrace?.id }
       });
     }
-  }, [geminiApiKey, currentStep.simulatedTime, appendAuditLog]);
+  }, [currentStep.simulatedTime, appendAuditLog]);
 
   const setSignalFilters = useCallback((filters: Partial<SignalFilterState>) => {
     setSignalFiltersState(prev => ({ ...prev, ...filters }));
@@ -1035,7 +1058,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setGeminiApiKey: key => {
           setGeminiApiKey(key);
           localStorage.setItem('nagar_bodh_gemini_key', key);
-        }
+        },
+        theme,
+        setTheme,
+        toggleTheme
       }}
     >
       {children}

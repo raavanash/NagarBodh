@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Activity,
   CheckCircle2,
+  ChevronDown,
   ChevronUp,
   FastForward,
   Flame,
+  GripVertical,
   Pause,
   Play,
   RotateCcw,
@@ -36,54 +38,180 @@ export const DemoCommandCenter: React.FC = () => {
   } = useCivic();
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isPillMinimized, setIsPillMinimized] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 640);
+  const [pillPos, setPillPos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingPillRef = useRef(false);
+  const dragPillStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
+    startX: 0,
+    startY: 0,
+    initialX: 0,
+    initialY: 0
+  });
+  const pillRef = useRef<HTMLDivElement>(null);
+
+  const handlePillPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const el = pillRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    isDraggingPillRef.current = true;
+    dragPillStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: pillPos ? pillPos.x : rect.left,
+      initialY: pillPos ? pillPos.y : rect.top
+    };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePillPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingPillRef.current) return;
+    const dx = e.clientX - dragPillStartRef.current.startX;
+    const dy = e.clientY - dragPillStartRef.current.startY;
+    const newX = Math.max(10, Math.min(window.innerWidth - 240, dragPillStartRef.current.initialX + dx));
+    const newY = Math.max(10, Math.min(window.innerHeight - 45, dragPillStartRef.current.initialY + dy));
+    setPillPos({ x: newX, y: newY });
+  };
+
+  const handlePillPointerUp = (e: React.PointerEvent) => {
+    if (isDraggingPillRef.current) {
+      isDraggingPillRef.current = false;
+      try {
+        (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      } catch {}
+    }
+  };
 
   return (
     <>
-      {/* Minimal Persistent Floating Demo Pill */}
-      <div className="demo-pill-container">
-        <div className="demo-pill">
-          <div className="demo-pill-status">
-            <span className="demo-pill-dot" />
-            <span className="demo-pill-title">DEMO MODE</span>
-          </div>
+      {/* Draggable & Minimizable Persistent Floating Demo Pill */}
+      <div
+        ref={pillRef}
+        className="demo-pill-container"
+        style={pillPos ? { position: 'fixed', left: `${pillPos.x}px`, top: `${pillPos.y}px`, right: 'auto', bottom: 'auto' } : undefined}
+      >
+        {isPillMinimized ? (
+          /* Minimized Compact Demo Pill */
+          <div className="demo-pill" style={{ padding: '0.35rem 0.65rem', gap: '0.5rem' }}>
+            {/* Drag Handle */}
+            <div
+              onPointerDown={handlePillPointerDown}
+              onPointerMove={handlePillPointerMove}
+              onPointerUp={handlePillPointerUp}
+              style={{
+                cursor: isDraggingPillRef.current ? 'grabbing' : 'grab',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 2px',
+                color: '#94a3b8',
+                touchAction: 'none'
+              }}
+              title="Drag to reposition demo pill"
+            >
+              <GripVertical size={13} />
+            </div>
 
-          <div style={{ color: 'var(--text-muted)' }}>|</div>
+            <div className="demo-pill-status">
+              <span className="demo-pill-dot" />
+              <span className="demo-pill-title" style={{ fontSize: '0.72rem' }}>DEMO</span>
+            </div>
 
-          <div style={{ fontSize: '0.7rem', color: 'var(--cyan-300)', fontWeight: 600 }}>
-            Scenario: Waterlogging Surge
-          </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', fontFamily: 'var(--font-mono)' }}>
+              Step {currentStepIndex + 1}/15
+            </span>
 
-          <div style={{ color: 'var(--text-muted)' }}>|</div>
-
-          <div className="demo-pill-step">
-            <span>Step {currentStepIndex + 1}/15</span>
-            <span className="demo-pill-time">({currentStep.simulatedTime})</span>
-          </div>
-
-          <div className="demo-pill-actions" style={{ marginLeft: '0.4rem' }}>
             {isPlaying ? (
-              <button onClick={pauseDemo} className="demo-pill-btn" title="Pause Demo">
-                <Pause size={12} />
-                <span>Pause</span>
+              <button onClick={pauseDemo} className="demo-pill-btn" style={{ padding: '0.15rem 0.35rem', fontSize: '0.65rem' }} title="Pause Demo">
+                <Pause size={11} />
               </button>
             ) : (
-              <button onClick={startLiveDemo} className="demo-pill-btn demo-pill-btn-play" title="Play Live Demo">
-                <Play size={12} />
-                <span>Play</span>
+              <button onClick={startLiveDemo} className="demo-pill-btn demo-pill-btn-play" style={{ padding: '0.15rem 0.35rem', fontSize: '0.65rem' }} title="Play Live Demo">
+                <Play size={11} />
               </button>
             )}
 
-            <button onClick={fastForwardDemo} className="demo-pill-btn" title="Next Step">
-              <FastForward size={12} />
-              <span>Next</span>
-            </button>
-
-            <button onClick={() => setIsOpen(true)} className="demo-pill-btn demo-pill-btn-expand" title="Open Advanced Controls">
-              <Sliders size={12} />
-              <span>Controls</span>
+            <button
+              onClick={() => setIsPillMinimized(false)}
+              className="demo-pill-btn"
+              style={{ padding: '0.15rem 0.35rem', fontSize: '0.65rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}
+              title="Expand Demo Controls"
+            >
+              <ChevronUp size={13} />
             </button>
           </div>
-        </div>
+        ) : (
+          /* Expanded Full Demo Control Pill */
+          <div className="demo-pill">
+            {/* Drag Handle */}
+            <div
+              onPointerDown={handlePillPointerDown}
+              onPointerMove={handlePillPointerMove}
+              onPointerUp={handlePillPointerUp}
+              style={{
+                cursor: isDraggingPillRef.current ? 'grabbing' : 'grab',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 2px',
+                color: '#94a3b8',
+                touchAction: 'none'
+              }}
+              title="Drag to reposition demo controls"
+            >
+              <GripVertical size={14} />
+            </div>
+
+            <div className="demo-pill-status">
+              <span className="demo-pill-dot" />
+              <span className="demo-pill-title">DEMO MODE</span>
+            </div>
+
+            <div className="demo-pill-divider" style={{ color: 'var(--border-medium)' }}>|</div>
+ 
+            <div className="demo-pill-scenario" style={{ fontSize: '0.7rem', color: '#2563eb', fontWeight: 600 }}>
+              Scenario: Waterlogging Surge
+            </div>
+
+            <div className="demo-pill-divider" style={{ color: 'var(--border-medium)' }}>|</div>
+
+            <div className="demo-pill-step">
+              <span>Step {currentStepIndex + 1}/15</span>
+              <span className="demo-pill-time">({currentStep.simulatedTime})</span>
+            </div>
+
+            <div className="demo-pill-actions" style={{ marginLeft: '0.4rem' }}>
+              {isPlaying ? (
+                <button onClick={pauseDemo} className="demo-pill-btn" title="Pause Demo">
+                  <Pause size={12} />
+                  <span>Pause</span>
+                </button>
+              ) : (
+                <button onClick={startLiveDemo} className="demo-pill-btn demo-pill-btn-play" title="Play Live Demo">
+                  <Play size={12} />
+                  <span>Play</span>
+                </button>
+              )}
+
+              <button onClick={fastForwardDemo} className="demo-pill-btn" title="Next Step">
+                <FastForward size={12} />
+                <span>Next</span>
+              </button>
+
+              <button onClick={() => setIsOpen(true)} className="demo-pill-btn demo-pill-btn-expand" title="Open Advanced Controls">
+                <Sliders size={12} />
+                <span>Controls</span>
+              </button>
+
+              <button
+                onClick={() => setIsPillMinimized(true)}
+                className="demo-pill-btn"
+                style={{ padding: '0.2rem 0.35rem', marginLeft: '0.15rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}
+                title="Minimize Demo Pill"
+              >
+                <ChevronDown size={13} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Expanded Demo Controls Modal */}
@@ -96,7 +224,7 @@ export const DemoCommandCenter: React.FC = () => {
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                     NagarBodh Scripted Emergency Demonstration Controls
                   </h3>
                   <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>

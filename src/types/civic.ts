@@ -102,6 +102,8 @@ export interface EvidenceItem {
   usedFor: string;             // e.g. "Used for incident detection", "Used for environmental risk"
   snippet?: string;
   confidence?: number;
+  classification?: 'OBSERVED' | 'CALCULATED' | 'INFERRED' | 'RECOMMENDED';
+  evidenceMode?: 'LIVE' | 'REPLAY' | 'SIMULATION';
 }
 
 export interface PriorityBreakdown {

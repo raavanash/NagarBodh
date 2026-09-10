@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CivicContextDataLayer } from '../CivicContextDataLayer';
 import { WeatherContextProvider } from '../providers/WeatherContextProvider';
 import { AdminBoundaryContextProvider } from '../providers/AdminBoundaryContextProvider';
@@ -80,12 +80,32 @@ describe('Civic Context Data Layer', () => {
     expect(demoWeather.source).toContain('Demo');
     expect(demoWeather.dataFreshness).toContain('Demo');
 
-    // Live mode
-    provider.setMode('live');
-    const liveWeather = await provider.getWeather(28.5832, 77.3188);
-    expect(liveWeather.mode).toBe('live');
-    expect(liveWeather.dataFreshness).toContain('Live');
-    expect(liveWeather.confidence).toBeGreaterThan(0.9);
+    // Live mode with mock API response
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        provider: 'openweather',
+        data: {
+          main: { temp: 28.5, feels_like: 32.0, humidity: 82, pressure: 1012 },
+          wind: { speed: 4.2, deg: 120 },
+          weather: [{ main: 'Rain', description: 'moderate rain' }],
+          rain: { '1h': 24.0 },
+          name: 'Noida Station'
+        }
+      })
+    }) as any;
+
+    try {
+      provider.setMode('live');
+      const liveWeather = await provider.getWeather(28.5832, 77.3188);
+      expect(liveWeather.mode).toBe('live');
+      expect(liveWeather.dataFreshness).toContain('Live');
+      expect(liveWeather.confidence).toBeGreaterThan(0.9);
+    } finally {
+      global.fetch = originalFetch;
+    }
 
     // Cached mode
     provider.setMode('cached');
@@ -93,6 +113,7 @@ describe('Civic Context Data Layer', () => {
     expect(cachedWeather.mode).toBe('cached');
     expect(cachedWeather.dataFreshness).toContain('Cached');
   });
+
 
   it('AdminBoundaryContextProvider returns accurate ward and zone boundaries', async () => {
     const provider = new AdminBoundaryContextProvider('live');

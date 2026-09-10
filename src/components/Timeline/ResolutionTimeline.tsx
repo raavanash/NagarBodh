@@ -28,13 +28,13 @@ export const ResolutionTimeline: React.FC = () => {
   });
 
   return (
-    <div style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
+    <div className="timeline-view-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
       {/* Top Header */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
             <Clock size={20} color="var(--cyan-400)" />
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: '#fff' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Incident Resolution Audit Timeline
             </h2>
           </div>
@@ -44,7 +44,7 @@ export const ResolutionTimeline: React.FC = () => {
         </div>
 
         {/* Filter Pills */}
-        <div style={{ display: 'flex', gap: '0.4rem', background: 'var(--bg-surface)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+        <div className="timeline-filter-pills" style={{ display: 'flex', gap: '0.4rem', background: 'var(--bg-surface)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
           <button
             onClick={() => setFilterType('all')}
             style={{
@@ -124,9 +124,10 @@ export const ResolutionTimeline: React.FC = () => {
       </div>
 
       {/* Timeline Stream */}
-      <div style={{ position: 'relative', paddingLeft: '2.5rem' }}>
+      <div className="timeline-stream-container" style={{ position: 'relative', paddingLeft: '2.5rem' }}>
         {/* Continuous vertical line */}
         <div
+          className="timeline-vertical-line"
           style={{
             position: 'absolute',
             left: '17px',
@@ -181,6 +182,7 @@ export const ResolutionTimeline: React.FC = () => {
               <div key={log.id} style={{ position: 'relative' }} className="animate-fade-in">
                 {/* Node icon */}
                 <div
+                  className="timeline-node-icon"
                   style={{
                     position: 'absolute',
                     left: '-2.5rem',
@@ -233,7 +235,7 @@ export const ResolutionTimeline: React.FC = () => {
                     </div>
                   </div>
 
-                  <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#fff', marginBottom: '0.35rem' }}>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
                     {log.title}
                   </h3>
 

@@ -72,51 +72,90 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
         overflowY: 'auto'
       }}
     >
-      {/* Top Header Hierarchy */}
-      <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-elevated)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-          <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '0.15rem 0.55rem', borderRadius: '4px', background: badgeBg, color: badgeColor, border: `1px solid ${badgeColor}`, textTransform: 'uppercase' }}>
-            {badgeLabel}
-          </span>
-          <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-secondary)' }}>
-            Active since {incident.firstSignalTime ? incident.firstSignalTime.slice(11, 16) : '08:05'}
-          </span>
-        </div>
-
-        <h2 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-heading)', fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em', margin: '0.2rem 0 0.3rem' }}>
-          {incident.category.toUpperCase()}
+      {/* Top Header Hierarchy (Ordered: Title -> Priority -> Status -> Location) */}
+      <div style={{ padding: '1rem 1.15rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
+        {/* 1. Incident Title */}
+        <h2 style={{
+          fontSize: '1.25rem',
+          fontFamily: 'var(--font-heading)',
+          fontWeight: 800,
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.25,
+          margin: '0 0 0.6rem 0'
+        }}>
+          {incident.title}
         </h2>
 
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <MapPin size={13} color="var(--cyan-400)" />
-          <span>{(incident.location as any)?.name || incident.locationName || incident.title} · {incident.ward}</span>
+        {/* 2 & 3. Priority & Status Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+          <span style={{
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            padding: '0.2rem 0.6rem',
+            borderRadius: '4px',
+            background: badgeBg,
+            color: badgeColor,
+            border: `1px solid ${badgeColor}`,
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-mono)'
+          }}>
+            {badgeLabel} ({score}/100)
+          </span>
+
+          <span style={{
+            fontSize: '0.7rem',
+            fontWeight: 800,
+            padding: '0.2rem 0.55rem',
+            borderRadius: '4px',
+            background: 'var(--bg-surface-elevated)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-medium)',
+            textTransform: 'uppercase',
+            fontFamily: 'var(--font-mono)'
+          }}>
+            STATUS: {incident.status.toUpperCase()}
+          </span>
+
+          <span style={{
+            fontSize: '0.7rem',
+            color: 'var(--text-secondary)',
+            marginLeft: 'auto',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 600
+          }}>
+            {incident.signalIds.length} signals • ↑{incident.velocitySurgePercent}% surge
+          </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Signals & Velocity</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-              {incident.signalIds.length} signals <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>↑{incident.velocitySurgePercent}%</span>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Priority</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: badgeColor, fontFamily: 'var(--font-mono)' }}>
-              {score} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ 100</span>
-            </div>
-          </div>
+        {/* 4. Location */}
+        <div style={{
+          fontSize: '0.8rem',
+          color: 'var(--text-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          background: 'var(--bg-surface-elevated)',
+          padding: '0.45rem 0.75rem',
+          borderRadius: '6px',
+          border: '1px solid var(--border-subtle)'
+        }}>
+          <MapPin size={14} color="#2563eb" style={{ flexShrink: 0 }} />
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+            {(incident.location as any)?.name || incident.locationName || incident.title}
+          </span>
+          <span style={{ color: 'var(--text-muted)' }}>• {incident.ward}</span>
         </div>
       </div>
 
       {/* Main Panel Content */}
       <div style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
 
-        {/* Section 1: WHY THIS PRIORITY? (Visual Compact Bars) */}
-        <div style={{ marginBottom: '1.25rem', padding: '0.85rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cyan-400)', letterSpacing: '0.04em', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        {/* 5. WHY THIS MATTERS: Explainable Priority Factors */}
+        <div style={{ marginBottom: '1.25rem', padding: '0.85rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#2563eb', letterSpacing: '0.04em', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Calculator size={14} />
-            <span>Why This Priority? ({score}/100)</span>
+            <span>Why It Matters: Explainable Risk Factors ({score}/100)</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -126,7 +165,7 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
                 <span>Severity Score</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{factors.severityScore} pts</span>
               </div>
-              <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ height: '5px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ width: `${severityPct}%`, height: '100%', background: '#ef4444', borderRadius: '3px' }} />
               </div>
             </div>
@@ -137,8 +176,8 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
                 <span>Signal Velocity Surge</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{factors.velocityScore} pts</span>
               </div>
-              <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${velocityPct}%`, height: '100%', background: '#38bdf8', borderRadius: '3px' }} />
+              <div style={{ height: '5px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${velocityPct}%`, height: '100%', background: '#0284c7', borderRadius: '3px' }} />
               </div>
             </div>
 
@@ -148,8 +187,8 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
                 <span>Critical Asset Exposure</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{factors.criticalAssetExposureScore} pts</span>
               </div>
-              <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${assetPct}%`, height: '100%', background: '#fbbf24', borderRadius: '3px' }} />
+              <div style={{ height: '5px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${assetPct}%`, height: '100%', background: '#f59e0b', borderRadius: '3px' }} />
               </div>
             </div>
 
@@ -159,8 +198,8 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
                 <span>Weather & Environmental Risk</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{factors.environmentalRiskScore} pts</span>
               </div>
-              <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${weatherPct}%`, height: '100%', background: '#c084fc', borderRadius: '3px' }} />
+              <div style={{ height: '5px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${weatherPct}%`, height: '100%', background: '#7c3aed', borderRadius: '3px' }} />
               </div>
             </div>
 
@@ -170,54 +209,65 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
                 <span>Historical Recurrence</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{factors.slaRecurrenceScore} pts</span>
               </div>
-              <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{ width: `${recurrencePct}%`, height: '100%', background: '#34d399', borderRadius: '3px' }} />
+              <div style={{ height: '5px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${recurrencePct}%`, height: '100%', background: '#059669', borderRadius: '3px' }} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Section 2: EVIDENCE */}
+        {/* 6. KEY EVIDENCE */}
         <div style={{ marginBottom: '1.25rem' }}>
-          <ExpandableEvidenceUI incident={incident} defaultExpanded={true} title="Source Evidence" />
+          <ExpandableEvidenceUI incident={incident} defaultExpanded={true} title="Key Evidence" />
         </div>
 
-        {/* Section 3: RECOMMENDED RESPONSE */}
-        <div style={{ marginBottom: '1.25rem', padding: '0.85rem', background: 'rgba(12, 192, 188, 0.08)', borderRadius: '8px', border: '1px solid var(--border-accent)' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cyan-300)', letterSpacing: '0.04em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        {/* 7. RECOMMENDED ACTION */}
+        <div style={{ marginBottom: '1.25rem', padding: '0.85rem', background: 'var(--civic-blue-50)', borderRadius: '8px', border: '1px solid var(--border-medium)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#2563eb', letterSpacing: '0.04em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Truck size={14} />
-            <span>Recommended Response</span>
+            <span>Recommended Action</span>
           </div>
 
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: '0.3rem' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.3rem' }}>
             SOP-WL-04: Mobile Dewatering & Traffic Diversion
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
             <div>
               <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.62rem' }}>Department</span>
-              <strong style={{ color: '#fff' }}>Municipal Drainage Division</strong>
+              <strong style={{ color: 'var(--text-primary)' }}>Municipal Drainage Division</strong>
             </div>
             <div>
               <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.62rem' }}>Target Response Time</span>
-              <strong style={{ color: 'var(--cyan-400)' }}>15 mins</strong>
+              <strong style={{ color: '#2563eb' }}>15 mins</strong>
             </div>
             <div style={{ gridColumn: 'span 2' }}>
               <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.62rem' }}>Allocated Resources</span>
-              <span style={{ color: '#fff' }}>2x High-Capacity Dewatering Pumps + Emergency Traffic Patrol</span>
+              <span style={{ color: 'var(--text-primary)' }}>2x High-Capacity Dewatering Pumps + Emergency Traffic Patrol</span>
             </div>
           </div>
 
           {isApproved ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#34d399', fontSize: '0.8rem', fontWeight: 700, padding: '0.4rem', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#047857', fontSize: '0.8rem', fontWeight: 700, padding: '0.6rem', minHeight: '44px', background: '#d1fae5', borderRadius: '6px', border: '1px solid #6ee7b7' }}>
               <CheckCircle2 size={16} />
               <span>Response Approved & Dispatched</span>
             </div>
           ) : (
             <button
               onClick={() => approveDispatch(actionPlan?.id || 'plan-1', 'Municipal Commander')}
-              className="sim-btn sim-btn-play"
-              style={{ width: '100%', justifyContent: 'center', padding: '0.55rem', fontSize: '0.82rem', fontWeight: 800 }}
+              className="sim-btn"
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                padding: '0.65rem',
+                minHeight: '44px',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                color: '#ffffff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
+              }}
             >
               <Send size={14} />
               <span>APPROVE & DISPATCH</span>

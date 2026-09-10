@@ -37,7 +37,7 @@ const AppContent: React.FC = () => {
             <MapSidebarLeft />
 
             {/* Hero Center Map Canvas */}
-            <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="map-canvas-column" style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div style={{ flex: 1, position: 'relative' }}>
                 <LiveMap />
               </div>
@@ -45,19 +45,19 @@ const AppContent: React.FC = () => {
               {/* Bottom Operational City Metrics Strip */}
               <div className="bottom-metrics-strip">
                 <div className="metric-item">
-                  <Activity size={13} color="var(--cyan-400)" />
+                  <Activity size={13} color="#2563eb" />
                   <span>Active Clusters: <strong>{totalClusters}</strong></span>
                 </div>
                 <div className="metric-item">
-                  <AlertTriangle size={13} color="#ef4444" />
+                  <AlertTriangle size={13} color="#dc2626" />
                   <span>Critical P1: <strong>{criticalCount}</strong></span>
                 </div>
                 <div className="metric-item">
-                  <Truck size={13} color="#38bdf8" />
+                  <Truck size={13} color="#0284c7" />
                   <span>Dispatched Teams: <strong>{activeDispatches}</strong></span>
                 </div>
                 <div className="metric-item">
-                  <ShieldCheck size={13} color="#34d399" />
+                  <ShieldCheck size={13} color="#059669" />
                   <span>Verified Resolutions: <strong>{verifiedCount}</strong></span>
                 </div>
               </div>

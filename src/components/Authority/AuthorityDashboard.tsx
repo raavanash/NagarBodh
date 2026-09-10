@@ -49,7 +49,7 @@ export const AuthorityDashboard: React.FC = () => {
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
           <Sparkles size={20} color="var(--cyan-400)" />
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: '#fff' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             Authority Executive Dashboard
           </h2>
         </div>
@@ -66,7 +66,7 @@ export const AuthorityDashboard: React.FC = () => {
             <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700 }}>Total Clustered Incidents</span>
             <Layers size={16} color="var(--cyan-400)" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#fff' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
             {incidents.length}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--cyan-400)', marginTop: '0.25rem' }}>
@@ -118,11 +118,11 @@ export const AuthorityDashboard: React.FC = () => {
       </div>
 
       {/* Two Column Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      <div className="authority-mid-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
         {/* High-Velocity Incidents Leaderboard */}
         <div className="card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <TrendingUp size={16} color="#ef4444" />
               <span>High-Velocity Incident Leaderboard</span>
             </h3>
@@ -149,7 +149,7 @@ export const AuthorityDashboard: React.FC = () => {
                       justifyContent: 'space-between',
                       padding: '0.75rem',
                       borderRadius: '8px',
-                      background: 'rgba(7, 10, 19, 0.4)',
+                      background: 'var(--bg-surface-elevated)',
                       border: '1px solid var(--border-subtle)',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
@@ -160,7 +160,7 @@ export const AuthorityDashboard: React.FC = () => {
                         width: '22px',
                         height: '22px',
                         borderRadius: '50%',
-                        background: i === 0 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                        background: i === 0 ? 'rgba(239, 68, 68, 0.25)' : 'var(--bg-card)',
                         color: i === 0 ? '#f87171' : 'var(--text-secondary)',
                         display: 'flex',
                         alignItems: 'center',
@@ -172,7 +172,7 @@ export const AuthorityDashboard: React.FC = () => {
                         {i + 1}
                       </span>
                       <div>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#fff' }}>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                           {inc.title}
                         </div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
@@ -203,7 +203,7 @@ export const AuthorityDashboard: React.FC = () => {
         {/* Department Workload Distribution */}
         <div className="card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Building size={16} color="var(--cyan-400)" />
               <span>Departmental Incident Allocation</span>
             </h3>
@@ -216,7 +216,7 @@ export const AuthorityDashboard: React.FC = () => {
                 <span>Drainage & Dewatering Division (MCD)</span>
                 <strong style={{ fontFamily: 'var(--font-mono)', color: '#f87171' }}>{drainagePct}% {drainagePct > 40 ? '(High Surge)' : ''}</strong>
               </div>
-              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ width: `${drainagePct}%`, height: '100%', background: 'linear-gradient(90deg, #ef4444 0%, #f97316 100%)', transition: 'width 0.3s ease' }} />
               </div>
             </div>
@@ -226,7 +226,7 @@ export const AuthorityDashboard: React.FC = () => {
                 <span>Traffic Police Quick Response Wing</span>
                 <strong style={{ fontFamily: 'var(--font-mono)', color: '#fbbf24' }}>{trafficPct}%</strong>
               </div>
-              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ width: `${trafficPct}%`, height: '100%', background: 'linear-gradient(90deg, #fbbf24 0%, #eab308 100%)', transition: 'width 0.3s ease' }} />
               </div>
             </div>
@@ -236,7 +236,7 @@ export const AuthorityDashboard: React.FC = () => {
                 <span>Solid Waste Management (Sanitation)</span>
                 <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)' }}>{garbagePct}%</strong>
               </div>
-              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ width: `${garbagePct}%`, height: '100%', background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%)', transition: 'width 0.3s ease' }} />
               </div>
             </div>
@@ -246,7 +246,7 @@ export const AuthorityDashboard: React.FC = () => {
                 <span>Electrical & Road Maintenance Wing</span>
                 <strong style={{ fontFamily: 'var(--font-mono)', color: '#34d399' }}>{otherPct}%</strong>
               </div>
-              <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ width: `${otherPct}%`, height: '100%', background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', transition: 'width 0.3s ease' }} />
               </div>
             </div>
@@ -259,69 +259,129 @@ export const AuthorityDashboard: React.FC = () => {
         <IncidentLifecycleStepper />
       </div>
 
-      {/* Municipal Ward Performance Table */}
+      {/* Municipal Ward Performance Table & Mobile Stacked Cards */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <MapPin size={16} color="var(--cyan-400)" />
             <span>Municipal Ward Breakdown & SLA Compliance</span>
           </h3>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>4 Monitored Sub-Zones</span>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
-              <th style={{ padding: '0.65rem 0.75rem' }}>Ward Name</th>
-              <th style={{ padding: '0.65rem 0.75rem' }}>Zone</th>
-              <th style={{ padding: '0.65rem 0.75rem' }}>Active Incidents</th>
-              <th style={{ padding: '0.65rem 0.75rem' }}>Avg Resolution Time</th>
-              <th style={{ padding: '0.65rem 0.75rem' }}>SLA Compliance</th>
-              <th style={{ padding: '0.65rem 0.75rem' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {WARDS_DATA.map(w => {
-              const isHighRisk = w.wardId === 'ward-15';
+        {/* Desktop Table View */}
+        <div className="desktop-ward-table" style={{ width: '100%', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                <th style={{ padding: '0.65rem 0.75rem' }}>Ward Name</th>
+                <th style={{ padding: '0.65rem 0.75rem' }}>Zone</th>
+                <th style={{ padding: '0.65rem 0.75rem' }}>Active Incidents</th>
+                <th style={{ padding: '0.65rem 0.75rem' }}>Avg Resolution Time</th>
+                <th style={{ padding: '0.65rem 0.75rem' }}>SLA Compliance</th>
+                <th style={{ padding: '0.65rem 0.75rem' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {WARDS_DATA.map(w => {
+                const isHighRisk = w.wardId === 'ward-15';
+                const activeCount = wardStats[w.wardId]?.activeCount ?? 0;
+                const criticalCount = wardStats[w.wardId]?.criticalCount ?? 0;
 
-              return (
-                <tr key={w.wardId} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 600, color: isHighRisk ? '#fca5a5' : '#fff' }}>
-                    {w.wardName}
-                  </td>
-                  <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {w.primaryZone}
-                  </td>
-                  <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-                    <span style={{ color: isHighRisk ? '#f87171' : 'var(--text-primary)', fontWeight: isHighRisk ? 700 : 400 }}>
-                      {wardStats[w.wardId]?.activeCount ?? 0} {wardStats[w.wardId]?.criticalCount ? `(${wardStats[w.wardId].criticalCount} Critical)` : ''}
+                return (
+                  <tr key={w.wardId} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: 600, color: isHighRisk ? '#fca5a5' : 'var(--text-primary)' }}>
+                      {w.wardName}
+                    </td>
+                    <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
+                      {w.primaryZone}
+                    </td>
+                    <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                      <span style={{ color: isHighRisk ? '#f87171' : 'var(--text-primary)', fontWeight: isHighRisk ? 700 : 400 }}>
+                        {activeCount} {criticalCount > 0 ? `(${criticalCount} Critical)` : ''}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                      {w.avgResolutionTimeHours} Hours
+                    </td>
+                    <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                      <span style={{ color: w.slaCompliancePercent >= 90 ? '#34d399' : '#fbbf24', fontWeight: 700 }}>
+                        {w.slaCompliancePercent}%
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '4px',
+                        background: isHighRisk ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                        color: isHighRisk ? '#f87171' : '#34d399'
+                      }}>
+                        {isHighRisk ? 'ACTIVE MONSOON ALERT' : 'OPERATIONAL NORMAL'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Stacked Cards View (Preserves P1 and Ward Details) */}
+        <div className="mobile-ward-cards" style={{ display: 'none', flexDirection: 'column', gap: '0.75rem' }}>
+          {WARDS_DATA.map(w => {
+            const isHighRisk = w.wardId === 'ward-15';
+            const activeCount = wardStats[w.wardId]?.activeCount ?? 0;
+            const criticalCount = wardStats[w.wardId]?.criticalCount ?? 0;
+
+            return (
+              <div
+                key={w.wardId}
+                style={{
+                  background: 'var(--bg-surface-elevated)',
+                  border: isHighRisk ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  padding: '0.85rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                  <div>
+                    <strong style={{ fontSize: '0.9rem', color: isHighRisk ? '#ef4444' : 'var(--text-primary)' }}>{w.wardName}</strong>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{w.primaryZone}</div>
+                  </div>
+
+                  <span style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '4px',
+                    background: isHighRisk ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                    color: isHighRisk ? '#f87171' : '#34d399'
+                  }}>
+                    {isHighRisk ? 'MONSOON ALERT' : 'NORMAL'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.74rem', background: 'var(--bg-card)', padding: '0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.64rem', display: 'block', textTransform: 'uppercase' }}>Active Incidents</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: isHighRisk ? '#ef4444' : 'var(--text-primary)' }}>
+                      {activeCount} {criticalCount > 0 ? `(${criticalCount} P1)` : ''}
                     </span>
-                  </td>
-                  <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-                    {w.avgResolutionTimeHours} Hours
-                  </td>
-                  <td style={{ padding: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-                    <span style={{ color: w.slaCompliancePercent >= 90 ? '#34d399' : '#fbbf24', fontWeight: 700 }}>
-                      {w.slaCompliancePercent}%
+                  </div>
+
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.64rem', display: 'block', textTransform: 'uppercase' }}>SLA Compliance</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: w.slaCompliancePercent >= 90 ? '#059669' : '#d97706' }}>
+                      {w.slaCompliancePercent}% ({w.avgResolutionTimeHours}h avg)
                     </span>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span style={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px',
-                      background: isHighRisk ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                      color: isHighRisk ? '#f87171' : '#34d399'
-                    }}>
-                      {isHighRisk ? 'ACTIVE MONSOON ALERT' : 'OPERATIONAL NORMAL'}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

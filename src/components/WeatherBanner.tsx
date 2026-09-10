@@ -56,13 +56,16 @@ export const WeatherBanner: React.FC = () => {
       className="weather-alert-strip"
       style={{
         background: hasError
-          ? 'linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(185, 28, 28, 0.2) 100%)'
+          ? '#fee2e2'
           : alertLevel === 'red'
-          ? 'linear-gradient(90deg, rgba(220, 38, 38, 0.4) 0%, rgba(185, 28, 28, 0.25) 100%)'
+          ? '#fee2e2'
           : alertLevel === 'orange'
-          ? 'linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%)'
-          : 'linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
-        borderBottom: isAlert ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)',
+          ? '#fef3c7'
+          : '#eff6ff',
+        borderBottom: isAlert
+          ? alertLevel === 'red' || hasError ? '1px solid #fca5a5' : '1px solid #fcd34d'
+          : '1px solid #dbeafe',
+        color: hasError || alertLevel === 'red' ? '#b91c1c' : alertLevel === 'orange' ? '#b45309' : '#1e3a8a',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -71,7 +74,7 @@ export const WeatherBanner: React.FC = () => {
       }}
     >
       {/* Left Section: Mode Badge, Title & Condition */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <div className="weather-alert-main" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
         {/* Mode Pill Badge */}
         <span
           style={{
@@ -86,20 +89,20 @@ export const WeatherBanner: React.FC = () => {
             textTransform: 'uppercase',
             fontFamily: 'var(--font-mono)',
             background: hasError
-              ? 'rgba(239, 68, 68, 0.25)'
+              ? '#fee2e2'
               : isLiveMode && liveModeStatus === 'live'
-              ? 'rgba(16, 185, 129, 0.25)'
-              : 'rgba(245, 158, 11, 0.25)',
+              ? '#d1fae5'
+              : '#fef3c7',
             color: hasError
-              ? '#fca5a5'
+              ? '#b91c1c'
               : isLiveMode && liveModeStatus === 'live'
-              ? '#34d399'
-              : '#fbbf24',
+              ? '#047857'
+              : '#b45309',
             border: hasError
-              ? '1px solid rgba(239, 68, 68, 0.5)'
+              ? '1px solid #fca5a5'
               : isLiveMode && liveModeStatus === 'live'
-              ? '1px solid rgba(16, 185, 129, 0.5)'
-              : '1px solid rgba(245, 158, 11, 0.5)'
+              ? '1px solid #6ee7b7'
+              : '1px solid #fcd34d'
           }}
         >
           {isLiveMode && liveModeStatus === 'live' ? (
@@ -118,8 +121,8 @@ export const WeatherBanner: React.FC = () => {
         </span>
 
         {/* Alert / Warning Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {isAlert ? <AlertCircle size={15} color="#f87171" /> : <CloudRain size={15} color="#38bdf8" />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {isAlert ? <AlertCircle size={15} color="#dc2626" /> : <CloudRain size={15} color="#2563eb" />}
           <span style={{ fontWeight: 700, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
             {hasError
               ? 'WEATHER API ERROR'
@@ -129,23 +132,23 @@ export const WeatherBanner: React.FC = () => {
               ? 'IMD ORANGE WARNING: Heavy Downpour'
               : `IMD WEATHER: ${condition.toUpperCase()}`}
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.74rem' }}>
+          <span style={{ color: '#475569', fontSize: '0.74rem' }}>
             — {hasError ? liveWeatherEnvelope?.error || 'Failed to fetch OpenWeather API' : description}
           </span>
         </div>
       </div>
 
       {/* Right Section: Telemetry Metrics & Manual Refresh Button */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'var(--font-mono)', fontSize: '0.73rem' }}>
+      <div className="weather-alert-telemetry" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', fontFamily: 'var(--font-mono)', fontSize: '0.73rem', flexWrap: 'wrap' }}>
         {tempCelsius !== null && tempCelsius !== undefined && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <span>Temp: <strong style={{ color: '#fff' }}>{tempCelsius}°C</strong></span>
+            <span>Temp: <strong style={{ color: 'var(--text-primary)' }}>{tempCelsius}°C</strong></span>
           </div>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <Droplets size={13} color="#38bdf8" />
-          <span>Precipitation: <strong style={{ color: '#fff' }}>{rainfallMm} mm/hr</strong></span>
+          <Droplets size={13} color="#2563eb" />
+          <span>Precipitation: <strong style={{ color: 'var(--text-primary)' }}>{rainfallMm} mm/hr</strong></span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-muted)' }} title={stationName}>
@@ -158,8 +161,8 @@ export const WeatherBanner: React.FC = () => {
           disabled={isRefreshing}
           title="Fetch latest OpenWeather data"
           style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid var(--border-subtle)',
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid var(--border-medium)',
             borderRadius: '6px',
             color: 'var(--text-primary)',
             padding: '0.25rem 0.5rem',

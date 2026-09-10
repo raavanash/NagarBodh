@@ -92,13 +92,13 @@ export const SignalExplorer: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
+    <div className="signals-view-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
       {/* Top Header & Action Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
             <Activity size={20} color="var(--cyan-400)" />
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: '#fff' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Multimodal Signal Ingestion & Explorer
             </h2>
             <span style={{
@@ -114,7 +114,7 @@ export const SignalExplorer: React.FC = () => {
             </span>
           </div>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Provider-independent ingestion pipeline. Normalizes citizen apps, X/social streams, 311 portals, and offline CSV/JSON datasets.
+            Provider-independent ingestion pipeline. Normalizes citizen apps, X/social streams, 155304 / 112 helpline portals, and offline CSV/JSON datasets.
           </p>
         </div>
 
@@ -133,7 +133,7 @@ export const SignalExplorer: React.FC = () => {
             className="sim-btn"
             style={{
               background: 'var(--bg-surface-elevated)',
-              color: '#f8fafc',
+              color: 'var(--text-primary)',
               border: '1px solid var(--border-accent)',
               padding: '0.55rem 0.85rem',
               fontSize: '0.82rem',
@@ -155,7 +155,7 @@ export const SignalExplorer: React.FC = () => {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 fontSize: '0.74rem',
                 outline: 'none',
                 width: '140px',
@@ -204,7 +204,7 @@ export const SignalExplorer: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="card" style={{ padding: '0.75rem 1rem' }}>
           <div style={{ fontSize: '0.66rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Received</div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#fff' }}>{ingestionStats.signalsReceived}</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{ingestionStats.signalsReceived}</div>
         </div>
         <div className="card" style={{ padding: '0.75rem 1rem' }}>
           <div style={{ fontSize: '0.66rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Accepted</div>
@@ -292,7 +292,7 @@ export const SignalExplorer: React.FC = () => {
             <option value="citizen_app">Citizen Mobile App</option>
             <option value="social_x">Social Media (X / Twitter)</option>
             <option value="grievance_portal">Civic Grievance Portal</option>
-            <option value="helpline_311">311 Emergency Helpline</option>
+            <option value="helpline_311">155304 / 112 Unified Civic Helpline</option>
           </select>
         </div>
 
@@ -399,7 +399,7 @@ export const SignalExplorer: React.FC = () => {
               </div>
 
               {/* Raw Citizen Text */}
-              <div style={{ fontSize: '0.92rem', color: '#fff', lineHeight: 1.4, marginBottom: '0.4rem', fontStyle: sig.detectedLanguage !== 'en' ? 'italic' : 'normal' }}>
+              <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: '0.4rem', fontStyle: sig.detectedLanguage !== 'en' ? 'italic' : 'normal' }}>
                 "{sig.rawText}"
               </div>
 
@@ -407,12 +407,12 @@ export const SignalExplorer: React.FC = () => {
               {sig.detectedLanguage !== 'en' && (
                 <div
                   style={{
-                    background: 'rgba(7, 10, 19, 0.5)',
+                    background: 'var(--bg-surface-elevated)',
                     padding: '0.5rem 0.75rem',
                     borderRadius: '6px',
                     borderLeft: '2px solid #38bdf8',
                     fontSize: '0.8rem',
-                    color: '#93c5fd',
+                    color: 'var(--text-primary)',
                     marginBottom: '0.6rem'
                   }}
                 >
@@ -559,6 +559,8 @@ export const SignalExplorer: React.FC = () => {
             style={{
               width: '100%',
               maxWidth: '520px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
               background: 'var(--bg-surface-elevated)',
               border: '1px solid var(--border-accent)'
             }}
@@ -566,7 +568,7 @@ export const SignalExplorer: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sparkles size={18} color="var(--cyan-400)" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Test Multilingual AI Ingestion
                 </h3>
               </div>
@@ -627,7 +629,7 @@ export const SignalExplorer: React.FC = () => {
                 >
                   <option value="citizen_app">Citizen App (Geotagged Mobile)</option>
                   <option value="social_x">Social Media / X (@CitizenReporter)</option>
-                  <option value="helpline_311">311 Phone Helpline Transcript</option>
+                  <option value="helpline_311">155304 / 112 Phone Helpline Transcript</option>
                   <option value="grievance_portal">Govt Grievance Portal</option>
                 </select>
               </div>

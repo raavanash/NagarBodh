@@ -42,6 +42,7 @@ interface FetchResult {
 }
 
 // Startup environment configuration check (never prints key strings)
+console.log('[ NAGARBODH SERVER ] GOOGLE_WEATHER_API_KEY configured:', Boolean(process.env.GOOGLE_WEATHER_API_KEY));
 console.log('[ NAGARBODH SERVER ] OPENWEATHER_API_KEY configured:', Boolean(process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY));
 console.log('[ NAGARBODH SERVER ] X_BEARER_TOKEN configured:', Boolean(process.env.X_BEARER_TOKEN || process.env.VITE_X_BEARER_TOKEN));
 console.log('[ NAGARBODH SERVER ] GEMINI_API_KEY configured:', Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY));
@@ -101,58 +102,92 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
     return true;
   }
 
+  // 1. Weather Route: Google Weather -> OpenWeatherMap -> Replay Fallback
   if (pathname === '/api/weather') {
     const lat = reqUrl.searchParams.get('lat') || '28.583';
     const lng = reqUrl.searchParams.get('lng') || '77.318';
-    const apiKey = (process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || '').trim();
+    const requestedProvider = reqUrl.searchParams.get('provider') || 'auto';
+
+    const googleKey = (process.env.GOOGLE_WEATHER_API_KEY || '').trim();
+    const openweatherKey = (process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || '').trim();
 
     res.setHeader('Content-Type', 'application/json');
-    if (!apiKey || apiKey === 'your_openweather_api_key_here') {
-      res.statusCode = 400;
-      res.end(JSON.stringify({
-        ok: false,
-        error: 'OPENWEATHER_API_KEY is missing or unconfigured on backend server.'
-      }));
-      return true;
+
+    // (A) Attempt Google Weather if key configured and not explicitly set to openweather
+    if (
+      (requestedProvider === 'google' || requestedProvider === 'auto') &&
+      googleKey &&
+      googleKey !== 'your_google_weather_api_key_here'
+    ) {
+      try {
+        const gwRes = await fetchUrl(
+          `https://weather.googleapis.com/v1/currentConditions:lookup?key=${googleKey}&location.latitude=${lat}&location.longitude=${lng}`
+        );
+        if (gwRes.ok && gwRes.data?.currentConditions) {
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            ok: true,
+            provider: 'google',
+            source: 'Google Weather API (Hyperlocal Grid)',
+            data: gwRes.data
+          }));
+          return true;
+        }
+      } catch (err: any) {
+        console.warn('[ NAGARBODH SERVER ] Google Weather request failed, attempting OpenWeather fallback:', err.message);
+      }
     }
 
-    try {
-      const owRes = await fetchUrl(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`);
-      if (!owRes.ok) {
-        res.statusCode = owRes.status || 500;
-        res.end(JSON.stringify({
-          ok: false,
-          status: owRes.status,
-          error: `OpenWeather API returned HTTP ${owRes.status}: ${owRes.data?.message || owRes.statusText || 'Fetch failed'}`
-        }));
-        return true;
+    // (B) Attempt OpenWeatherMap if configured
+    if (openweatherKey && openweatherKey !== 'your_openweather_api_key_here') {
+      try {
+        const owRes = await fetchUrl(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${openweatherKey}&units=metric`
+        );
+        if (owRes.ok && owRes.data) {
+          res.statusCode = 200;
+          res.end(JSON.stringify({
+            ok: true,
+            provider: 'openweather',
+            source: 'OpenWeatherMap Live API',
+            data: owRes.data
+          }));
+          return true;
+        }
+      } catch (err: any) {
+        console.warn('[ NAGARBODH SERVER ] OpenWeather request failed:', err.message);
       }
-      res.statusCode = 200;
-      res.end(JSON.stringify({ ok: true, data: owRes.data }));
-      return true;
-    } catch (err: any) {
-      res.statusCode = 502;
-      res.end(JSON.stringify({ ok: false, error: `OpenWeather network request failed: ${err.message}` }));
-      return true;
     }
+
+    // (C) Honest Fallback: Inform client that live weather keys are unconfigured
+    res.statusCode = 200;
+    res.end(JSON.stringify({
+      ok: false,
+      provider: 'replay_fallback',
+      message: 'Live weather API keys unconfigured or unreachable. Using deterministic replay simulation.',
+      supportedProviders: ['google', 'openweather', 'replay']
+    }));
+    return true;
   }
 
+  // 2. Social / X Route: X API v2 -> Simulated Fallback
   if (pathname === '/api/social') {
     const query = reqUrl.searchParams.get('query') || '(waterlogging OR "drain overflow" OR "paani bhar gaya") (Delhi OR Noida OR Gurgaon)';
     const maxResults = reqUrl.searchParams.get('max_results') || '10';
-    let token = process.env.X_BEARER_TOKEN || process.env.VITE_X_BEARER_TOKEN || '';
+    let token = (process.env.X_BEARER_TOKEN || process.env.VITE_X_BEARER_TOKEN || '').trim();
 
     res.setHeader('Content-Type', 'application/json');
     if (!token || token.includes('your_x_bearer_token')) {
-      res.statusCode = 400;
+      res.statusCode = 200;
       res.end(JSON.stringify({
         ok: false,
-        error: 'X_BEARER_TOKEN is missing or unconfigured on backend server.'
+        fallback: true,
+        error: 'X_BEARER_TOKEN is not configured on backend server. Operating in simulated replay feed mode.'
       }));
       return true;
     }
 
-    token = token.trim().replace(/^["']|["']$/g, '').replace(/^Bearer\s+/i, '');
+    token = token.replace(/^["']|["']$/g, '').replace(/^Bearer\s+/i, '');
     if (token.includes('%')) {
       try { token = decodeURIComponent(token); } catch {}
     }
@@ -166,9 +201,10 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       );
 
       if (!xRes.ok) {
-        res.statusCode = xRes.status || 500;
+        res.statusCode = 200;
         res.end(JSON.stringify({
           ok: false,
+          fallback: true,
           status: xRes.status,
           error: `X API returned HTTP ${xRes.status}: ${xRes.data?.detail || xRes.data?.title || xRes.statusText || 'Fetch failed'}`
         }));
@@ -179,12 +215,13 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       res.end(JSON.stringify({ ok: true, data: xRes.data?.data || [] }));
       return true;
     } catch (err: any) {
-      res.statusCode = 502;
-      res.end(JSON.stringify({ ok: false, error: `X API network request failed: ${err.message}` }));
+      res.statusCode = 200;
+      res.end(JSON.stringify({ ok: false, fallback: true, error: `X API network request failed: ${err.message}` }));
       return true;
     }
   }
 
+  // 3. Gemini REST Route: Server-side secret protection, strictly no client-side secret forwarding
   if (pathname === '/api/gemini') {
     res.setHeader('Content-Type', 'application/json');
 
@@ -198,18 +235,20 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       if (bodyData) bodyJson = JSON.parse(bodyData);
     } catch {}
 
-    const apiKey = (bodyJson.apiKey || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '').trim();
+    // Security hardening: Server-side environment key ONLY. Reject client body key.
+    const apiKey = (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '').trim();
 
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-      res.statusCode = 400;
+      res.statusCode = 200;
       res.end(JSON.stringify({
         ok: false,
-        error: 'GEMINI_API_KEY is missing or unconfigured on backend server.'
+        fallback: true,
+        error: 'GEMINI_API_KEY is not configured on backend server. Operating in deterministic AI fallback mode.'
       }));
       return true;
     }
 
-    const model = bodyJson.model || 'gemini-3.6-flash';
+    const model = bodyJson.model || 'gemini-2.0-flash';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
@@ -224,9 +263,10 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       );
 
       if (!geminiRes.ok) {
-        res.statusCode = geminiRes.status || 500;
+        res.statusCode = 200;
         res.end(JSON.stringify({
           ok: false,
+          fallback: true,
           status: geminiRes.status,
           error: `Gemini API returned HTTP ${geminiRes.status}: ${geminiRes.data?.error?.message || geminiRes.statusText || 'Fetch failed'}`
         }));
@@ -237,11 +277,12 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       res.end(JSON.stringify({ ok: true, data: geminiRes.data }));
       return true;
     } catch (err: any) {
-      res.statusCode = 502;
-      res.end(JSON.stringify({ ok: false, error: `Gemini network request failed: ${err.message}` }));
+      res.statusCode = 200;
+      res.end(JSON.stringify({ ok: false, fallback: true, error: `Gemini network request failed: ${err.message}` }));
       return true;
     }
   }
 
   return false;
 }
+

@@ -6,11 +6,8 @@ export class PublicSocialXProvider implements SignalProvider {
   public type = 'social_x' as const;
   public mode: IngestionMode;
 
-  private bearerToken: string;
-
-  constructor(bearerToken?: string) {
-    this.bearerToken = bearerToken || (import.meta.env?.VITE_X_BEARER_TOKEN as string) || '';
-    this.mode = 'LIVE';
+  constructor() {
+    this.mode = 'REPLAY';
   }
 
   public setMode(mode: IngestionMode): void {
@@ -29,8 +26,9 @@ export class PublicSocialXProvider implements SignalProvider {
 
     if (this.mode === 'LIVE') {
       try {
-        // Try backend server proxy /api/social first
-        const apiRes = await fetch('/api/social').catch(() => null);
+        const endpoint = typeof window !== 'undefined' ? '/api/social' : 'http://localhost:5173/api/social';
+        const apiRes = await fetch(endpoint).catch(() => null);
+
         if (apiRes && apiRes.ok) {
           const body = await apiRes.json().catch(() => null);
           if (body && body.ok && Array.isArray(body.data)) {
@@ -51,39 +49,7 @@ export class PublicSocialXProvider implements SignalProvider {
           }
         }
 
-        // Direct browser fetch fallback if bearerToken is present in client
-        if (this.bearerToken && this.bearerToken !== 'your_x_bearer_token_here') {
-          let cleanToken = this.bearerToken.trim().replace(/^["']|["']$/g, '').replace(/^Bearer\s+/i, '');
-          if (cleanToken.includes('%')) {
-            try { cleanToken = decodeURIComponent(cleanToken); } catch {}
-          }
-          const query = encodeURIComponent('(waterlogging OR "drain overflow" OR "paani bhar gaya") (Delhi OR Noida OR Gurgaon)');
-          const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&tweet.fields=created_at,author_id&max_results=10`;
-
-          const res = await fetch(url, {
-            headers: { Authorization: `Bearer ${cleanToken}` }
-          }).catch(() => null);
-
-          if (res && res.ok) {
-            const json = await res.json().catch(() => null);
-            if (json && json.data && Array.isArray(json.data)) {
-              return json.data.map((tweet: any) => ({
-                id: `x-live-${tweet.id}`,
-                text: tweet.text,
-                sourceChannel: 'social_x',
-                authorHandle: `@user_${tweet.author_id || 'x_user'}`,
-                timestamp: tweet.created_at || new Date().toISOString(),
-                lat: 28.5833 + (Math.random() - 0.5) * 0.02,
-                lng: 77.3185 + (Math.random() - 0.5) * 0.02,
-                ward: 'Ward 15 - Central Sub-city',
-                locationName: 'Sector 15 / NCR Corridor'
-              }));
-            }
-          }
-        }
-
-        // In LIVE mode, if API request fails, return empty array with console warning
-        console.warn('[PublicSocialXProvider] Live X API request failed or bearer token missing.');
+        console.warn('[PublicSocialXProvider] Live X API endpoint returned fallback or unconfigured state.');
         return [];
       } catch (err) {
         console.warn('[PublicSocialXProvider] Exception during live fetch:', err);
@@ -91,7 +57,7 @@ export class PublicSocialXProvider implements SignalProvider {
       }
     }
 
-    // SIMULATION / REPLAY mode
+    // SIMULATION / REPLAY mode: Deterministic calibrated social stream
     return [
       {
         id: 'x-sim-301',

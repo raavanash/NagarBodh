@@ -4,12 +4,18 @@ import {
   Activity,
   AlertCircle,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
   Clock,
+  Compass,
   Eye,
   Filter,
   Flame,
+  GripHorizontal,
   Layers,
   MapPin,
+  Maximize2,
+  Minus,
   Pause,
   Play,
   RotateCcw,
@@ -32,6 +38,52 @@ export const LiveMap: React.FC = () => {
   const bufferLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   const prevSignalsCountRef = useRef<number>(0);
+
+  const [isLegendMinimized, setIsLegendMinimized] = useState<boolean>(false);
+  const [isQuickNavMinimized, setIsQuickNavMinimized] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 900);
+  const [isTimelineMinimized, setIsTimelineMinimized] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 900);
+  const [timelinePos, setTimelinePos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingTimelineRef = useRef(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
+    startX: 0,
+    startY: 0,
+    initialX: 0,
+    initialY: 0
+  });
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  const handleTimelinePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const el = timelineRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    isDraggingTimelineRef.current = true;
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: timelinePos ? timelinePos.x : rect.left,
+      initialY: timelinePos ? timelinePos.y : rect.top
+    };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handleTimelinePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingTimelineRef.current) return;
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+    const newX = Math.max(10, Math.min(window.innerWidth - 320, dragStartRef.current.initialX + dx));
+    const newY = Math.max(10, Math.min(window.innerHeight - 100, dragStartRef.current.initialY + dy));
+    setTimelinePos({ x: newX, y: newY });
+  };
+
+  const handleTimelinePointerUp = (e: React.PointerEvent) => {
+    if (isDraggingTimelineRef.current) {
+      isDraggingTimelineRef.current = false;
+      try {
+        (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      } catch {}
+    }
+  };
 
   const {
     signals,
@@ -147,20 +199,20 @@ export const LiveMap: React.FC = () => {
       const marker = L.marker([asset.coordinates.lat, asset.coordinates.lng], { icon: customPoiIcon });
 
       marker.bindPopup(`
-        <div style="font-family: var(--font-sans); color: #f8fafc;">
-          <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">
+        <div style="font-family: var(--font-sans); color: var(--text-primary); min-width: 220px;">
+          <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">
             Critical Urban Infrastructure • ${asset.type.toUpperCase()}
           </div>
-          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: #fff;">
+          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-primary);">
             ${asset.name}
           </div>
-          <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 6px;">
+          <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px;">
             ${asset.capacity || ''}
           </div>
-          <div style="font-size: 0.72rem; color: #38bdf8; font-family: var(--font-mono); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px;">
+          <div style="font-size: 0.72rem; color: var(--text-accent); font-family: var(--font-mono); border-top: 1px solid var(--border-subtle); padding-top: 4px;">
             Contact: ${asset.contactPerson || 'Emergency Liaison'}
           </div>
-          <div style="font-size: 0.68rem; color: #e2e8f0; margin-top: 4px; background: rgba(139, 92, 246, 0.2); padding: 3px 6px; border-radius: 4px;">
+          <div style="font-size: 0.68rem; color: #7c3aed; margin-top: 4px; background: rgba(124, 58, 237, 0.12); border: 1px solid rgba(124, 58, 237, 0.25); padding: 3px 6px; border-radius: 4px; font-weight: 600;">
             Alert Buffer: ${asset.vulnerabilityBufferMeters}m
           </div>
         </div>
@@ -233,19 +285,19 @@ export const LiveMap: React.FC = () => {
         const marker = L.marker([sig.coordinates.lat, sig.coordinates.lng], { icon: signalDivIcon });
 
         marker.bindPopup(`
-          <div style="font-family: var(--font-sans); color: #f8fafc; max-width: 240px;">
+          <div style="font-family: var(--font-sans); color: var(--text-primary); max-width: 240px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
               <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: ${channelColor};">
-                ${channelIcon} ${sig.channel.replace('_', ' ').toUpperCase()}
+                ${channelIcon} ${sig.channel === 'helpline_311' ? '155304 / 112 HELPLINE' : sig.channel.replace('_', ' ').toUpperCase()}
               </span>
-              <span style="font-family: var(--font-mono); font-size: 0.7rem; color: #94a3b8;">
+              <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">
                 ${sig.simulatedTimeLabel}
               </span>
             </div>
-            <div style="font-size: 0.82rem; color: #fff; font-weight: 600; margin-bottom: 6px; line-height: 1.3;">
+            <div style="font-size: 0.82rem; color: var(--text-primary); font-weight: 600; margin-bottom: 6px; line-height: 1.3;">
               "${sig.rawText}"
             </div>
-            <div style="font-size: 0.72rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px; display: flex; justify-content: space-between;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 4px; display: flex; justify-content: space-between;">
               <span>📍 ${sig.locationName}</span>
               <span style="color: ${sevColor}; font-weight: 700;">${sig.reportedSeverity.toUpperCase()}</span>
             </div>
@@ -322,37 +374,37 @@ export const LiveMap: React.FC = () => {
 
       // Interactive Popup
       marker.bindPopup(`
-        <div style="font-family: var(--font-sans); color: #f8fafc; min-width: 250px;">
+        <div style="font-family: var(--font-sans); color: var(--text-primary); min-width: 250px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: ${isCritical ? '#f87171' : '#38bdf8'};">
+            <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: ${isCritical ? '#ef4444' : '#0284c7'};">
               ${inc.category.toUpperCase()} • ${inc.status.toUpperCase()}
             </span>
-            <span style="font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: #fff; background: ${isCritical ? 'rgba(239,68,68,0.3)' : 'rgba(6,182,212,0.3)'}; padding: 2px 6px; border-radius: 4px;">
+            <span style="font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: ${isCritical ? '#b91c1c' : '#0369a1'}; background: ${isCritical ? '#fee2e2' : '#e0f2fe'}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isCritical ? '#fca5a5' : '#bae6fd'};">
               PRIORITY ${inc.priority.overallScore}/100
             </span>
           </div>
 
-          ${isEmergingNow ? `<div style="background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; font-size: 0.68rem; font-weight: 800; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+          ${isEmergingNow ? `<div style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #dc2626; font-size: 0.68rem; font-weight: 800; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
             🔥 ACCELERATING SIGNAL VELOCITY (+${inc.velocitySurgePercent}%/hr)
           </div>` : ''}
 
-          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; color: #fff; line-height: 1.3;">
+          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; color: var(--text-primary); line-height: 1.3;">
             ${inc.title}
           </div>
 
-          <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 8px;">
+          <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.35;">
             ${inc.auditableInsight.modelInference.summary}
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.72rem; font-family: var(--font-mono); background: rgba(0,0,0,0.4); padding: 6px 8px; border-radius: 6px; margin-bottom: 8px;">
-            <div>Signals: <strong>${inc.signalIds.length}</strong></div>
-            <div>Velocity: <strong>+${inc.velocitySurgePercent}%/hr</strong></div>
-            ${inc.auditableInsight.calculatedMetrics.nearestSchoolName ? `<div style="grid-column: span 2; color: #c084fc;">🏫 ${inc.auditableInsight.calculatedMetrics.nearestSchoolName} (${inc.auditableInsight.calculatedMetrics.nearestSchoolDistanceMeters}m)</div>` : ''}
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.72rem; font-family: var(--font-mono); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; color: var(--text-secondary);">
+            <div>Signals: <strong style="color: var(--text-primary);">${inc.signalIds.length}</strong></div>
+            <div>Velocity: <strong style="color: #dc2626;">+${inc.velocitySurgePercent}%/hr</strong></div>
+            ${inc.auditableInsight.calculatedMetrics.nearestSchoolName ? `<div style="grid-column: span 2; color: #7c3aed; font-weight: 600;">🏫 ${inc.auditableInsight.calculatedMetrics.nearestSchoolName} (${inc.auditableInsight.calculatedMetrics.nearestSchoolDistanceMeters}m)</div>` : ''}
           </div>
 
           <button
             id="popup-btn-${inc.id}"
-            style="width: 100%; padding: 6px 10px; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); border: none; border-radius: 6px; color: #fff; font-weight: 700; font-size: 0.76rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;"
+            style="width: 100%; padding: 7px 10px; background: #2563eb; border: none; border-radius: 6px; color: #fff; font-weight: 700; font-size: 0.76rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25); transition: background 0.15s ease;"
           >
             Inspect Intelligence Dossier →
           </button>
@@ -415,298 +467,413 @@ export const LiveMap: React.FC = () => {
 
   return (
     <div className="map-canvas-wrapper" style={{ display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', height: '100%' }}>
-      {/* Top Header Mode Switcher Bar */}
+      {/* Main Leaflet Map Canvas (rendered first so overlay controls sit on top) */}
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
+
+      {/* Top Header Floating Controls Bar (z-index 1100 on top of Leaflet canvas) */}
       <div
+        className="live-map-top-bar"
         style={{
           position: 'absolute',
-          top: '1rem',
-          left: '1rem',
-          right: '1rem',
-          zIndex: 400,
+          top: '0.85rem',
+          left: '0.85rem',
+          right: '0.85rem',
+          zIndex: 1100,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           pointerEvents: 'none'
         }}
       >
-        {/* Left Side: Map Mode Switcher */}
-        <div
-          style={{
-            pointerEvents: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.3rem',
-            background: 'rgba(14, 21, 38, 0.9)',
-            padding: '0.3rem',
-            borderRadius: '10px',
-            border: '1px solid var(--border-subtle)',
-            backdropFilter: 'blur(12px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
-          }}
-        >
+        {/* Left Side: Minimizable Telemetry Legend */}
+        {isLegendMinimized ? (
           <button
-            onClick={() => setMapMode('ai_priority')}
+            onClick={() => setIsLegendMinimized(false)}
             style={{
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              padding: '0.35rem 0.85rem',
+              pointerEvents: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-medium)',
+              padding: '0.4rem 0.75rem',
               borderRadius: '8px',
-              background: mapMode === 'ai_priority' ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' : 'transparent',
-              color: mapMode === 'ai_priority' ? '#fff' : 'var(--text-secondary)',
-              border: 'none',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              boxShadow: 'var(--shadow-md)',
               cursor: 'pointer',
+              backdropFilter: 'blur(12px)',
+              transition: 'all 0.15s ease'
+            }}
+            title="Expand Telemetry Legend"
+          >
+            <Layers size={14} color="#2563eb" />
+            <span>Telemetry Legend</span>
+            <ChevronDown size={13} color="var(--text-muted)" />
+          </button>
+        ) : (
+          <div
+            style={{
+              pointerEvents: 'auto',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '10px',
+              padding: '0.65rem 0.85rem',
+              backdropFilter: 'blur(16px)',
+              fontSize: '0.72rem',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.35rem',
+              boxShadow: 'var(--shadow-lg)',
+              maxWidth: '260px'
+            }}
+          >
+            <div style={{ fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Layers size={13} color="#2563eb" />
+                <span style={{ fontSize: '0.74rem' }}>Telemetry Legend</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ color: '#2563eb', fontSize: '0.62rem', fontWeight: 700, background: 'var(--civic-blue-50)', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                  {mapMode === 'ai_priority' ? 'AI PRIORITY' : 'CIVIC SIGNALS'}
+                </span>
+                <button
+                  onClick={() => setIsLegendMinimized(true)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '2px',
+                    borderRadius: '4px'
+                  }}
+                  title="Minimize Telemetry Legend"
+                >
+                  <ChevronUp size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} />
+              <span>Critical P1 (Priority &ge; 80)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
+              <span>High P2 (Priority 60 - 79)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563eb', display: 'inline-block', flexShrink: 0 }} />
+              <span>Standard P3 (Priority &lt; 60)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <span style={{ fontSize: '0.7rem' }}>🔥</span>
+              <span>Emerging Now (Velocity Surge)</span>
+            </div>
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.45rem', fontSize: '0.66rem' }}>
+              <span>📱 App</span>
+              <span>🐦 X</span>
+              <span>🏛️ Grievance</span>
+              <span>📞 155304 / 112</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.66rem', color: 'var(--text-muted)' }}>
+              <span>🏫 School (250m)</span>
+              <span>🏥 Hospital (400m)</span>
+            </div>
+          </div>
+        )}
+
+        {/* Right Side: Quick Corridor Jump Controls (Minimizable) */}
+        {isQuickNavMinimized ? (
+          <button
+            onClick={() => setIsQuickNavMinimized(false)}
+            style={{
+              pointerEvents: 'auto',
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Zap size={14} color={mapMode === 'ai_priority' ? '#fff' : 'var(--cyan-400)'} />
-            AI PRIORITY MODE
-          </button>
-
-          <button
-            onClick={() => setMapMode('civic_signals')}
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              padding: '0.35rem 0.85rem',
+              background: 'var(--bg-surface)',
+              padding: '0.4rem 0.75rem',
               borderRadius: '8px',
-              background: mapMode === 'civic_signals' ? 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)' : 'transparent',
-              color: mapMode === 'civic_signals' ? '#fff' : 'var(--text-secondary)',
-              border: 'none',
+              border: '1px solid var(--border-medium)',
+              boxShadow: 'var(--shadow-md)',
+              backdropFilter: 'blur(12px)',
               cursor: 'pointer',
+              color: 'var(--text-primary)',
+              fontSize: '0.74rem',
+              fontWeight: 700
+            }}
+            title="Expand Quick Corridors"
+          >
+            <Compass size={13} color="#2563eb" />
+            <span>Quick Corridors</span>
+            <ChevronDown size={13} color="var(--text-muted)" />
+          </button>
+        ) : (
+          <div
+            style={{
+              pointerEvents: 'auto',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'all 0.2s'
+              gap: '0.35rem',
+              background: 'var(--bg-surface)',
+              padding: '0.35rem 0.5rem',
+              borderRadius: '10px',
+              border: '1px solid var(--border-medium)',
+              boxShadow: 'var(--shadow-md)',
+              backdropFilter: 'blur(12px)'
             }}
           >
-            <Activity size={14} color={mapMode === 'civic_signals' ? '#fff' : '#c084fc'} />
-            CIVIC SIGNALS MODE
-          </button>
-        </div>
-
-        {/* Right Side: Quick Navigation & Focus Controls */}
-        <div
-          style={{
-            pointerEvents: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            background: 'rgba(14, 21, 38, 0.9)',
-            padding: '0.3rem',
-            borderRadius: '10px',
-            border: '1px solid var(--border-subtle)',
-            backdropFilter: 'blur(12px)'
-          }}
-        >
-          <button
-            onClick={focusGurugramCyberCity}
-            className="sim-btn"
-            style={{ fontSize: '0.74rem', background: 'rgba(6, 182, 212, 0.2)', borderColor: 'rgba(6, 182, 212, 0.4)', color: '#38bdf8' }}
-            title="Focus Gurugram Cyber City & Rapid Metro Hub"
-          >
-            🏢 Gurugram Cyber City
-          </button>
-          <button
-            onClick={focusGurugramSubhashChowk}
-            className="sim-btn"
-            style={{ fontSize: '0.74rem', background: 'rgba(245, 158, 11, 0.2)', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
-            title="Focus Gurugram Subhash Chowk Underpass Corridor"
-          >
-            📍 Subhash Chowk
-          </button>
-          <button
-            onClick={focusSector15}
-            className="sim-btn"
-            style={{ fontSize: '0.74rem', background: 'rgba(239, 68, 68, 0.2)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}
-            title="Focus Sector 15 Emergency Inundation Zone"
-          >
-            📍 Sector 15
-          </button>
-          <button
-            onClick={fitOverview}
-            className="sim-btn"
-            style={{ fontSize: '0.74rem' }}
-            title="Zoom out to NCR regional overview"
-          >
-            🌐 NCR View
-          </button>
-        </div>
+            <button
+              onClick={focusGurugramCyberCity}
+              className="sim-btn"
+              style={{ fontSize: '0.74rem', background: '#eff6ff', borderColor: '#bfdbfe', color: '#0284c7' }}
+              title="Focus Gurugram Cyber City & Rapid Metro Hub"
+            >
+              🏢 Cyber City
+            </button>
+            <button
+              onClick={focusGurugramSubhashChowk}
+              className="sim-btn"
+              style={{ fontSize: '0.74rem', background: '#fef3c7', borderColor: '#fcd34d', color: '#b45309' }}
+              title="Focus Gurugram Subhash Chowk Underpass Corridor"
+            >
+              📍 Subhash Chowk
+            </button>
+            <button
+              onClick={focusSector15}
+              className="sim-btn"
+              style={{ fontSize: '0.74rem', background: '#fee2e2', borderColor: '#fca5a5', color: '#dc2626' }}
+              title="Focus Sector 15 Emergency Inundation Zone"
+            >
+              📍 Sector 15
+            </button>
+            <button
+              onClick={fitOverview}
+              className="sim-btn"
+              style={{ fontSize: '0.74rem' }}
+              title="Zoom out to NCR regional overview"
+            >
+              🌐 NCR View
+            </button>
+            <button
+              onClick={() => setIsQuickNavMinimized(true)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '2px',
+                borderRadius: '4px',
+                marginLeft: '2px'
+              }}
+              title="Minimize Quick Corridors"
+            >
+              <ChevronUp size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Main Map Container */}
-      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-
-      {/* Floating Replay & Time Slider Control Bar */}
+      {/* Floating Replay & Time Slider Control Bar (Draggable across screen & Minimizable) */}
       <div
+        ref={timelineRef}
+        className="live-map-timeline-dock"
         style={{
-          position: 'absolute',
-          bottom: '1.25rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 450,
-          width: 'calc(100% - 340px)',
-          maxWidth: '820px',
-          background: 'rgba(14, 21, 38, 0.92)',
-          border: '1px solid var(--border-accent)',
+          position: timelinePos ? 'fixed' : 'absolute',
+          left: timelinePos ? `${timelinePos.x}px` : '50%',
+          top: timelinePos ? `${timelinePos.y}px` : undefined,
+          bottom: timelinePos ? undefined : '1.25rem',
+          transform: timelinePos ? 'none' : 'translateX(-50%)',
+          zIndex: 1100,
+          width: isTimelineMinimized ? 'auto' : 'calc(100% - 340px)',
+          maxWidth: isTimelineMinimized ? '440px' : '820px',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-medium)',
           borderRadius: '12px',
-          padding: '0.75rem 1.25rem',
+          padding: isTimelineMinimized ? '0.45rem 0.85rem' : '0.65rem 1.15rem',
           backdropFilter: 'blur(16px)',
-          boxShadow: '0 12px 35px rgba(0,0,0,0.85)',
-          color: '#fff',
+          boxShadow: 'var(--shadow-lg)',
+          color: 'var(--text-primary)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem'
+          gap: isTimelineMinimized ? '0' : '0.45rem'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Clock size={14} color="var(--cyan-400)" />
-            <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--cyan-400)' }}>
+        {isTimelineMinimized ? (
+          /* Minimized Compact Timeline Bar */
+          <div
+            onPointerDown={handleTimelinePointerDown}
+            onPointerMove={handleTimelinePointerMove}
+            onPointerUp={handleTimelinePointerUp}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              cursor: isDraggingTimelineRef.current ? 'grabbing' : 'grab',
+              userSelect: 'none',
+              touchAction: 'none'
+            }}
+            title="Drag to reposition timeline anywhere on screen"
+          >
+            <GripHorizontal size={14} color="#94a3b8" />
+            <Clock size={13} color="#2563eb" />
+            <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#2563eb' }}>
               {currentStep.simulatedTime}
             </strong>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.74rem' }}>
-              • {currentStep.description}
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
             </span>
+            <button
+              onClick={isPlaying ? pause : play}
+              style={{
+                background: isPlaying ? '#fee2e2' : 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                border: isPlaying ? '1px solid #fca5a5' : 'none',
+                borderRadius: '50%',
+                width: 26,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: isPlaying ? '#dc2626' : '#fff'
+              }}
+              title={isPlaying ? 'Pause replay' : 'Play replay'}
+            >
+              {isPlaying ? <Pause size={12} /> : <Play size={12} style={{ marginLeft: 1 }} />}
+            </button>
+            <button
+              onClick={() => setIsTimelineMinimized(false)}
+              className="sim-btn"
+              style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem', gap: '0.25rem' }}
+              title="Expand timeline controls"
+            >
+              <Maximize2 size={11} />
+              <span>Expand</span>
+            </button>
           </div>
+        ) : (
+          /* Expanded Timeline Control Bar */
+          <>
+            {/* Drag Handle & Status Header */}
+            <div
+              onPointerDown={handleTimelinePointerDown}
+              onPointerMove={handleTimelinePointerMove}
+              onPointerUp={handleTimelinePointerUp}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: isDraggingTimelineRef.current ? 'grabbing' : 'grab',
+                paddingBottom: '0.35rem',
+                borderBottom: '1px solid var(--border-subtle)',
+                userSelect: 'none',
+                touchAction: 'none'
+              }}
+              title="Drag to reposition timeline anywhere on screen"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
+                <GripHorizontal size={15} color="#94a3b8" />
+                <Clock size={14} color="#2563eb" />
+                <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#2563eb' }}>
+                  {currentStep.simulatedTime}
+                </strong>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.74rem' }}>
+                  • {currentStep.description}
+                </span>
+              </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rainfall:</span>
-            <strong style={{ fontSize: '0.75rem', color: currentStep.weatherCondition.rainfallMmPerHour > 50 ? '#f87171' : '#38bdf8', fontFamily: 'var(--font-mono)' }}>
-              {currentStep.weatherCondition.rainfallMmPerHour} mm/hr
-            </strong>
-          </div>
-        </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rainfall:</span>
+                <strong style={{ fontSize: '0.75rem', color: currentStep.weatherCondition.rainfallMmPerHour > 50 ? '#dc2626' : '#0284c7', fontFamily: 'var(--font-mono)' }}>
+                  {currentStep.weatherCondition.rainfallMmPerHour} mm/hr
+                </strong>
+                <button
+                  onClick={() => setIsTimelineMinimized(true)}
+                  className="sim-btn"
+                  style={{ padding: '0.15rem 0.45rem', fontSize: '0.68rem', gap: '0.2rem' }}
+                  title="Minimize timeline to compact bar"
+                >
+                  <Minus size={11} />
+                  <span>Minimize</span>
+                </button>
+              </div>
+            </div>
 
-        {/* Timeline Slider Track */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={isPlaying ? pause : play}
-            style={{
-              background: isPlaying ? 'rgba(239, 68, 68, 0.25)' : 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
-              border: 'none',
-              borderRadius: '50%',
-              width: 32,
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#fff'
-            }}
-            title={isPlaying ? 'Pause simulation replay' : 'Play simulation replay'}
-          >
-            {isPlaying ? <Pause size={14} /> : <Play size={14} style={{ marginLeft: 2 }} />}
-          </button>
+            {/* Timeline Slider Track */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <button
+                onClick={isPlaying ? pause : play}
+                style={{
+                  background: isPlaying ? '#fee2e2' : 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                  border: isPlaying ? '1px solid #fca5a5' : 'none',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: isPlaying ? '#dc2626' : '#fff',
+                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)'
+                }}
+                title={isPlaying ? 'Pause simulation replay' : 'Play simulation replay'}
+              >
+                {isPlaying ? <Pause size={14} /> : <Play size={14} style={{ marginLeft: 2 }} />}
+              </button>
 
-          <button
-            onClick={stepForward}
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '6px',
-              padding: '0.35rem 0.55rem',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.2rem',
-              fontSize: '0.72rem'
-            }}
-            title="Advance one simulation step"
-          >
-            <SkipForward size={12} />
-          </button>
+              <button
+                onClick={stepForward}
+                className="sim-btn"
+                style={{
+                  padding: '0.35rem 0.55rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  fontSize: '0.72rem'
+                }}
+                title="Advance one simulation step"
+              >
+                <SkipForward size={12} />
+              </button>
 
-          {/* Interactive Range Slider */}
-          <input
-            type="range"
-            min="0"
-            max={SIMULATION_STEPS.length - 1}
-            value={currentStepIndex}
-            onChange={e => jumpToStep(Number(e.target.value))}
-            style={{ flex: 1, accentColor: 'var(--cyan-400)', height: 6, cursor: 'pointer' }}
-          />
+              {/* Interactive Range Slider */}
+              <input
+                type="range"
+                min="0"
+                max={SIMULATION_STEPS.length - 1}
+                value={currentStepIndex}
+                onChange={e => jumpToStep(Number(e.target.value))}
+                style={{ flex: 1, accentColor: '#2563eb', height: 6, cursor: 'pointer' }}
+              />
 
-          <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-            Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
-          </span>
+              <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
+              </span>
 
-          <button
-            onClick={resetSimulation}
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '6px',
-              padding: '0.35rem 0.55rem',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.2rem',
-              fontSize: '0.72rem'
-            }}
-            title="Reset simulation to initial baseline"
-          >
-            <RotateCcw size={12} />
-          </button>
-        </div>
-      </div>
-
-      {/* Map Legend Overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '1.25rem',
-          left: '1rem',
-          zIndex: 400,
-          background: 'rgba(14, 21, 38, 0.92)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '10px',
-          padding: '0.75rem 1rem',
-          backdropFilter: 'blur(12px)',
-          fontSize: '0.72rem',
-          color: 'var(--text-secondary)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.4rem',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-          maxWidth: '260px'
-        }}
-      >
-        <div style={{ fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Telemetry Legend</span>
-          <span style={{ color: 'var(--cyan-400)', fontSize: '0.65rem' }}>{mapMode === 'ai_priority' ? 'AI PRIORITY' : 'CIVIC SIGNALS'}</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-          <span>Critical P1 (Priority &ge; 80)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
-          <span>High P2 (Priority 60 - 79)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#06b6d4', display: 'inline-block' }} />
-          <span>Standard P3 (Priority &lt; 60)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '0.7rem' }}>🔥</span>
-          <span>Emerging Now (Velocity Surge)</span>
-        </div>
-        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.3rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.68rem' }}>
-          <span>📱 App</span>
-          <span>🐦 X</span>
-          <span>🏛️ Grievance</span>
-          <span>📞 311</span>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-          <span>🏫 School (250m)</span>
-          <span>🏥 Hospital (400m)</span>
-        </div>
+              <button
+                onClick={resetSimulation}
+                className="sim-btn"
+                style={{
+                  padding: '0.35rem 0.55rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  fontSize: '0.72rem'
+                }}
+                title="Reset simulation to initial baseline"
+              >
+                <RotateCcw size={12} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

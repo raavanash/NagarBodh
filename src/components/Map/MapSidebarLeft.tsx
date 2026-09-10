@@ -26,6 +26,7 @@ export const MapSidebarLeft: React.FC = () => {
     signals,
     selectedIncidentId,
     setSelectedIncidentId,
+    setActiveTab,
     mapMode,
     setMapMode,
     categoryFilter,
@@ -61,7 +62,7 @@ export const MapSidebarLeft: React.FC = () => {
     { id: 'citizen_app', label: 'Citizen App' },
     { id: 'social_x', label: 'Social (X)' },
     { id: 'grievance_portal', label: 'Grievance Portal' },
-    { id: 'helpline_311', label: '311 Helpline' }
+    { id: 'helpline_311', label: '155304 / 112 Civic Helpline' }
   ];
 
   const severities = [
@@ -101,19 +102,19 @@ export const MapSidebarLeft: React.FC = () => {
   return (
     <aside className="map-sidebar-left">
       {/* Concise Sidebar Header */}
-      <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-elevated)' }}>
+      <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', fontWeight: 800, color: '#fff' }}>
-            <Activity size={16} color="var(--cyan-400)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+            <Activity size={16} color="#2563eb" />
             <span>CivicPulse</span>
           </div>
-          <span style={{ fontSize: '0.7rem', color: 'var(--cyan-400)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.7rem', color: '#2563eb', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
             {filteredIncidents.length} Clusters
           </span>
         </div>
 
         {/* View Mode Toggle Switcher */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem', marginBottom: '0.6rem', background: 'rgba(0,0,0,0.3)', padding: '0.2rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem', marginBottom: '0.6rem', background: 'var(--bg-surface-elevated)', padding: '0.2rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
           <button
             onClick={() => setMapMode('ai_priority')}
             style={{
@@ -121,10 +122,10 @@ export const MapSidebarLeft: React.FC = () => {
               fontWeight: 700,
               padding: '0.35rem 0.4rem',
               borderRadius: '6px',
-              border: 'none',
+              border: mapMode === 'ai_priority' ? '1px solid var(--civic-blue-500)' : 'none',
               cursor: 'pointer',
-              background: mapMode === 'ai_priority' ? 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' : 'transparent',
-              color: mapMode === 'ai_priority' ? '#fff' : 'var(--text-secondary)',
+              background: mapMode === 'ai_priority' ? 'var(--civic-blue-50)' : 'transparent',
+              color: mapMode === 'ai_priority' ? 'var(--civic-blue-600)' : 'var(--text-secondary)',
               transition: 'all 0.15s ease'
             }}
           >
@@ -137,10 +138,10 @@ export const MapSidebarLeft: React.FC = () => {
               fontWeight: 700,
               padding: '0.35rem 0.4rem',
               borderRadius: '6px',
-              border: 'none',
+              border: mapMode === 'civic_signals' ? '1px solid var(--purple-400)' : 'none',
               cursor: 'pointer',
-              background: mapMode === 'civic_signals' ? 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)' : 'transparent',
-              color: mapMode === 'civic_signals' ? '#fff' : 'var(--text-secondary)',
+              background: mapMode === 'civic_signals' ? 'rgba(124, 58, 237, 0.15)' : 'transparent',
+              color: mapMode === 'civic_signals' ? 'var(--purple-400)' : 'var(--text-secondary)',
               transition: 'all 0.15s ease'
             }}
           >
@@ -260,14 +261,18 @@ export const MapSidebarLeft: React.FC = () => {
             return (
               <div
                 key={inc.id}
-                onClick={() => setSelectedIncidentId(inc.id)}
+                onClick={() => {
+                  setSelectedIncidentId(inc.id);
+                  if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+                    setActiveTab('dossier');
+                  }
+                }}
                 className={`civic-incident-card ${isSelected ? 'selected' : ''}`}
                 style={{
                   marginBottom: '0.45rem',
                   padding: '0.65rem 0.75rem',
                   borderRadius: '8px',
-                  background: isSelected ? 'rgba(12, 192, 188, 0.15)' : 'var(--bg-surface-elevated)',
-                  border: isSelected ? '1px solid var(--cyan-400)' : '1px solid var(--border-subtle)',
+                  boxShadow: isSelected ? '0 2px 8px rgba(37, 99, 235, 0.15)' : 'var(--shadow-sm)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
@@ -278,12 +283,12 @@ export const MapSidebarLeft: React.FC = () => {
                   </span>
 
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                    <TrendingUp size={11} color="var(--cyan-400)" />
+                    <TrendingUp size={11} color="#2563eb" />
                     <span>+{inc.velocitySurgePercent}%</span>
                   </span>
                 </div>
 
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: isSelected ? '#fff' : 'var(--text-primary)', lineHeight: 1.25, marginBottom: '0.25rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.25, marginBottom: '0.25rem' }}>
                   {inc.title}
                 </div>
 
