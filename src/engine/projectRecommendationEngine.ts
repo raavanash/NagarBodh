@@ -17,8 +17,12 @@ export function generateProjectRecommendation(
   let projectTitle = `Priority Infrastructure Development in ${wardName}`;
   let primaryDepartment = 'Ministry of Housing & Urban Affairs / State PWD';
   let supportingDepartments: string[] = ['Department of Expenditure', 'State Nodal Planning Agency'];
-  let estimatedCostLakhs = investment.investmentGapLakhs > 0 ? investment.investmentGapLakhs : 250;
+  const investGap = investment.investmentGapLakhs ?? (investment.plannedInvestment - investment.existingInvestment);
+  let estimatedCostLakhs = investGap > 0 ? investGap : 250;
   let estimatedCompletionMonths = 12;
+  const popEst = demographics.totalPopulationEstimate ?? demographics.population ?? 500000;
+  const vulnRatio = demographics.vulnerableGroupRatio ?? (demographics.population > 0 ? demographics.vulnerablePopulation / demographics.population : 0.25);
+  const unaddressedCount = investment.unaddressedRequestsCount ?? 20;
 
   switch (category) {
     case 'healthcare':
@@ -88,7 +92,7 @@ export function generateProjectRecommendation(
   const priorityLevel: 'P1_NATIONAL_HIGH_PRIORITY' | 'P2_STATE_PRIORITY' | 'P3_STANDARD_DEVELOPMENT' =
     priorityScore >= 80 ? 'P1_NATIONAL_HIGH_PRIORITY' : priorityScore >= 60 ? 'P2_STATE_PRIORITY' : 'P3_STANDARD_DEVELOPMENT';
 
-  const beneficiaryCount = Math.round(demographics.totalPopulationEstimate * 0.65);
+  const beneficiaryCount = Math.round(popEst * 0.65);
   const deficitReductionPercent = Math.min(95, Math.round(developmentGap.overallGapIndex * 0.85));
 
   const recommendedActions = [
@@ -104,7 +108,7 @@ export function generateProjectRecommendation(
       id: `act-2-${Date.now()}`,
       actionText: `Allocate capital grant of ₹${estimatedCostLakhs} Lakhs under National Infrastructure Plan (NIP) / State Development Fund.`,
       department: supportingDepartments[0] || 'Department of Expenditure',
-      rationale: `Unfunded investment gap in ${wardName} currently stands at ₹${investment.investmentGapLakhs} Lakhs.`,
+      rationale: `Unfunded investment gap in ${wardName} currently stands at ₹${investGap} Lakhs.`,
       isSopRule: true,
       isAiRecommendation: true
     },
@@ -112,7 +116,7 @@ export function generateProjectRecommendation(
       id: `act-3-${Date.now()}`,
       actionText: `Establish multi-agency coordination committee for fast-tracked execution within ${estimatedCompletionMonths} months.`,
       department: primaryDepartment,
-      rationale: `Benefiting approximately ${beneficiaryCount.toLocaleString()} residents (${Math.round(demographics.vulnerableGroupRatio * 100)}% vulnerable groups).`,
+      rationale: `Benefiting approximately ${beneficiaryCount.toLocaleString()} residents (${Math.round(vulnRatio * 100)}% vulnerable groups).`,
       isSopRule: false,
       isAiRecommendation: true
     }
@@ -120,6 +124,8 @@ export function generateProjectRecommendation(
 
   const justification =
     `Project recommended based on deterministic Priority Score of ${priorityScore}/100 and Development Gap Index of ${developmentGap.overallGapIndex}/100. Addressable beneficiary population is estimated at ${beneficiaryCount.toLocaleString()} citizens in ${wardName}.`;
+
+  const protectedAssetsList = infrastructure.criticalAssetsNearby ? infrastructure.criticalAssetsNearby.map(a => a.name) : ['Local Ward Infrastructure'];
 
   return {
     id: projId,
@@ -135,8 +141,8 @@ export function generateProjectRecommendation(
     expectedImpact: {
       beneficiaryCount,
       deficitReductionPercent,
-      protectedAssets: infrastructure.criticalAssetsNearby.map(a => a.name),
-      narrative: `Project expected to reduce infrastructure deficit by ${deficitReductionPercent}% and resolve ${investment.unaddressedRequestsCount} pending citizen requests.`
+      protectedAssets: protectedAssetsList,
+      narrative: `Project expected to reduce infrastructure deficit by ${deficitReductionPercent}% and resolve ${unaddressedCount} pending citizen requests.`
     },
     status: 'pending_policy_review',
     targetLocation: locationName || wardName,

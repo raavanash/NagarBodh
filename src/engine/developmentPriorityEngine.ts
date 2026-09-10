@@ -35,21 +35,27 @@ export function calculateDeterministicDevelopmentPriority(
   else if (overallScore >= 70) level = 'urgent';
   else if (overallScore >= 50) level = 'high';
 
+  const nearestDist = infrastructure.nearestFacilityDistanceMeters ?? 1000;
+  const popDensity = demographics.populationDensityPerSqKm ?? demographics.populationDensity ?? 10000;
+  const vulnRatio = demographics.vulnerableGroupRatio ?? (demographics.population > 0 ? demographics.vulnerablePopulation / demographics.population : 0.25);
+  const investGap = investment.investmentGapLakhs ?? (investment.plannedInvestment - investment.existingInvestment);
+  const unaddressedCount = investment.unaddressedRequestsCount ?? 20;
+
   const whyPrioritizedBullets = [
     {
       reasonText: `High Citizen Demand: ${requestCount} requests logged (${velocityPerHour.toFixed(1)} req/hr velocity).`,
       evidenceSource: 'Citizen Request Stream & Multilingual Voice/Text Ingestion'
     },
     {
-      reasonText: `Infrastructure Deficit Index: ${infrastructure.infrastructureDeficitIndex}/100. Nearest facility ${infrastructure.nearestFacilityName} at ${infrastructure.nearestFacilityDistanceMeters}m distance.`,
+      reasonText: `Infrastructure Deficit Index: ${infrastructure.infrastructureDeficitIndex ?? 50}/100. Nearest facility ${infrastructure.nearestFacilityName || 'facility'} at ${nearestDist}m distance.`,
       evidenceSource: 'National Infrastructure Registry & Spatial Proximity Data'
     },
     {
-      reasonText: `Demographic Exposure: ${demographics.wardName} population density ${demographics.populationDensityPerSqKm}/km² (${Math.round(demographics.vulnerableGroupRatio * 100)}% vulnerable demographics).`,
+      reasonText: `Demographic Exposure: ${demographics.wardName || 'Region'} population density ${popDensity}/km² (${Math.round(vulnRatio * 100)}% vulnerable demographics).`,
       evidenceSource: 'National Census & Demographic Data Layer'
     },
     {
-      reasonText: `Public Investment Gap: Unfunded budget gap of ₹${investment.investmentGapLakhs} Lakhs across ${investment.unaddressedRequestsCount} pending requests.`,
+      reasonText: `Public Investment Gap: Unfunded budget gap of ₹${investGap} Lakhs across ${unaddressedCount} pending requests.`,
       evidenceSource: 'Public Expenditure & Capital Investment Plan Registry'
     }
   ];
