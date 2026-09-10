@@ -76,4 +76,37 @@ describe('DevelopmentRequestNormalizer (Multilingual & Multi-Channel)', () => {
     expect(req.rawText).toBe(rawPayload.text);
     expect(req.confidence).toBeGreaterThan(0);
   });
+
+  it('normalizes WhatsApp messaging payload for electricity category', () => {
+    const rawPayload = {
+      text: 'Sector 15 me naya transformer chahiye, har shaam ko bijli aur light chali jati hai',
+      sourceChannel: 'whatsapp_msg',
+      timestamp: '2026-09-10T11:00:00.000Z'
+    };
+
+    const req = DevelopmentRequestNormalizer.normalizeToDevelopmentRequest(rawPayload, 'provider-whatsapp', 'LIVE');
+
+    expect(req.sourceChannel).toBe('MESSAGING');
+    expect(req.category).toBe('ELECTRICITY');
+    expect(req.mode).toBe('LIVE');
+    expect(req.rawText).toContain('transformer');
+  });
+
+  it('normalizes malformed or minimal payload gracefully without throwing', () => {
+    const rawPayload = {
+      text: '',
+      channel: 'unknown_source'
+    };
+
+    const req = DevelopmentRequestNormalizer.normalizeToDevelopmentRequest(rawPayload as any, 'provider-unknown', 'SIMULATION');
+
+    expect(req.category).toBe('OTHER');
+    expect(req.sourceChannel).toBe('TEXT');
+    expect(req.mode).toBe('SIMULATION');
+    expect(req.location.country).toBe('India');
+    expect(req.location.latitude).toBeNull();
+    expect(req.location.longitude).toBeNull();
+    expect(req.evidence.length).toBe(4);
+  });
 });
+
