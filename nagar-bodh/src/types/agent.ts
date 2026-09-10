@@ -38,7 +38,7 @@ export type FactSeparation = z.infer<typeof FactSeparationSchema>;
  * Full Zod Schema for Structured Signal Analyst Agent Output
  */
 export const SignalAnalystOutputSchema = z.object({
-  category: z.enum(['waterlogging', 'road_hazard', 'drainage', 'garbage', 'electricity', 'traffic']),
+  category: z.enum(['waterlogging', 'road_hazard', 'drainage', 'garbage', 'electricity', 'traffic', 'healthcare', 'education', 'water', 'sanitation', 'transport', 'roads', 'digital_connectivity', 'public_safety', 'other']),
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   confidence: z.number().min(0).max(1),
   language: z.enum(['hi', 'hinglish', 'en']),

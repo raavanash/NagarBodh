@@ -4,7 +4,7 @@ import { CivicCategory, CivicSignal } from '../types/civic';
  * Category compatibility and semantic affinity matrix.
  * Reflects domain knowledge (e.g. storm waterlogging causing drainage overflow and road hazards).
  */
-const CATEGORY_AFFINITY_MATRIX: Record<CivicCategory, Partial<Record<CivicCategory, number>>> = {
+const CATEGORY_AFFINITY_MATRIX: Partial<Record<CivicCategory, Partial<Record<CivicCategory, number>>>> = {
   waterlogging: { waterlogging: 1.0, drainage: 0.85, road_hazard: 0.70, traffic: 0.45 },
   drainage: { drainage: 1.0, waterlogging: 0.85, road_hazard: 0.65, garbage: 0.50 },
   road_hazard: { road_hazard: 1.0, waterlogging: 0.70, drainage: 0.65, traffic: 0.60 },

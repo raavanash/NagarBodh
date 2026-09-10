@@ -1,6 +1,6 @@
 export type SignalChannel = 'citizen_app' | 'social_x' | 'social_bluesky' | 'grievance_portal' | 'helpline_311';
 export type DetectedLanguage = 'hi' | 'hinglish' | 'en';
-export type CivicCategory = 'waterlogging' | 'road_hazard' | 'drainage' | 'garbage' | 'electricity' | 'traffic';
+export type CivicCategory = 'waterlogging' | 'road_hazard' | 'drainage' | 'garbage' | 'electricity' | 'traffic' | 'healthcare' | 'education' | 'water' | 'sanitation' | 'transport' | 'roads' | 'digital_connectivity' | 'public_safety' | 'other';
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
 export type IncidentStatus =
   | 'emerging'

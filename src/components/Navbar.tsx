@@ -49,15 +49,15 @@ export const Navbar: React.FC = () => {
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 700
               }}>
-                MUNICIPAL OS
+                DEVELOPMENT & INVESTMENT INTELLIGENCE
               </span>
             </div>
 
             <div className="brand-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
               <Building2 size={11} color="#2563eb" />
-              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Delhi NCR Command</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>BRICS Innovation Track • Digital Public Good</span>
               <span>•</span>
-              <span style={{ color: '#059669', fontWeight: 700 }}>99.8% Health</span>
+              <span style={{ color: '#059669', fontWeight: 700 }}>National Policy Command</span>
             </div>
           </div>
         </div>
