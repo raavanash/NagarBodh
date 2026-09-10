@@ -108,31 +108,77 @@ export type DevelopmentPolicyStatus =
   | 'completed'
   | 'impact_verified';
 
+export interface GeographicHierarchy {
+  countryCode: string; // e.g. "IN", scalable to "BR", "RU", "CN", "ZA"
+  country: string; // "India"
+  state: string;
+  district: string;
+  subDistrict?: string;
+  villageOrWard?: string;
+}
+
+export interface ContextProvenance {
+  source: string; // e.g. "NagarBodh Realistic Sample Dataset"
+  mode: 'LIVE' | 'REPLAY' | 'SIMULATION';
+  timestamp: string;
+  freshness: string; // e.g. "Q3 2026", "Real-time"
+  coverage: string; // e.g. "District Level", "Ward Level"
+  confidence: number;
+}
+
 export interface DemographicContext {
-  wardId: string;
-  wardName: string;
-  populationDensityPerSqKm: number;
-  totalPopulationEstimate: number;
-  vulnerableGroupRatio: number; // 0.0 - 1.0 (children, elderly, low income)
-  primaryLivelihoodZone: string;
-  literacyPercent: number;
+  population: number;
+  populationDensity: number; // per sq km
+  populationGrowth: number; // annual % growth
+  urbanizationRate: number; // %
+  vulnerablePopulation: number; // absolute count
+  youthPopulation: number; // under 25 count
+  elderlyPopulation: number; // over 60 count
+  wardId?: string;
+  wardName?: string;
+  populationDensityPerSqKm?: number;
+  totalPopulationEstimate?: number;
+  vulnerableGroupRatio?: number; // 0.0 - 1.0 (children, elderly, low income)
+  primaryLivelihoodZone?: string;
+  literacyPercent?: number;
 }
 
 export interface InfrastructureContext {
-  existingFacilitiesCount: number;
-  nearestFacilityName: string;
-  nearestFacilityDistanceMeters: number;
-  capacityUtilizationPercent: number;
-  infrastructureDeficitIndex: number; // 0 - 100
-  criticalAssetsNearby: CriticalAsset[];
+  healthcareIndex: number; // 0 - 100
+  educationIndex: number; // 0 - 100
+  waterIndex: number; // 0 - 100
+  sanitationIndex: number; // 0 - 100
+  transportIndex: number; // 0 - 100
+  electricityIndex: number; // 0 - 100
+  digitalConnectivityIndex: number; // 0 - 100
+  existingFacilitiesCount?: number;
+  nearestFacilityName?: string;
+  nearestFacilityDistanceMeters?: number;
+  capacityUtilizationPercent?: number;
+  infrastructureDeficitIndex?: number; // 0 - 100
+  criticalAssetsNearby?: CriticalAsset[];
 }
 
 export interface InvestmentContext {
-  approvedBudgetLakhs: number;
-  allocatedFundingLakhs: number;
-  investmentGapLakhs: number;
-  historicalProjectsCompleted: number;
-  unaddressedRequestsCount: number;
+  existingInvestment: number; // ₹ Lakhs
+  plannedInvestment: number; // ₹ Lakhs
+  activeProjects: number; // count
+  plannedProjects: number; // count
+  investmentByCategory: Record<CanonicalDevelopmentCategory | string, number>; // ₹ Lakhs
+  approvedBudgetLakhs?: number;
+  allocatedFundingLakhs?: number;
+  investmentGapLakhs?: number;
+  historicalProjectsCompleted?: number;
+  unaddressedRequestsCount?: number;
+}
+
+export interface DevelopmentContext {
+  id: string;
+  hierarchy: GeographicHierarchy;
+  demographic: DemographicContext;
+  infrastructure: InfrastructureContext;
+  investment: InvestmentContext;
+  provenance: ContextProvenance;
 }
 
 export interface DevelopmentGap {
