@@ -71,7 +71,7 @@ describe('Development Intelligence Foundation Engines', () => {
 
     expect(priority.overallScore).toBeGreaterThanOrEqual(0);
     expect(priority.overallScore).toBeLessThanOrEqual(100);
-    expect(priority.whyPrioritizedBullets.length).toBe(4);
+    expect(priority.whyPrioritizedBullets.length).toBe(5);
     expect(priority.formulaExplanation).toContain('Priority Score');
   });
 
@@ -108,9 +108,9 @@ describe('Development Intelligence Foundation Engines', () => {
     );
 
     expect(project.id).toBeDefined();
-    expect(project.projectTitle).toContain('Primary Health');
+    expect(project.title).toContain('Healthcare Access Programme');
     expect(project.status).toBe('pending_policy_review');
-    expect(project.recommendedActions.length).toBeGreaterThan(0);
-    expect(project.expectedImpact.beneficiaryCount).toBeGreaterThan(0);
+    expect(project.recommendedActions?.length).toBeGreaterThan(0);
+    expect(project.expectedBeneficiaries).toBeGreaterThan(0);
   });
 });

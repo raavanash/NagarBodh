@@ -19,13 +19,27 @@ export const CIVIC_SEARCH_QUERIES = [
   'flooded road Ghaziabad'
 ];
 
+export interface BlueskyHealthState {
+  isAvailable: boolean;
+  lastStatus: number;
+  lastError: string | null;
+  lastCheckedAt: string | null;
+  endpoint: string;
+}
+
 export class BlueskySocialProvider implements SignalProvider {
   public id = 'provider-social-bluesky';
-  public name = 'Public Social Stream (Bluesky API)';
+  public name = 'Public Social Stream (Bluesky AppView API)';
   public type = 'social_bluesky' as const;
   public mode: IngestionMode;
 
+  public endpoint = 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts';
+
   private currentQueryIndex = 0;
+  private isAvailableState = true;
+  private lastStatus = 200;
+  private lastError: string | null = null;
+  private lastCheckedAt: string | null = null;
 
   constructor() {
     this.mode = 'LIVE';
@@ -35,8 +49,24 @@ export class BlueskySocialProvider implements SignalProvider {
     this.mode = mode;
   }
 
+  /**
+   * Meaningful provider availability tracking based on recent fetch health state.
+   */
   public async isAvailable(): Promise<boolean> {
-    return true;
+    return this.mode === 'SIMULATION' || this.isAvailableState;
+  }
+
+  /**
+   * Retrieves full structured health status metadata for diagnostics
+   */
+  public getHealthStatus(): BlueskyHealthState {
+    return {
+      isAvailable: this.isAvailableState,
+      lastStatus: this.lastStatus,
+      lastError: this.lastError,
+      lastCheckedAt: this.lastCheckedAt,
+      endpoint: this.endpoint
+    };
   }
 
   public async fetchOrIngest(
@@ -56,45 +86,67 @@ export class BlueskySocialProvider implements SignalProvider {
 
         let rawPosts: any[] = [];
         let fetchedOk = false;
+        let httpStatus = 200;
+        let errorMessage: string | null = null;
 
-        const endpoint = typeof window !== 'undefined'
+        const proxyEndpoint = typeof window !== 'undefined'
           ? `/api/social/bluesky?query=${encodeURIComponent(query)}&limit=25&sort=latest`
           : `http://localhost:5173/api/social/bluesky?query=${encodeURIComponent(query)}&limit=25&sort=latest`;
 
-        console.log(`[Bluesky] Query: "${query}" (sort=latest, limit=25)`);
-        const apiRes = await fetch(endpoint).catch(() => null);
+        console.log(`[Bluesky] Querying proxy for: "${query}"`);
+        const apiRes = await fetch(proxyEndpoint).catch(err => {
+          errorMessage = `Network fetch error: ${err.message}`;
+          return null;
+        });
 
         if (apiRes && apiRes.ok) {
           const body = await apiRes.json().catch(() => null);
-          console.log(`[Bluesky] HTTP status: ${apiRes.status}`);
 
           if (body && body.ok && Array.isArray(body.data)) {
             rawPosts = body.data;
             fetchedOk = true;
-          } else {
-            console.warn(`[Bluesky] Proxy route returned non-OK or fallback:`, body?.error || 'Unknown error');
+            httpStatus = 200;
+          } else if (body) {
+            httpStatus = body.status || 500;
+            errorMessage = body.message || body.error || 'Upstream Bluesky request failed';
           }
+        } else if (apiRes) {
+          httpStatus = apiRes.status;
+          errorMessage = `HTTP ${apiRes.status} ${apiRes.statusText}`;
         }
 
-        // Direct Browser Fetch Fallback if proxy returned forbidden/error in local env
+        // Direct Browser Fallback using public.api.bsky.app endpoint (never exposing secrets)
         if (!fetchedOk && typeof window !== 'undefined') {
-          console.log(`[Bluesky] Attempting direct browser fetch to https://api.bsky.app for query: "${query}"`);
-          const directUrl = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&sort=latest&limit=25`;
-          const directRes = await fetch(directUrl).catch(() => null);
+          console.log(`[Bluesky] Proxy unavailable. Attempting direct browser fetch to ${this.endpoint}`);
+          const directUrl = `${this.endpoint}?q=${encodeURIComponent(query)}&sort=latest&limit=25`;
+          const directRes = await fetch(directUrl).catch(err => {
+            errorMessage = `Direct fetch exception: ${err.message}`;
+            return null;
+          });
 
           if (directRes && directRes.ok) {
             const directBody = await directRes.json().catch(() => null);
-            console.log(`[Bluesky] Direct browser fetch HTTP status: ${directRes.status}`);
             if (directBody && Array.isArray(directBody.posts)) {
               rawPosts = directBody.posts;
               fetchedOk = true;
+              httpStatus = 200;
+              errorMessage = null;
             }
+          } else if (directRes) {
+            httpStatus = directRes.status;
+            errorMessage = `Direct AppView returned HTTP ${directRes.status}`;
           }
         }
 
-        console.log(`[Bluesky] Raw posts: ${rawPosts.length}`);
+        // Update internal provider health state honestly
+        this.lastStatus = httpStatus;
+        this.lastCheckedAt = new Date().toISOString();
 
-        if (fetchedOk && rawPosts.length > 0) {
+        if (fetchedOk) {
+          this.isAvailableState = true;
+          this.lastError = null;
+          console.log(`[Bluesky] Live posts received: ${rawPosts.length}`);
+
           return rawPosts.map((post: any) => {
             const handle = post.author?.handle || 'bluesky_user';
             const rkey = (post.uri || '').split('/').pop() || Date.now().toString();
@@ -111,11 +163,21 @@ export class BlueskySocialProvider implements SignalProvider {
               rawUri: post.uri
             };
           });
+        } else {
+          this.isAvailableState = false;
+          this.lastError = errorMessage || `HTTP ${httpStatus} from upstream`;
+          console.warn(`[Bluesky] Provider unavailable: ${this.lastError} (${this.endpoint})`);
+          // Honest response: Return empty array, NEVER fabricate live posts!
+          return [];
         }
-      } catch (err) {
-        console.warn('[BlueskySocialProvider] Exception during live fetch:', err);
+      } catch (err: any) {
+        this.isAvailableState = false;
+        this.lastStatus = 500;
+        this.lastError = err.message || 'Unhandled exception in provider';
+        this.lastCheckedAt = new Date().toISOString();
+        console.warn('[BlueskySocialProvider] Ingestion exception:', this.lastError);
+        return [];
       }
-      return [];
     }
 
     // SIMULATION mode fallback

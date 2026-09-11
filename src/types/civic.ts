@@ -1,3 +1,12 @@
+import type {
+  DemographicContext,
+  DevelopmentGap,
+  DevelopmentProjectRecommendation,
+  DevelopmentRequestEvidence,
+  InfrastructureContext,
+  InvestmentContext
+} from './development';
+
 export type SignalChannel = 'citizen_app' | 'social_x' | 'social_bluesky' | 'grievance_portal' | 'helpline_311';
 export type DetectedLanguage = 'hi' | 'hinglish' | 'en';
 export type CivicCategory = 'waterlogging' | 'road_hazard' | 'drainage' | 'garbage' | 'electricity' | 'traffic' | 'healthcare' | 'education' | 'water' | 'sanitation' | 'transport' | 'roads' | 'digital_connectivity' | 'public_safety' | 'other';
@@ -298,6 +307,15 @@ export interface ClusteredIncident {
   actionPlan?: DispatchActionPlan;
   resolutionConfirmedSignals?: string[];
   statusHistory?: StateTransitionRecord[];
+
+  // Development Intelligence & Project Recommendation extensions
+  projectRecommendation?: DevelopmentProjectRecommendation;
+  developmentGap?: DevelopmentGap;
+  demographics?: DemographicContext;
+  infrastructure?: InfrastructureContext;
+  investment?: InvestmentContext;
+  evidence?: DevelopmentRequestEvidence[];
+
   resolutionVerification?: ResolutionVerificationData;
   evidenceChain?: EvidenceItem[];
   verifiedAt?: string;

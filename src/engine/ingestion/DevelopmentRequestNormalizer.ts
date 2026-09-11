@@ -11,7 +11,7 @@ import { RawSignalPayload } from '../../types/ingestion';
 import { parseCivicSignalText } from '../nlpParser';
 
 const HINDI_REGEX = /[\u0900-\u097F]/;
-const HINGLISH_REGEX = /\b(paani|pani|bhar|gaya|rasta|sadak|sadke|gaddha|gaddhe|kachra|nala|naala|bijli|school|aspatal|hospital|bache|bachhe|gaadi|gadi|bahut|bohot|hai|hain|nahi|karo|bhejo|bachao|bijli|paani|batti)\b/i;
+const HINGLISH_REGEX = /\b(paani|pani|bhar|gaya|rasta|sadak|sadke|gaddha|gaddhe|kachra|nala|naala|bijli|aspatal|bache|bachhe|gaadi|gadi|bahut|bohot|hai|hain|nahi|karo|bhejo|bachao|batti|yahan|hamare|samagri)\b/i;
 
 /**
  * Normalizes multi-channel, multilingual citizen payloads into canonical DevelopmentRequest objects.
@@ -31,10 +31,14 @@ export class DevelopmentRequestNormalizer {
    */
   public static normalizeChannel(rawChannel?: string): DevelopmentRequestChannel {
     if (!rawChannel) return 'TEXT';
+    const upper = rawChannel.toUpperCase();
+    if (upper === 'TEXT' || upper === 'VOICE' || upper === 'MESSAGING' || upper === 'SOCIAL' || upper === 'GOVERNMENT_PORTAL' || upper === 'REPLAY') {
+      return upper as DevelopmentRequestChannel;
+    }
     const lower = rawChannel.toLowerCase();
     if (lower.includes('voice') || lower.includes('speech') || lower.includes('audio') || lower.includes('call')) return 'VOICE';
-    if (lower.includes('bluesky') || lower.includes('bsky') || lower.includes('x') || lower.includes('social') || lower.includes('twitter')) return 'SOCIAL';
-    if (lower.includes('whatsapp') || lower.includes('telegram') || lower.includes('msg') || lower.includes('chat') || lower.includes('message')) return 'MESSAGING';
+    if (lower.includes('bluesky') || lower.includes('bsky') || lower.includes('social') || lower.includes('twitter') || lower === 'x') return 'SOCIAL';
+    if (lower.includes('whatsapp') || lower.includes('telegram') || lower.includes('msg') || lower.includes('messag') || lower.includes('chat')) return 'MESSAGING';
     if (lower.includes('grievance') || lower.includes('portal') || lower.includes('govt') || lower.includes('311') || lower.includes('helpline')) return 'GOVERNMENT_PORTAL';
     if (lower.includes('replay')) return 'REPLAY';
     return 'TEXT';

@@ -70,6 +70,9 @@ export interface SignalProvider {
   name: string;
   type: ProviderType;
   mode: IngestionMode;
+  setMode?(mode: IngestionMode): void;
+  start?(): void;
+  stop?(): void;
   isAvailable(): Promise<boolean>;
   fetchOrIngest(payload?: RawSignalPayload | RawSignalPayload[]): Promise<RawSignalPayload[]>;
 }

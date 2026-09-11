@@ -140,6 +140,7 @@ interface CivicContextType {
 
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
+  getBlueskyHealth: () => any;
 
   // Theme State
   theme: 'light' | 'dark';
@@ -864,7 +865,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         timeLabel: currentStep.simulatedTime,
         type: 'state_transition',
         title: '🌐 Switched to LIVE Bluesky Ingestion Mode',
-        description: 'Activated real OpenWeather and Bluesky API search (api.bsky.app). Context Data Layer set to LIVE.',
+        description: 'Live ingestion mode enabled. External providers will be queried through the NagarBodh backend proxy.',
         actor: 'Commander Mode Switcher'
       });
     } else {
@@ -885,23 +886,80 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [currentStep.simulatedTime, appendAuditLog, refreshWeather, fetchBlueskyLiveSignals]);
 
+  // Register real-time callback from BlueskyJetstreamProvider to drive state bridge
+  useEffect(() => {
+    const currentIngestionService = ingestionServiceRef.current;
+    const bskyProvider = currentIngestionService.getProvider('provider-social-bluesky') as any;
+
+    if (bskyProvider && typeof bskyProvider.setOnSignalListener === 'function') {
+      bskyProvider.setOnSignalListener(async (rawPayload: RawSignalPayload) => {
+        try {
+          const { normalizedSignals, results } = await currentIngestionService.ingest(
+            'provider-social-bluesky',
+            rawPayload
+          );
+
+          const isDuplicate = results.some(r => r.isDuplicate);
+          if (isDuplicate && bskyProvider.duplicatesRejected !== undefined) {
+            bskyProvider.duplicatesRejected++;
+            console.log('[Bluesky Jetstream] Duplicate signal rejected');
+          }
+
+          if (normalizedSignals.length > 0) {
+            if (bskyProvider.normalizedAccepted !== undefined) {
+              bskyProvider.normalizedAccepted += normalizedSignals.length;
+            }
+            console.log('[Bluesky Jetstream] Forwarding RawSignalPayload');
+            console.log('[Bluesky Jetstream] Normalized signal accepted');
+            console.log(`[Bluesky Jetstream] Adding ${normalizedSignals.length} live signals to CivicContext`);
+
+            setSignals(prev => {
+              const existingIds = new Set(prev.map(s => s.id));
+              const fresh = normalizedSignals.filter(s => !existingIds.has(s.id));
+              const nextState = fresh.length > 0 ? [...fresh, ...prev] : prev;
+              console.log(`[Bluesky Jetstream] CivicContext signals updated: total ${nextState.length}`);
+              return nextState;
+            });
+          }
+        } catch (err) {
+          console.warn('[CivicContext] Exception processing live Jetstream signal:', err);
+        }
+      });
+    }
+
+    const handleTestFixture = (e: any) => {
+      const fixtureData = e.detail;
+      if (bskyProvider && typeof bskyProvider.simulateRawJetstreamEventForTesting === 'function') {
+        bskyProvider.simulateRawJetstreamEventForTesting(fixtureData);
+      }
+    };
+    window.addEventListener('nagarbodh:test-jetstream', handleTestFixture);
+
+    return () => {
+      window.removeEventListener('nagarbodh:test-jetstream', handleTestFixture);
+      if (bskyProvider && typeof bskyProvider.setOnSignalListener === 'function') {
+        bskyProvider.setOnSignalListener(null);
+      }
+    };
+  }, []);
+
   // Sync Data Layer mode on mount & trigger initial live fetch if mode is LIVE
   useEffect(() => {
+    ingestionServiceRef.current.setIngestionMode(ingestionMode);
     if (ingestionMode === 'LIVE') {
       civicContextDataLayerInstance.setGlobalMode('live');
       fetchBlueskyLiveSignals();
     } else {
       civicContextDataLayerInstance.setGlobalMode('cached');
     }
-  }, [ingestionMode, fetchBlueskyLiveSignals]);
 
-  // Auto-refresh Bluesky polling every 60 seconds in LIVE mode
-  useEffect(() => {
-    if (ingestionMode !== 'LIVE') return;
-    const interval = setInterval(() => {
-      fetchBlueskyLiveSignals();
-    }, 60 * 1000);
-    return () => clearInterval(interval);
+    const currentIngestionService = ingestionServiceRef.current;
+    return () => {
+      const bskyProvider = currentIngestionService.getProvider('provider-social-bluesky') as any;
+      if (bskyProvider && typeof bskyProvider.stop === 'function') {
+        bskyProvider.stop();
+      }
+    };
   }, [ingestionMode, fetchBlueskyLiveSignals]);
 
   // Auto-refresh weather every 5 minutes in LIVE mode
@@ -1087,6 +1145,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setGeminiApiKey(key);
           localStorage.setItem('nagar_bodh_gemini_key', key);
         },
+        getBlueskyHealth: () => ingestionServiceRef.current.getBlueskyHealth(),
         theme,
         setTheme,
         toggleTheme

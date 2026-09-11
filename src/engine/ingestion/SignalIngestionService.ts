@@ -1,5 +1,6 @@
 import { IngestedCivicSignal, IngestionMode, IngestionStats, NormalizationResult, ProviderType, RawSignalPayload, SignalProvider } from '../../types/ingestion';
 import { DuplicateDetector } from './DuplicateDetector';
+import { BlueskyJetstreamProvider } from './providers/BlueskyJetstreamProvider';
 import { BlueskySocialProvider } from './providers/BlueskySocialProvider';
 import { CitizenReportProvider } from './providers/CitizenReportProvider';
 import { DemoSimulationProvider } from './providers/DemoSimulationProvider';
@@ -27,10 +28,17 @@ export class SignalIngestionService {
   constructor(initialSignals: IngestedCivicSignal[] = []) {
     this.duplicateDetector = new DuplicateDetector(initialSignals);
 
-    // Register built-in providers
+    // Register built-in providers (Jetstream is primary for Bluesky)
     this.registerProvider(new DemoSimulationProvider());
     this.registerProvider(new CitizenReportProvider());
-    this.registerProvider(new BlueskySocialProvider());
+
+    const jetstreamProvider = new BlueskyJetstreamProvider();
+    this.registerProvider(jetstreamProvider);
+
+    const legacyBlueskyProvider = new BlueskySocialProvider();
+    legacyBlueskyProvider.id = 'provider-social-bluesky-legacy';
+    this.registerProvider(legacyBlueskyProvider);
+
     this.registerProvider(new PublicSocialXProvider());
     this.registerProvider(new GovtGrievanceProvider());
     this.registerProvider(new FileImportProvider());
@@ -52,10 +60,22 @@ export class SignalIngestionService {
 
   public setIngestionMode(mode: IngestionMode): void {
     this.activeMode = mode;
+    this.providers.forEach(provider => {
+      if (typeof provider.setMode === 'function') {
+        provider.setMode(mode);
+      }
+    });
   }
 
   public getIngestionMode(): IngestionMode {
     return this.activeMode;
+  }
+
+  public getBlueskyHealth(): any {
+    const provider = this.providers.get('provider-social-bluesky') as BlueskyJetstreamProvider | undefined;
+    return provider && typeof provider.getHealthStatus === 'function'
+      ? provider.getHealthStatus()
+      : null;
   }
 
   public getStats(): IngestionStats {

@@ -208,17 +208,70 @@ export interface DevelopmentPriorityBreakdown {
   formulaExplanation: string;
 }
 
+export interface StructuredPriorityFactor {
+  factor: string;
+  score: number; // 0 - 100
+  contribution: number; // weighted contribution points to final score
+  evidence: string;
+  source: string;
+}
+
+export interface DevelopmentPriority {
+  hotspotId: string;
+  category: CanonicalDevelopmentCategory | DevelopmentCategory | string;
+  priorityScore: number; // 0 - 100
+  priorityLevel: 'P1' | 'P2' | 'P3';
+  demandScore: number; // 0 - 100
+  infrastructureGap: number; // 0 - 100
+  investmentGap: number; // 0 - 100
+  populationImpact: number; // 0 - 100
+  vulnerabilityScore: number; // 0 - 100
+  factors: StructuredPriorityFactor[];
+  evidence: DevelopmentRequestEvidence[];
+}
+
 export interface DevelopmentProjectRecommendation {
   id: string;
   hotspotId: string;
-  projectTitle: string;
-  category: DevelopmentCategory;
-  primaryDepartment: string;
-  supportingDepartments: string[];
-  priorityLevel: 'P1_NATIONAL_HIGH_PRIORITY' | 'P2_STATE_PRIORITY' | 'P3_STANDARD_DEVELOPMENT';
-  estimatedCostLakhs: number;
-  estimatedCompletionMonths: number;
-  recommendedActions: Array<{
+  title: string;
+  projectTitle?: string; // backward-compatibility alias
+  category: CanonicalDevelopmentCategory | DevelopmentCategory | string;
+  geography: GeographicHierarchy | {
+    country: string;
+    state: string;
+    district: string;
+    subDistrict?: string;
+    wardOrDistrict?: string;
+    locationName?: string;
+  };
+  problemStatement: string;
+  recommendedIntervention: string;
+  priorityScore: number;
+  priorityLevel?: 'P1_NATIONAL_HIGH_PRIORITY' | 'P2_STATE_PRIORITY' | 'P3_STANDARD_DEVELOPMENT';
+  expectedBeneficiaries: number;
+  estimatedImpact: {
+    infrastructureIndexImprovement?: number;
+    beneficiaryCount?: number;
+    deficitReductionPercent?: number;
+    protectedAssets?: string[];
+    narrative: string;
+  };
+  supportingEvidence: DevelopmentRequestEvidence[] | EvidenceItem[];
+  rationale: string;
+  implementationConsiderations: string[];
+  confidence: number;
+  sourceMode: 'LIVE' | 'REPLAY' | 'SIMULATION' | 'HYBRID';
+  status: 'pending_policy_review' | 'approved' | 'modified' | 'rejected' | 'allocated';
+  approvedBy?: string;
+  modifiedNotes?: string;
+  rejectionReason?: string;
+  
+  // Operational details & backward compatibility
+  primaryDepartment?: string;
+  supportingDepartments?: string[];
+  estimatedCostLakhs?: number;
+  estimatedCompletionMonths?: number;
+  recommendedActions?: Array<{
     id: string;
     actionText: string;
     department: string;
@@ -226,16 +279,8 @@ export interface DevelopmentProjectRecommendation {
     isSopRule: boolean;
     isAiRecommendation: boolean;
   }>;
-  expectedImpact: {
-    beneficiaryCount: number;
-    deficitReductionPercent: number;
-    protectedAssets: string[];
-    narrative: string;
-  };
-  status: 'pending_policy_review' | 'approved' | 'modified' | 'rejected' | 'allocated';
-  approvedBy?: string;
-  targetLocation: string;
-  justification: string;
+  targetLocation?: string;
+  justification?: string;
 }
 
 export interface DevelopmentSignal extends CivicSignal {
@@ -248,29 +293,42 @@ export interface DevelopmentSignal extends CivicSignal {
 export interface DevelopmentDemandHotspot {
   id: string;
   title: string;
-  category: DevelopmentCategory;
-  legacyCategory: CivicCategory;
+  category: CanonicalDevelopmentCategory | DevelopmentCategory | string;
+  legacyCategory?: CivicCategory;
   status: DevelopmentPolicyStatus;
-  legacyStatus: IncidentStatus;
-  centroid: {
-    lat: number;
-    lng: number;
+  legacyStatus?: IncidentStatus;
+  geographicArea: {
+    centroid: { lat: number; lng: number };
+    radiusMeters: number;
+    wardOrDistrict: string;
+    state: string;
   };
+  centroid: { lat: number; lng: number };
   radiusMeters: number;
-  signalIds: string[];
-  requestCount: number;
-  firstRequestTime: string;
-  latestRequestTime: string;
-  demandVelocityPerHour: number;
   ward: string;
   locationName: string;
-  priority: DevelopmentPriorityBreakdown;
+  requestCount: number;
+  demandScore: number;
+  affectedPopulation: number;
+  languages: string[];
+  sourceChannels: DevelopmentRequestChannel[];
+  requestVelocity: number;
+  demandVelocityPerHour?: number;
+  firstRequestTime: string;
+  latestRequestTime: string;
+  signalIds: string[];
+
   developmentGap: DevelopmentGap;
+  priorityScore: DevelopmentPriority;
+  priority?: DevelopmentPriorityBreakdown;
   demographics: DemographicContext;
   infrastructure: InfrastructureContext;
   investment: InvestmentContext;
-  projectRecommendation?: DevelopmentProjectRecommendation;
+  context?: DevelopmentContext;
+
+  evidence: DevelopmentRequestEvidence[];
   evidenceChain?: EvidenceItem[];
+  projectRecommendation?: DevelopmentProjectRecommendation;
   statusHistory?: StateTransitionRecord[];
 }
 

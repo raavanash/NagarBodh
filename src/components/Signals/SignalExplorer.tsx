@@ -17,6 +17,7 @@ import {
 import { useCivic } from '../../context/CivicContext';
 import { CivicCategory, DetectedLanguage, SignalChannel } from '../../types/civic';
 import { AgentTraceDrawer } from './AgentTraceDrawer';
+import { MultilingualCitizenIngestionPanel } from './MultilingualCitizenIngestionPanel';
 
 export const SignalExplorer: React.FC = () => {
   const {
@@ -31,8 +32,15 @@ export const SignalExplorer: React.FC = () => {
     ingestFileDataset,
     agentTraces,
     selectedTrace,
-    inspectAgentTrace
+    inspectAgentTrace,
+    getBlueskyHealth
   } = useCivic();
+
+  const bskyHealth = getBlueskyHealth?.();
+  const isBskyLive = bskyHealth?.status === 'CONNECTED';
+  const lastEventStr = bskyHealth?.lastEventTimestamp
+    ? new Date(bskyHealth.lastEventTimestamp).toLocaleTimeString()
+    : null;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatusMsg, setImportStatusMsg] = useState<string | null>(null);
@@ -112,6 +120,26 @@ export const SignalExplorer: React.FC = () => {
             }}>
               Mode: {ingestionMode}
             </span>
+
+            {ingestionMode === 'LIVE' && (
+              <span style={{
+                background: isBskyLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                color: isBskyLive ? '#10b981' : '#f87171',
+                border: isBskyLive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                fontSize: '0.74rem',
+                padding: '0.15rem 0.5rem',
+                borderRadius: '999px',
+                fontWeight: 700,
+                fontFamily: 'var(--font-mono)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isBskyLive ? '#10b981' : '#ef4444' }} />
+                {isBskyLive ? 'Bluesky · LIVE' : 'Bluesky · Disconnected'}
+                {lastEventStr && <span style={{ opacity: 0.8, fontSize: '0.65rem' }}>({lastEventStr})</span>}
+              </span>
+            )}
           </div>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
             Provider-independent ingestion pipeline. Normalizes citizen apps, X/social streams, 155304 / 112 helpline portals, and offline CSV/JSON datasets.
@@ -192,11 +220,97 @@ export const SignalExplorer: React.FC = () => {
         </div>
       </div>
 
+      {/* Multilingual Citizen Ingestion Gateway Component */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <MultilingualCitizenIngestionPanel onIngestRequest={(req) => addCustomSignal(req.rawText, req.sourceChannel as any)} />
+      </div>
+
       {/* Import Status Alert */}
       {importStatusMsg && (
         <div style={{ padding: '0.65rem 1rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#34d399', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <CheckCircle2 size={16} />
           <span>{importStatusMsg}</span>
+        </div>
+      )}
+
+      {/* Live Diagnostic Telemetry Panel */}
+      {ingestionMode === 'LIVE' && bskyHealth && (
+        <div
+          style={{
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '10px',
+            padding: '0.85rem 1.1rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isBskyLive ? '#10b981' : '#ef4444' }} />
+              <strong style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                BLUESKY JETSTREAM FIREHOSE • {isBskyLive ? 'CONNECTED' : 'DISCONNECTED'}
+              </strong>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+              {isBskyLive && (bskyHealth.telemetry?.civicCandidates || 0) === 0 ? (
+                <span>CONNECTED • No civic signals detected yet</span>
+              ) : (
+                <span>
+                  WS Events: <strong>{bskyHealth.telemetry?.websocketEventsReceived || 0}</strong> • Posts: <strong>{bskyHealth.telemetry?.createPostEvents || 0}</strong> • Candidates: <strong>{bskyHealth.telemetry?.civicCandidates || 0}</strong> • Accepted: <strong style={{ color: '#34d399' }}>{bskyHealth.telemetry?.normalizedAccepted || 0}</strong>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              Last Signal: <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{bskyHealth.lastAcceptedSignalAt || 'None'}</span>
+            </div>
+
+            {/* Development-Only Test Fixture Action */}
+            <button
+              onClick={() => {
+                const bskyProvider = (window as any).__NAGARBODH_BSKY_PROVIDER__ || (useCivic as any);
+                const devFixture = JSON.stringify({
+                  kind: 'commit',
+                  did: `did:plc:devtest${Date.now().toString().slice(-4)}`,
+                  commit: {
+                    operation: 'create',
+                    collection: 'app.bsky.feed.post',
+                    rkey: `test-rkey-${Date.now()}`,
+                    record: {
+                      $type: 'app.bsky.feed.post',
+                      text: 'Delhi Karol Bagh road completely flooded after heavy rain. Drain overflow near metro station!',
+                      createdAt: new Date().toISOString()
+                    }
+                  }
+                });
+                const testEvent = new CustomEvent('nagarbodh:test-jetstream', { detail: devFixture });
+                window.dispatchEvent(testEvent);
+                setImportStatusMsg('TEST ONLY: Injecting realistic Jetstream event fixture through production pipeline...');
+                setTimeout(() => setImportStatusMsg(null), 4000);
+              }}
+              style={{
+                background: 'rgba(6, 182, 212, 0.15)',
+                color: 'var(--cyan-400)',
+                border: '1px solid rgba(6, 182, 212, 0.4)',
+                borderRadius: '6px',
+                padding: '0.35rem 0.7rem',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)'
+              }}
+              title="DEV ONLY: Run realistic Jetstream JSON event fixture through exact production pipeline"
+            >
+              ⚡ Test Jetstream Fixture (Dev)
+            </button>
+          </div>
         </div>
       )}
 

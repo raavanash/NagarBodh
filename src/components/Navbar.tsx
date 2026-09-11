@@ -93,7 +93,7 @@ export const Navbar: React.FC = () => {
                 gap: '0.3rem',
                 transition: 'all 0.2s ease'
               }}
-              title="Fetch real OpenWeather & Bluesky API search (api.bsky.app)"
+              title="Live ingestion via OpenWeather and Bluesky Jetstream WebSocket"
             >
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ingestionMode === 'LIVE' ? '#10b981' : '#94a3b8' }} />
               LIVE

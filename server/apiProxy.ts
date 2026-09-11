@@ -170,18 +170,19 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
     return true;
   }
 
-  // 2. Bluesky Social Route: https://api.bsky.app/xrpc/app.bsky.feed.searchPosts
+  // 2. Bluesky Social Route: https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts
   if (pathname === '/api/social/bluesky') {
     const query = reqUrl.searchParams.get('query') || reqUrl.searchParams.get('q') || 'waterlogging Delhi';
     const limit = reqUrl.searchParams.get('limit') || '25';
     const sort = reqUrl.searchParams.get('sort') || 'latest';
+    const bskyEndpoint = 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts';
 
     res.setHeader('Content-Type', 'application/json');
 
     console.log(`[Bluesky] Query: "${query}" (sort=${sort}, limit=${limit})`);
 
     try {
-      const bskyUrl = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&sort=${encodeURIComponent(sort)}&limit=${encodeURIComponent(limit)}`;
+      const bskyUrl = `${bskyEndpoint}?q=${encodeURIComponent(query)}&sort=${encodeURIComponent(sort)}&limit=${encodeURIComponent(limit)}`;
       const bskyRes = await fetchUrl(bskyUrl, {
         headers: {
           'User-Agent': 'NagarBodh-CivicSignals/1.0',
@@ -192,13 +193,20 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       console.log(`[Bluesky] HTTP status: ${bskyRes.status}`);
 
       if (!bskyRes.ok) {
-        console.warn(`[Bluesky] API error HTTP ${bskyRes.status}:`, bskyRes.data);
+        const errorDetail = typeof bskyRes.data === 'object' && bskyRes.data?.message
+          ? bskyRes.data.message
+          : (bskyRes.statusText || 'Search posts failed');
+        console.warn(`[Bluesky] Upstream returned HTTP ${bskyRes.status} from ${bskyEndpoint}`);
+
         res.statusCode = 200;
         res.end(JSON.stringify({
           ok: false,
-          fallback: true,
+          fallback: false,
+          provider: 'bluesky',
           status: bskyRes.status,
-          error: `Bluesky API returned HTTP ${bskyRes.status}: ${bskyRes.data?.message || bskyRes.data?.error || bskyRes.statusText || 'Search posts failed'}`
+          errorCode: bskyRes.status === 403 ? 'UPSTREAM_FORBIDDEN' : 'UPSTREAM_ERROR',
+          message: `Bluesky API returned HTTP ${bskyRes.status}: ${errorDetail}`,
+          endpoint: bskyEndpoint
         }));
         return true;
       }
@@ -211,16 +219,21 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
         ok: true,
         data: posts,
         query,
-        count: posts.length
+        count: posts.length,
+        endpoint: bskyEndpoint
       }));
       return true;
     } catch (err: any) {
-      console.error(`[Bluesky] Network/request exception:`, err);
+      console.error(`[Bluesky] Network/request exception: ${err.message}`);
       res.statusCode = 200;
       res.end(JSON.stringify({
         ok: false,
-        fallback: true,
-        error: `Bluesky API network request failed: ${err.message}`
+        fallback: false,
+        provider: 'bluesky',
+        status: 502,
+        errorCode: 'UPSTREAM_NETWORK_ERROR',
+        message: `Bluesky API network request failed: ${err.message}`,
+        endpoint: bskyEndpoint
       }));
       return true;
     }
