@@ -31,25 +31,29 @@ describe('Development Impact Measurement Engine', () => {
       mode: 'REPLAY'
     });
 
-    // Before metrics
-    expect(impact.baselineMetrics.infrastructureIndex).toBe(38);
-    expect(impact.baselineMetrics.averageTravelDistanceKm).toBe(28);
-    expect(impact.baselineMetrics.demandScore).toBe(91);
+    // BEFORE METRICS
+    expect(impact.baselineMetrics.demandScore).toBe(91); // Demand pressure
+    expect(impact.baselineMetrics.infrastructureIndex).toBe(38); // Infrastructure index
+    expect(impact.baselineMetrics.serviceAccessScore).toBe(35); // Service access
+    expect(impact.baselineMetrics.affectedPopulation).toBe(148000); // Affected population
 
-    // After metrics
-    expect(impact.postInterventionMetrics.infrastructureIndex).toBe(67);
-    expect(impact.postInterventionMetrics.averageTravelDistanceKm).toBe(14);
-    expect(impact.postInterventionMetrics.demandScore).toBe(54);
+    // PROJECT INTERVENTION METRICS
+    expect(impact.projectId).toBe('proj-health-001');
 
-    // Change percentages and score
-    expect(impact.change.infrastructureIndexImprovement).toBe(29); // +29
-    expect(impact.change.averageTravelDistanceReductionPercent).toBe(-50); // -50%
-    expect(impact.change.demandPressureReductionPercent).toBe(-37); // -37%
+    // AFTER METRICS
+    expect(impact.postInterventionMetrics.demandScore).toBe(54); // Demand pressure
+    expect(impact.postInterventionMetrics.infrastructureIndex).toBe(67); // Infrastructure index
+    expect(impact.postInterventionMetrics.serviceAccessScore).toBe(67); // Service access
+
+    // MEASURED IMPACT
+    expect(impact.change.infrastructureIndexImprovement).toBe(29); // +29 pts improvement
+    expect(impact.change.demandPressureReductionPercent).toBe(-37); // -37 pts reduction
+    expect(impact.change.serviceAccessImprovement).toBe(32); // +32 pts improvement
     expect(impact.impactScore).toBeGreaterThan(0);
     expect(impact.mode).toBe('REPLAY');
   });
 
-  it('formats Gemini AI summary bounded strictly by deterministic numbers', () => {
+  it('formats Gemini AI narrative summary bounded strictly by deterministic numbers', () => {
     const impact = calculateDevelopmentImpact({
       project: sampleProject,
       mode: 'SIMULATION'
@@ -58,6 +62,23 @@ describe('Development Impact Measurement Engine', () => {
     expect(impact.aiSummary).toContain('The intervention appears to have reduced the identified healthcare access gap');
     expect(impact.aiSummary).toContain('+29');
     expect(impact.aiSummary).toContain('50%');
+    // Ensure numerical metrics are deterministic and not fabricated by AI
+    expect(typeof impact.change.infrastructureIndexImprovement).toBe('number');
+    expect(typeof impact.change.demandPressureReductionPercent).toBe('number');
+  });
+
+  it('enforces data honesty with explicit mode metadata (SIMULATION / REPLAY)', () => {
+    const simImpact = calculateDevelopmentImpact({
+      project: sampleProject,
+      mode: 'SIMULATION'
+    });
+    expect(simImpact.mode).toBe('SIMULATION');
+
+    const replayImpact = calculateDevelopmentImpact({
+      project: sampleProject,
+      mode: 'REPLAY'
+    });
+    expect(replayImpact.mode).toBe('REPLAY');
   });
 
   it('attaches evidence provenance metadata', () => {
@@ -71,3 +92,4 @@ describe('Development Impact Measurement Engine', () => {
     expect(impact.evidence[1].classification).toBe('CALCULATED');
   });
 });
+
