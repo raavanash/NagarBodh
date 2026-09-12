@@ -166,13 +166,13 @@ export class DevelopmentRequestNormalizer {
     const timestamp = payload.timestamp || payload.createdAt || new Date().toISOString();
 
     return {
-      id: payload.id && payload.id.startsWith('dev-req-')
+      id: payload.id
         ? payload.id
         : `dev-req-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       rawText,
       language,
       sourceChannel,
-      source: sourceProviderId,
+      source: payload.source || sourceProviderId || 'X',
       mode,
       timestamp,
       location,

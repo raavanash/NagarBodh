@@ -16,6 +16,7 @@ import { VoiceProvider } from '../../engine/ingestion/providers/VoiceProvider';
 import { MessagingReplayProvider } from '../../engine/ingestion/providers/MessagingReplayProvider';
 import { SocialProvider } from '../../engine/ingestion/providers/SocialProvider';
 import { ReplayProvider } from '../../engine/ingestion/providers/ReplayProvider';
+import { DuplicateDetector } from '../../engine/ingestion/DuplicateDetector';
 
 interface MultilingualCitizenIngestionPanelProps {
   onIngestRequest?: (request: DevelopmentRequest) => void;
@@ -31,46 +32,52 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastExtractedRequest, setLastExtractedRequest] = useState<DevelopmentRequest | null>(null);
 
-  // Voice state
-  const [isRecording, setIsRecording] = useState(false);
+  // Fixture selection states
   const [selectedVoiceFixtureIdx, setSelectedVoiceFixtureIdx] = useState<number>(0);
-
-  // Messaging state
   const [selectedMsgFixtureIdx, setSelectedMsgFixtureIdx] = useState<number>(0);
+  const [selectedSocialFixtureIdx, setSelectedSocialFixtureIdx] = useState<number>(0);
+  const [dedupStatus, setDedupStatus] = useState<{ isDuplicate: boolean; reason?: string } | null>(null);
 
   // Sample Language Quick Buttons
   const sampleLanguageTexts = [
     {
       label: 'Hindi',
-      text: 'हमारे गांव में अस्पताल बहुत दूर है, आपातकालीन स्थिति में समस्या होती है।',
+      text: 'हमारे गांव में अस्पताल बहुत दूर है।',
       lang: 'hi'
     },
     {
       label: 'English',
-      text: 'Nearest hospital is 25 km away, need emergency ambulance facility.',
+      text: 'Nearest hospital is 25 km away.',
       lang: 'en'
     },
     {
       label: 'Hinglish',
-      text: 'Yahan drinking water ka proper arrangement nahi hai, paani ki pipeline leak ho rahi hai.',
+      text: 'Yahan ambulance bahut late aati hai.',
       lang: 'hinglish'
     }
   ];
 
-  // Instantiated providers
+  // Instantiated providers & detector
   const textProvider = new TextProvider('LIVE');
   const voiceProvider = new VoiceProvider('LIVE');
   const messagingProvider = new MessagingReplayProvider();
-  const socialProvider = new SocialProvider('LIVE');
+  const socialProvider = new SocialProvider('REPLAY');
   const replayProvider = new ReplayProvider();
+  const [detector] = useState(() => new DuplicateDetector());
 
   const handleIngestText = async (textToProcess: string) => {
     if (!textToProcess.trim()) return;
     setIsProcessing(true);
 
     const devReq = await textProvider.ingestRequest(textToProcess);
+    const check = detector.isDuplicate(devReq);
+    setDedupStatus(check);
+
+    if (!check.isDuplicate) {
+      detector.register(devReq);
+      onIngestRequest?.(devReq);
+    }
     setLastExtractedRequest(devReq);
-    onIngestRequest?.(devReq);
 
     setIsProcessing(false);
   };
@@ -87,8 +94,14 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
       isReplayFixture: true
     });
 
+    const check = detector.isDuplicate(devReq);
+    setDedupStatus(check);
+
+    if (!check.isDuplicate) {
+      detector.register(devReq);
+      onIngestRequest?.(devReq);
+    }
     setLastExtractedRequest(devReq);
-    onIngestRequest?.(devReq);
     setIsProcessing(false);
   };
 
@@ -104,23 +117,41 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
       isReplayFixture: true
     });
 
+    const check = detector.isDuplicate(devReq);
+    setDedupStatus(check);
+
+    if (!check.isDuplicate) {
+      detector.register(devReq);
+      onIngestRequest?.(devReq);
+    }
     setLastExtractedRequest(devReq);
-    onIngestRequest?.(devReq);
     setIsProcessing(false);
   };
 
-  const handleIngestSocialFixture = async () => {
+  const handleIngestSocialFixture = async (idx: number) => {
     setIsProcessing(true);
+    setSelectedSocialFixtureIdx(idx);
 
+    const fixture = SocialProvider.SAMPLE_X_FIXTURES[idx] || SocialProvider.SAMPLE_X_FIXTURES[0];
     const devReq = await socialProvider.ingestRequest({
-      id: `social-live-${Date.now()}`,
-      rawText: 'Waterlogging flooded major road underpass near Karol Bagh Metro station.',
+      id: fixture.id,
+      rawText: fixture.rawText,
       sourceChannel: 'SOCIAL',
-      locationName: 'Karol Bagh Metro'
+      authorHandle: fixture.authorHandle,
+      locationName: fixture.locationName,
+      lat: fixture.lat,
+      lng: fixture.lng,
+      category: fixture.category
     });
 
+    const check = detector.isDuplicate(devReq);
+    setDedupStatus(check);
+
+    if (!check.isDuplicate) {
+      detector.register(devReq);
+      onIngestRequest?.(devReq);
+    }
     setLastExtractedRequest(devReq);
-    onIngestRequest?.(devReq);
     setIsProcessing(false);
   };
 
@@ -130,7 +161,13 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
     const list = await replayProvider.fetchBatchRequests();
     if (list.length > 0) {
       setLastExtractedRequest(list[0]);
-      list.forEach(r => onIngestRequest?.(r));
+      list.forEach(r => {
+        const check = detector.isDuplicate(r);
+        if (!check.isDuplicate) {
+          detector.register(r);
+          onIngestRequest?.(r);
+        }
+      });
     }
 
     setIsProcessing(false);
@@ -234,7 +271,7 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
             }}
           >
             <Radio size={13} />
-            <span>Replay/Social</span>
+            <span>Social / X</span>
           </button>
         </div>
       </div>
@@ -251,7 +288,6 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
             </span>
           </div>
 
-          {/* Sample Voice Fixtures Buttons */}
           <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
             Select Realistic Voice Sample:
           </div>
@@ -296,7 +332,6 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
             </span>
           </div>
 
-          {/* Quick-fill Multilingual Sample Buttons */}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {sampleLanguageTexts.map((sample, idx) => (
               <button
@@ -321,11 +356,10 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
             ))}
           </div>
 
-          {/* Free Text Input Form */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <textarea
               rows={2}
-              placeholder="e.g. 'আমাদের বা আমাদের এলাকায়...', 'हमारे गांव में अस्पताल बहुत दूर है', 'Yahan drinking water ka proper arrangement nahi hai'..."
+              placeholder="e.g. 'हमारे गांव में अस्पताल बहुत दूर है', 'School is there but no teachers', 'Yahan ambulance bahut late aati hai'..."
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               style={{
@@ -368,14 +402,13 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399' }}>
-              MESSAGING — REPLAY (WHATSAPP SIMULATION)
+              MESSAGING — REPLAY
             </span>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
               Simulated Citizen Messaging Chat Panel
             </span>
           </div>
 
-          {/* WhatsApp-Style Chat Panel */}
           <div style={{ background: '#0b141a', border: '1px solid #202c33', borderRadius: '10px', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {MessagingReplayProvider.SAMPLE_MESSAGING_FIXTURES.map((fixture, idx) => (
               <div
@@ -408,95 +441,97 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
         </div>
       )}
 
-      {/* TAB CONTENT 4: REPLAY / SOCIAL */}
+      {/* TAB CONTENT 4: SOCIAL / X */}
       {activeTab === 'social' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' }}>
-              SOCIAL / REPLAY — FIREHOSE STREAM
+              X — REPLAY
+            </span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              Public Social Media Channel (Source Honesty: Replay Mode Active)
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button
-              onClick={handleIngestSocialFixture}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                borderRadius: '8px',
-                background: 'var(--bg-canvas)',
-                border: '1px solid var(--cyan-400)',
-                color: 'var(--cyan-400)',
-                fontWeight: 700,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem'
-              }}
-            >
-              <Radio size={15} />
-              <span>Simulate Live Bluesky Post</span>
-            </button>
+          <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+            Select Social / X Post Sample:
+          </div>
 
-            <button
-              onClick={handleIngestReplayBatch}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                borderRadius: '8px',
-                background: 'var(--bg-canvas)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-primary)',
-                fontWeight: 700,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem'
-              }}
-            >
-              <Sparkles size={15} color="var(--amber-400)" />
-              <span>Run Full Replay Dataset</span>
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {SocialProvider.SAMPLE_X_FIXTURES.map((fixture, idx) => (
+              <div
+                key={fixture.id}
+                onClick={() => handleIngestSocialFixture(idx)}
+                style={{
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  background: selectedSocialFixtureIdx === idx ? 'var(--civic-blue-50)' : 'var(--bg-canvas)',
+                  border: selectedSocialFixtureIdx === idx ? '1.5px solid var(--purple-400)' : '1px solid var(--border-subtle)',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.3rem'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--purple-400)', fontWeight: 700 }}>
+                  <span>SOURCE: X / REPLAY ({fixture.authorHandle})</span>
+                  <span>LANG: {fixture.language.toUpperCase()}</span>
+                </div>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                  "{fixture.rawText}"
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                  <span>Location: {fixture.locationName}</span>
+                  <span style={{ color: 'var(--cyan-400)', fontWeight: 700 }}>INGEST SOCIAL SIGNAL →</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* VISIBLE GEMINI AI EXTRACTION CARD */}
+      {/* VISIBLE GEMINI AI EXTRACTION & DEDUPLICATION EVIDENCE CARD */}
       {lastExtractedRequest && (
         <div style={{ marginTop: '1rem', padding: '0.85rem', borderRadius: '8px', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.74rem', fontWeight: 800, color: 'var(--cyan-400)', textTransform: 'uppercase' }}>
               <Sparkles size={14} />
-              Gemini AI Structured Request Extraction Output
+              Gemini AI Evidence & Structured Request Interpretation
             </div>
-            <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-              REQ #{lastExtractedRequest.id}
-            </span>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' }}>
+                SOURCE: {lastExtractedRequest.source} / {lastExtractedRequest.mode}
+              </span>
+              <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                ID #{lastExtractedRequest.id}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.74rem', marginBottom: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-surface)', padding: '0.5rem', borderRadius: '6px' }}>
+            <strong>Citizen Signal:</strong> "{lastExtractedRequest.rawText}"
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.6rem', fontSize: '0.74rem' }}>
             <div style={{ background: 'var(--bg-surface)', padding: '0.5rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>LANGUAGE DETECTED:</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>AI INTERPRETATION:</span>
               <div style={{ fontWeight: 800, color: 'var(--cyan-400)' }}>
-                {lastExtractedRequest.language.toUpperCase()}
+                {lastExtractedRequest.category} Access Concern
               </div>
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '0.5rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>CATEGORY CLASSIFIED:</span>
-              <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
-                {lastExtractedRequest.category}
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>CONFIDENCE:</span>
+              <div style={{ fontWeight: 800, color: '#34d399' }}>
+                {(lastExtractedRequest.confidence * 100).toFixed(0)}%
               </div>
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '0.5rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>DEMAND INTENSITY:</span>
-              <div style={{ fontWeight: 800, color: lastExtractedRequest.demandIntensity >= 0.8 ? '#f87171' : 'var(--amber-400)' }}>
-                {(lastExtractedRequest.demandIntensity * 100).toFixed(0)}% ({lastExtractedRequest.urgency?.toUpperCase()})
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}>DEDUPLICATION STATUS:</span>
+              <div style={{ fontWeight: 800, color: dedupStatus?.isDuplicate ? '#f87171' : 'var(--emerald-400)' }}>
+                {dedupStatus?.isDuplicate ? 'DUPLICATE REPOST SUPPRESSED' : 'UNIQUE SIGNAL (1st report)'}
               </div>
             </div>
 
@@ -513,3 +548,4 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
     </div>
   );
 };
+;

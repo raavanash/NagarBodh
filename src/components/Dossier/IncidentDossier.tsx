@@ -19,6 +19,7 @@ import { ClusteredIncident } from '../../types/civic';
 import { IncidentLifecycleStepper } from '../Planner/IncidentLifecycleStepper';
 import { ResolutionVerificationPanel } from '../Verification/ResolutionVerificationPanel';
 import { ExpandableEvidenceUI, ObservedFact } from '../Evidence/ExpandableEvidenceUI';
+import { DevelopmentContextPanel } from './DevelopmentContextPanel';
 
 interface Props {
   incident?: ClusteredIncident | null;
@@ -167,56 +168,13 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
       {/* Main Panel Content */}
       <div style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
 
-        {/* Development Context & Deficit Summary Cards */}
-        <div style={{
-          marginBottom: '1.25rem',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-          gap: '0.5rem'
-        }}>
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Citizen Demand</span>
-            <strong style={{ fontSize: '1rem', color: '#2563eb', fontFamily: 'var(--font-mono)' }}>{incident.signalIds.length} Signals</strong>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', display: 'block' }}>↑{incident.velocitySurgePercent}% / hr</span>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Development Need</span>
-            <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)', display: 'block', textTransform: 'uppercase' }}>{incident.category}</strong>
-            <span style={{ fontSize: '0.62rem', color: badgeColor, fontWeight: 700 }}>P{isP1 ? '1' : isP2 ? '2' : '3'} Priority</span>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Affected Pop.</span>
-            <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-              {((incident as any).affectedPopulation || (incident as any).demographics?.population || 148000).toLocaleString()}
-            </strong>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', display: 'block' }}>Residents</span>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Infra. Index</span>
-            <strong style={{ fontSize: '0.95rem', color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
-              {(incident as any).infrastructure?.waterIndex || (incident as any).infrastructure?.infrastructureDeficitIndex || 38}/100
-            </strong>
-            <span style={{ fontSize: '0.62rem', color: '#dc2626', fontWeight: 700, display: 'block' }}>Capacity Deficit</span>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Investment Gap</span>
-            <strong style={{ fontSize: '0.95rem', color: '#b45309', fontFamily: 'var(--font-mono)' }}>
-              ₹{(incident as any).investment?.investmentGapLakhs || 350} L
-            </strong>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', display: 'block' }}>Unfunded Deficit</span>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Development Gap</span>
-            <strong style={{ fontSize: '0.95rem', color: '#7c3aed', fontFamily: 'var(--font-mono)' }}>
-              {(incident as any).developmentGap?.overallGapIndex || score}/100
-            </strong>
-            <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', display: 'block' }}>Composite Gap</span>
-          </div>
+        {/* Full 5-Pillar Context & Factor Contribution Panel */}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <DevelopmentContextPanel
+            incident={incident}
+            currentWeather={currentWeather}
+            ingestionMode={ingestionMode}
+          />
         </div>
 
         {/* 5. WHY THIS MATTERS: Explainable Priority Factors */}

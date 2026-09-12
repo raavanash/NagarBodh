@@ -35,7 +35,7 @@ export const ResponsePlannerView: React.FC = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editDept, setEditDept] = useState('');
   const [editCost, setEditCost] = useState<number>(350);
-  const [editIntervention, setEditIntervention] = useState('');
+  const [_editIntervention, setEditIntervention] = useState('');
   const [newActionText, setNewActionText] = useState('');
 
   const activeIncidents = incidents;

@@ -26,7 +26,7 @@ describe('DevelopmentRequestNormalizer (Multilingual & Multi-Channel)', () => {
 
   it('normalizes Devanagari Hindi voice transcript', () => {
     const rawPayload = {
-      text: 'हमारे वार्ड में प्राथमिक स्कूल का भवन बहुत पुराना और जर्जर है, नए स्कूल की तुरंत आवश्यकता है।',
+      text: 'हमारे गांव में अस्पताल बहुत दूर है।',
       sourceChannel: 'voice_call',
       authorHandle: '@HindiCaller',
       timestamp: '2026-09-10T10:15:00.000Z'
@@ -36,9 +36,41 @@ describe('DevelopmentRequestNormalizer (Multilingual & Multi-Channel)', () => {
 
     expect(req.language).toBe('hi');
     expect(req.sourceChannel).toBe('VOICE');
-    expect(req.category).toBe('EDUCATION');
-    expect(req.rawText).toContain('प्राथमिक स्कूल');
+    expect(req.category).toBe('HEALTHCARE');
+    expect(req.rawText).toBe('हमारे गांव में अस्पताल बहुत दूर है।');
     expect(req.evidence.some(e => e.classification === 'OBSERVED')).toBe(true);
+  });
+
+  it('normalizes English healthcare request', () => {
+    const rawPayload = {
+      text: 'Nearest hospital is 25 km away.',
+      sourceChannel: 'citizen_app',
+      authorHandle: '@EnglishCitizen',
+      timestamp: '2026-09-10T10:20:00.000Z'
+    };
+
+    const req = DevelopmentRequestNormalizer.normalizeToDevelopmentRequest(rawPayload, 'provider-citizen-direct', 'LIVE');
+
+    expect(req.language).toBe('en');
+    expect(req.sourceChannel).toBe('TEXT');
+    expect(req.category).toBe('HEALTHCARE');
+    expect(req.rawText).toBe('Nearest hospital is 25 km away.');
+  });
+
+  it('normalizes Hinglish code-mixed request', () => {
+    const rawPayload = {
+      text: 'Yahan ambulance bahut late aati hai.',
+      sourceChannel: 'whatsapp_msg',
+      authorHandle: '@HinglishUser',
+      timestamp: '2026-09-10T10:25:00.000Z'
+    };
+
+    const req = DevelopmentRequestNormalizer.normalizeToDevelopmentRequest(rawPayload, 'provider-whatsapp', 'LIVE');
+
+    expect(req.language).toBe('hinglish');
+    expect(req.sourceChannel).toBe('MESSAGING');
+    expect(req.category).toBe('HEALTHCARE');
+    expect(req.rawText).toBe('Yahan ambulance bahut late aati hai.');
   });
 
   it('normalizes Hinglish code-mixed social media post', () => {

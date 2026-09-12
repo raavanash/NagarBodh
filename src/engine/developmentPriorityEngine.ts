@@ -90,11 +90,28 @@ export function calculateDevelopmentPriority(
   // 1. Component Scores (all normalized to 0 - 100)
   const demandScore = calculateDemandScore(demandInput);
 
-  // Infrastructure Deficit (0 - 100)
+  // Infrastructure Deficit (0 - 100, Category-Aware)
   const nearestDist = infrastructure.nearestFacilityDistanceMeters ?? 1000;
   const capUtil = infrastructure.capacityUtilizationPercent ?? 75;
-  const infraDeficitRaw = infrastructure.infrastructureDeficitIndex ??
-    Math.min(100, Math.round((nearestDist / 50) + Math.max(0, capUtil - 50)));
+  const catUpper = (category || 'OTHER').toString().toUpperCase();
+
+  let categorySpecificDeficit: number | undefined;
+  if (catUpper === 'HEALTHCARE' && infrastructure.healthcareIndex !== undefined) {
+    categorySpecificDeficit = 100 - infrastructure.healthcareIndex;
+  } else if (catUpper === 'EDUCATION' && infrastructure.educationIndex !== undefined) {
+    categorySpecificDeficit = 100 - infrastructure.educationIndex;
+  } else if ((catUpper === 'WATER' || catUpper === 'WATERLOGGING' || catUpper === 'DRAINAGE') && infrastructure.waterIndex !== undefined) {
+    categorySpecificDeficit = 100 - infrastructure.waterIndex;
+  } else if ((catUpper === 'TRANSPORT' || catUpper === 'ROADS' || catUpper === 'TRAFFIC') && infrastructure.transportIndex !== undefined) {
+    categorySpecificDeficit = 100 - infrastructure.transportIndex;
+  }
+
+  const defaultCalculated = Math.min(100, Math.round((nearestDist / 50) + Math.max(0, capUtil - 50)));
+  const specifiedDeficit = Math.max(
+    categorySpecificDeficit ?? 0,
+    infrastructure.infrastructureDeficitIndex ?? 0
+  );
+  const infraDeficitRaw = specifiedDeficit > 0 ? specifiedDeficit : defaultCalculated;
   const infrastructureGap = Math.min(100, Math.max(0, Math.round(infraDeficitRaw)));
 
   // Population Impact (0 - 100)
