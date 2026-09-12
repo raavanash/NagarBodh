@@ -37,16 +37,27 @@ export type DevelopmentRequestChannel =
   | 'GOVERNMENT_PORTAL'
   | 'REPLAY';
 
+import type { CanonicalLocation, ResolutionStatus } from './location';
+
 export type DevelopmentRequestMode = 'LIVE' | 'REPLAY' | 'SIMULATION';
 
 export interface DevelopmentRequestLocation {
+  locationId?: string;
   country: string;
   state: string;
   district: string;
   subDistrict?: string;
+  block?: string;
+  village?: string;
+  ward?: string;
+  pincode?: string;
   latitude?: number | null;
   longitude?: number | null;
+  geohash?: string;
   locationName?: string;
+  locationConfidence?: number;
+  resolutionStatus?: ResolutionStatus;
+  canonicalLocation?: CanonicalLocation;
 }
 
 export interface DevelopmentRequestEvidence {
@@ -292,6 +303,8 @@ export interface DevelopmentSignal extends CivicSignal {
 
 export interface DevelopmentDemandHotspot {
   id: string;
+  locationId?: string;
+  canonicalLocation?: CanonicalLocation;
   title: string;
   category: CanonicalDevelopmentCategory | DevelopmentCategory | string;
   legacyCategory?: CivicCategory;
@@ -345,3 +358,34 @@ export interface DevelopmentImpactVerification {
   outcome: 'IMPACT_VERIFIED' | 'NEEDS_POLICY_REASSESSMENT';
   aiConclusion: string;
 }
+
+export interface DevelopmentImpactMetrics {
+  demandScore: number;
+  infrastructureIndex: number;
+  averageTravelDistanceKm?: number;
+  serviceAccessScore: number;
+  affectedPopulation: number;
+}
+
+export interface DevelopmentImpact {
+  id: string;
+  projectId: string;
+  category: CanonicalDevelopmentCategory | DevelopmentCategory | string;
+  baselineMetrics: DevelopmentImpactMetrics;
+  postInterventionMetrics: DevelopmentImpactMetrics;
+  change: {
+    infrastructureIndexImprovement: number; // e.g. +29
+    averageTravelDistanceReductionPercent: number; // e.g. -50%
+    demandPressureReductionPercent: number; // e.g. -37%
+    serviceAccessImprovement: number; // e.g. +30
+  };
+  impactScore: number; // 0 - 100
+  measurementDate: string;
+  source: string;
+  mode: 'LIVE' | 'REPLAY' | 'SIMULATION';
+  evidence: DevelopmentRequestEvidence[];
+  aiSummary: string;
+}
+
+export type DevelopmentHotspot = DevelopmentDemandHotspot;
+

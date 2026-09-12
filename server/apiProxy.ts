@@ -47,10 +47,12 @@ console.log('[ NAGARBODH SERVER ] OPENWEATHER_API_KEY configured:', Boolean(proc
 console.log('[ NAGARBODH SERVER ] X_BEARER_TOKEN configured:', Boolean(process.env.X_BEARER_TOKEN || process.env.VITE_X_BEARER_TOKEN));
 console.log('[ NAGARBODH SERVER ] GEMINI_API_KEY configured:', Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY));
 
-function fetchUrl(url: string, options: { method?: string; headers?: Record<string, string>; body?: any } = {}): Promise<FetchResult> {
+function fetchUrl(url: string, options: { method?: string; headers?: Record<string, string>; body?: any; timeoutMs?: number } = {}): Promise<FetchResult> {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const transport = parsedUrl.protocol === 'https:' ? https : http;
+    const timeoutMs = options.timeoutMs || 5000;
+
     const reqOptions = {
       hostname: parsedUrl.hostname,
       port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
@@ -59,10 +61,13 @@ function fetchUrl(url: string, options: { method?: string; headers?: Record<stri
       headers: options.headers || {}
     };
 
+    let isDone = false;
     const req = transport.request(reqOptions, (res) => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
+        if (isDone) return;
+        isDone = true;
         let parsed: any;
         try {
           parsed = JSON.parse(data);
@@ -78,7 +83,20 @@ function fetchUrl(url: string, options: { method?: string; headers?: Record<stri
       });
     });
 
-    req.on('error', err => reject(err));
+    const timer = setTimeout(() => {
+      if (isDone) return;
+      isDone = true;
+      req.destroy();
+      reject(new Error(`Request timeout after ${timeoutMs}ms: ${url}`));
+    }, timeoutMs);
+
+    req.on('error', err => {
+      clearTimeout(timer);
+      if (isDone) return;
+      isDone = true;
+      reject(err);
+    });
+
     if (options.body) {
       req.write(typeof options.body === 'string' ? options.body : JSON.stringify(options.body));
     }

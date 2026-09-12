@@ -104,10 +104,10 @@ export const SignalExplorer: React.FC = () => {
       {/* Top Header & Action Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
             <Activity size={20} color="var(--cyan-400)" />
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Multimodal Signal Ingestion & Explorer
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Citizen Signals
             </h2>
             <span style={{
               background: 'rgba(6, 182, 212, 0.15)',
@@ -141,8 +141,8 @@ export const SignalExplorer: React.FC = () => {
               </span>
             )}
           </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Provider-independent ingestion pipeline. Normalizes citizen apps, X/social streams, 155304 / 112 helpline portals, and offline CSV/JSON datasets.
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
+            "What are citizens asking for?"
           </p>
         </div>
 

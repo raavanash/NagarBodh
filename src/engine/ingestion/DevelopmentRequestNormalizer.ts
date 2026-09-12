@@ -7,6 +7,7 @@ import {
   DevelopmentRequestMode,
   DevelopmentUrgency
 } from '../../types/development';
+import { LocationResolver } from '../location/LocationResolver';
 import { RawSignalPayload } from '../../types/ingestion';
 import { parseCivicSignalText } from '../nlpParser';
 
@@ -76,66 +77,31 @@ export class DevelopmentRequestNormalizer {
   }
 
   /**
-   * Parse structured location without fabricating missing coordinates
+   * Parse structured location using LocationResolver without fabricating missing coordinates
    */
   public static normalizeLocation(payload: RawSignalPayload, text: string): DevelopmentRequestLocation {
-    const lowerText = text.toLowerCase();
-
-    // Default geographical container
-    let state = 'Delhi NCR';
-    let district = 'Central Delhi';
-    let subDistrict: string | undefined = payload.ward || undefined;
-    let locationName = payload.locationName || payload.location;
-
-    // Check known NCR / Indian regions
-    if (lowerText.includes('karol bagh') || lowerText.includes('करोल बाग')) {
-      district = 'Central Delhi';
-      subDistrict = 'Ward 14 - Karol Bagh';
-      locationName = locationName || 'Karol Bagh';
-    } else if (lowerText.includes('mayur vihar') || lowerText.includes('मयूर विहार')) {
-      district = 'East Delhi';
-      subDistrict = 'Ward 22 - Mayur Vihar';
-      locationName = locationName || 'Mayur Vihar Phase 1';
-    } else if (lowerText.includes('noida') || lowerText.includes('नोएडा')) {
-      state = 'Uttar Pradesh';
-      district = 'Gautam Buddha Nagar';
-      subDistrict = 'Noida Sector';
-      locationName = locationName || 'Noida';
-    } else if (lowerText.includes('gurgaon') || lowerText.includes('gurugram') || lowerText.includes('गुड़गांव')) {
-      state = 'Haryana';
-      district = 'Gurugram';
-      subDistrict = 'Gurugram Sub-region';
-      locationName = locationName || 'Gurugram';
-    } else if (lowerText.includes('ghaziabad') || lowerText.includes('गाजियाबाद')) {
-      state = 'Uttar Pradesh';
-      district = 'Ghaziabad';
-      subDistrict = 'Ghaziabad Sector';
-      locationName = locationName || 'Ghaziabad';
-    }
-
-    // Latitude / Longitude: Preserve if explicitly provided, else null (Zero Fabrication)
-    let lat: number | null = null;
-    let lng: number | null = null;
-
-    const valLat = payload.lat ?? payload.latitude ?? payload.coordinates?.lat;
-    const valLng = payload.lng ?? payload.longitude ?? payload.coordinates?.lng;
-
-    const rawLat = valLat !== undefined && valLat !== null ? parseFloat(String(valLat)) : NaN;
-    const rawLng = valLng !== undefined && valLng !== null ? parseFloat(String(valLng)) : NaN;
-
-    if (!isNaN(rawLat) && !isNaN(rawLng) && rawLat >= 8.0 && rawLat <= 37.0 && rawLng >= 68.0 && rawLng <= 97.0) {
-      lat = parseFloat(rawLat.toFixed(5));
-      lng = parseFloat(rawLng.toFixed(5));
-    }
+    const canonical = LocationResolver.resolveLocation(text, {
+      lat: payload.lat ?? payload.latitude ?? payload.coordinates?.lat,
+      lng: payload.lng ?? payload.longitude ?? payload.coordinates?.lng,
+      ward: payload.ward,
+      locationName: payload.locationName || payload.location,
+    });
 
     return {
-      country: 'India',
-      state,
-      district,
-      subDistrict,
-      latitude: lat,
-      longitude: lng,
-      locationName: locationName || 'Unspecified Landmark'
+      locationId: canonical.id,
+      country: canonical.country,
+      state: canonical.state,
+      district: canonical.district,
+      subDistrict: canonical.subDistrict,
+      ward: canonical.ward,
+      pincode: canonical.pincode,
+      latitude: canonical.latitude,
+      longitude: canonical.longitude,
+      geohash: canonical.geohash,
+      locationName: canonical.locationName,
+      locationConfidence: canonical.locationConfidence,
+      resolutionStatus: canonical.resolutionStatus,
+      canonicalLocation: canonical,
     };
   }
 

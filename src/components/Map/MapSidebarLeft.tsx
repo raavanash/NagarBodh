@@ -104,15 +104,18 @@ export const MapSidebarLeft: React.FC = () => {
     <aside className="map-sidebar-left">
       {/* Concise Sidebar Header */}
       <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)' }}>
             <Activity size={16} color="#2563eb" />
-            <span>CivicPulse</span>
+            <span>Demand Hotspots</span>
           </div>
           <span style={{ fontSize: '0.7rem', color: '#2563eb', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-            {filteredIncidents.length} Clusters
+            {filteredIncidents.length} Hotspots
           </span>
         </div>
+        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.7rem', color: '#0284c7', fontWeight: 600 }}>
+          "Where is development demand concentrated?"
+        </p>
 
         {/* View Mode Toggle Switcher */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem', marginBottom: '0.6rem', background: 'var(--bg-surface-elevated)', padding: '0.2rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>

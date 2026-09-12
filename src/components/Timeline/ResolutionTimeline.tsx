@@ -34,12 +34,15 @@ export const ResolutionTimeline: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
             <Clock size={20} color="var(--cyan-400)" />
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Incident Resolution Audit Timeline
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Impact
             </h2>
+            <span style={{ fontSize: '0.68rem', fontWeight: 800, background: 'rgba(6, 182, 212, 0.2)', color: 'var(--cyan-400)', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-mono)' }}>
+              DEVELOPMENT IMPACT MEASUREMENT
+            </span>
           </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Immutable chronological audit record tracing civic signals from first report to AI clustering, priority scoring, officer approval, and citizen-verified resolution.
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
+            "Did the intervention reduce the gap?"
           </p>
         </div>
 

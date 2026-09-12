@@ -95,15 +95,15 @@ export const AuthorityDashboard: React.FC = () => {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  India Development Policy Board
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  Policy Board
                 </h2>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, background: 'rgba(6, 182, 212, 0.2)', color: 'var(--cyan-400)', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-mono)' }}>
-                  POLICY INTELLIGENCE
+                  INDIA DEVELOPMENT POLICY BOARD
                 </span>
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Strategic allocation guidance answering: <em>"Where should policymakers focus development investment?"</em>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
+                "Where should national/state policymakers focus?"
               </p>
             </div>
           </div>

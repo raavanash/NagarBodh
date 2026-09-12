@@ -19,6 +19,8 @@ import { AgentTrace } from '../types/agent';
 import { CivicContextDataLayer, civicContextDataLayerInstance } from '../engine/context/CivicContextDataLayer';
 import { ExternalDataPointEnvelope, WeatherData } from '../types/contextDataLayer';
 import { calculateResolutionVerification } from '../engine/resolutionVerificationEngine';
+import { createRepositories, type RepositoryRegistry, type RepositoryStatus } from '../repositories';
+
 
 export interface AuditLogEntry {
   id: string;
@@ -45,7 +47,7 @@ interface CivicContextType {
   incidents: ClusteredIncident[];
   selectedIncident: ClusteredIncident | null;
   selectedIncidentId: string | null;
-  activeTab: 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline';
+  activeTab: 'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline';
   currentStepIndex: number;
   currentStep: SimulationStep;
   currentWeather: SimulationStep['weatherCondition'];
@@ -72,7 +74,7 @@ interface CivicContextType {
   // Setters & Actions
   setMapMode: (mode: 'civic_signals' | 'ai_priority') => void;
   setSelectedIncidentId: (id: string | null) => void;
-  setActiveTab: (tab: 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline') => void;
+  setActiveTab: (tab: 'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline') => void;
   setCategoryFilter: (cat: string) => void;
   setSourceFilter: (source: string) => void;
   setSeverityFilter: (sev: string) => void;
@@ -146,6 +148,10 @@ interface CivicContextType {
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
+
+  // Repositories & Firebase Persistence Status
+  repositories: RepositoryRegistry;
+  persistenceStatus: RepositoryStatus;
 }
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
@@ -157,6 +163,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Active signals accumulated up to current step
   const [signals, setSignals] = useState<CivicSignal[]>(() => [...SIMULATION_STEPS[0].signalsAdded]);
+
+  // Central Repositories instance (Firebase vs In-Memory Fallback)
+  const repositories = useMemo(() => createRepositories({ signals }), [signals]);
+  const persistenceStatus = repositories.status;
 
   // Persistent Action Plans (preserved across clustering recalculations)
   const [actionPlans, setActionPlans] = useState<Record<string, DispatchActionPlan>>({});
@@ -181,7 +191,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Selected incident & active navigation tab
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline'>('live_map');
+  const [activeTab, setActiveTab] = useState<'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline'>('development_map');
 
   // Map Mode & Extended Incident Filters
   const [mapMode, setMapMode] = useState<'civic_signals' | 'ai_priority'>('ai_priority');
@@ -1148,7 +1158,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         getBlueskyHealth: () => ingestionServiceRef.current.getBlueskyHealth(),
         theme,
         setTheme,
-        toggleTheme
+        toggleTheme,
+        repositories,
+        persistenceStatus
       }}
     >
       {children}

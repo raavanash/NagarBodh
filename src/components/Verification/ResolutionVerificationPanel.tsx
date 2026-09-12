@@ -1,243 +1,279 @@
 import React from 'react';
+import {
+  Activity,
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  Clock,
+  Compass,
+  FileCheck,
+  Globe,
+  Layers,
+  MapPin,
+  ShieldAlert,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Users
+} from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
-import { calculateResolutionVerification } from '../../engine/resolutionVerificationEngine';
+import { calculateDevelopmentImpact } from '../../engine/developmentImpactEngine';
+import { generateDevelopmentProjectRecommendation } from '../../engine/developmentRecommendationEngine';
 import { ClusteredIncident } from '../../types/civic';
+import { DevelopmentImpact } from '../../types/development';
 
 interface Props {
   incident?: ClusteredIncident | null;
 }
 
 export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propIncident }) => {
-  const { selectedIncident, signals, aiVerifyIncident, transitionIncidentState, addCustomSignal } = useCivic();
+  const { selectedIncident, signals, addCustomSignal } = useCivic();
 
   const inc = propIncident || selectedIncident;
   if (!inc) return null;
 
-  const verification = inc.resolutionVerification || calculateResolutionVerification(inc, signals);
-  const isVerified = verification.outcome === 'VERIFIED';
+  // Resolve or generate project recommendation and development impact model
+  const project = inc.projectRecommendation || generateDevelopmentProjectRecommendation({
+    hotspotId: inc.id,
+    category: inc.category,
+    geography: {
+      country: 'India',
+      state: 'Delhi NCR',
+      district: inc.ward,
+      subDistrict: inc.ward,
+      wardOrDistrict: inc.ward,
+      locationName: inc.locationName || inc.ward
+    },
+    priorityScoreVal: inc.priority.overallScore,
+    developmentGap: inc.developmentGap || {
+      overallGapIndex: inc.priority.overallScore,
+      demandGapScore: Math.round(inc.priority.overallScore * 0.3),
+      infrastructureDeficitScore: Math.round(inc.priority.overallScore * 0.25),
+      demographicVulnerabilityScore: Math.round(inc.priority.overallScore * 0.2),
+      investmentDeficitScore: Math.round(inc.priority.overallScore * 0.15),
+      environmentalRiskScore: Math.round(inc.priority.overallScore * 0.1),
+      explanationBullets: ['Elevated demand pressure', 'Infrastructure access gap']
+    },
+    demographics: inc.demographics || {
+      population: 148000,
+      populationDensity: 12000,
+      populationGrowth: 2.1,
+      urbanizationRate: 92,
+      vulnerablePopulation: 35000,
+      youthPopulation: 25000,
+      elderlyPopulation: 10000,
+      wardName: inc.ward
+    },
+    infrastructure: inc.infrastructure || {
+      healthcareIndex: 38,
+      educationIndex: 42,
+      waterIndex: 35,
+      sanitationIndex: 38,
+      transportIndex: 42,
+      electricityIndex: 50,
+      digitalConnectivityIndex: 60,
+      nearestFacilityDistanceMeters: 28000
+    },
+    investment: inc.investment || {
+      existingInvestment: 200,
+      plannedInvestment: 500,
+      activeProjects: 2,
+      plannedProjects: 1,
+      investmentByCategory: {},
+      investmentGapLakhs: 300,
+      unaddressedRequestsCount: inc.signalIds?.length || 15
+    },
+    evidence: inc.evidence || [],
+    sourceMode: 'SIMULATION'
+  });
 
-  const handleConfirmVerified = () => {
-    aiVerifyIncident(inc.id, 'Municipal Verification Desk', 'Manually confirmed signal reduction and verified site normalization.');
-  };
-
-  const handleFlagReinspection = () => {
-    transitionIncidentState(inc.id, 'resolving', 'Operations Inspector', 'Flagged post-resolution residual signals for field re-inspection.');
-  };
+  const impact: DevelopmentImpact = calculateDevelopmentImpact({
+    project,
+    hotspot: inc as any,
+    context: (inc as any).context,
+    mode: 'REPLAY'
+  });
 
   const handleSimulatePostSignal = () => {
     addCustomSignal(
-      `[Post-Resolution Check] Traffic moving smoothly at ${inc.ward}. Water completely drained.`,
+      `[Post-Intervention Verification] Citizen feedback confirms new facility operational in ${inc.ward}. Demand pressure reduced.`,
       'citizen_app',
       inc.centroid
     );
   };
 
   return (
-    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl text-slate-100 space-y-5 animate-in fade-in duration-200">
-      {/* Header Banner: Differentiated Paradigm Question */}
-      <div className="p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/80 via-blue-950/80 to-slate-950 border border-cyan-500/40 flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px' }}>
+      
+      {/* Header Banner: Development Impact Measurement Feedback Loop */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem', background: 'rgba(6, 182, 212, 0.1)', padding: '0.85rem', borderRadius: '10px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
         <div>
-          <div className="text-[10px] uppercase font-mono font-bold tracking-wider text-cyan-400">
-            NagarBodh Post-Resolution Paradigm
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--cyan-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            NagarBodh Development Impact Measurement Engine
           </div>
-          <div className="text-sm font-bold text-white mt-0.5 flex flex-wrap items-center gap-2">
-            <span className="line-through text-slate-400 text-xs">Don't finish at "Ticket closed."</span>
-            <span className="text-emerald-400 font-extrabold">Ask: "Did the city actually get better?"</span>
+          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+            Measurable Feedback Loop for Digital Public Infrastructure
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="px-2.5 py-1 bg-cyan-500/20 rounded-lg border border-cyan-400/40 text-cyan-300 text-xs font-mono font-bold">
-            Signal-Based Verification
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+            MEASUREMENT MODE: REPLAY / SIMULATION
           </span>
-          <span
-            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border ${
-              isVerified
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-            }`}
-          >
-            {verification.outcome} • {verification.verificationConfidenceScore}% CONFIDENCE
+          <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.4)' }}>
+            IMPACT SCORE: {impact.impactScore}/100
           </span>
         </div>
       </div>
 
-      {/* Incident Summary */}
-      <div className="flex items-start justify-between border-b border-slate-800 pb-3">
-        <div>
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>{inc.title}</span>
-          </h3>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
-            {inc.ward} • Post-Resolution Active Monitoring Window
-          </p>
-        </div>
-
-        <div className="text-right">
-          <div className="text-xs text-slate-400 font-mono">Time-to-Resolution</div>
-          <div className="text-lg font-bold text-amber-400 font-mono">{verification.timeToResolutionFormatted}</div>
+      {/* Project Title & Target Geography */}
+      <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Building2 size={18} color="var(--cyan-400)" />
+          <span>{project.title}</span>
+        </h3>
+        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '2px' }}>
+          <MapPin size={12} color="var(--cyan-400)" />
+          <span>{project.targetLocation} • Measured Feedback Evaluation Window</span>
         </div>
       </div>
 
-      {/* 8-Step Verification Protocol Execution Stepper */}
-      <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] font-mono space-y-2">
-        <div className="text-slate-400 uppercase text-[10px] font-bold tracking-wider flex items-center justify-between">
-          <span>8-Step Resolution Verification Audit Protocol</span>
-          <span className="text-emerald-400 font-bold">100% Executed</span>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400">
-            ✓ 1. Retained Original Evidence
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400">
-            ✓ 2. Ingested Post-Signals
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400">
-            ✓ 3. Compared Before vs After
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400">
-            ✓ 4. Signal Drop (-{verification.signalReductionPercent}%)
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400">
-            ✓ 5. Recurrence Check (Passed)
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-amber-400">
-            ✓ 6. Resolution Time ({verification.timeToResolutionFormatted})
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-blue-400">
-            ✓ 7. Confidence ({verification.verificationConfidenceScore}%)
-          </div>
-          <div className="p-2 bg-slate-950 rounded border border-slate-800 text-emerald-400 font-bold">
-            ✓ 8. Outcome ({verification.outcome})
-          </div>
-        </div>
-      </div>
-
-      {/* Before vs After Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* BEFORE → PROJECT → AFTER → MEASURED IMPACT PIPELINE GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+        
         {/* BEFORE CARD */}
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-red-900/50 shadow-inner space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase text-red-400 tracking-wider flex items-center gap-1.5">
-              <span>🚨 BEFORE (Peak Incident Baseline)</span>
-            </span>
-            <span className="text-[11px] font-mono text-slate-400">Pre-Resolution Evidence</span>
+        <div style={{ background: 'var(--bg-canvas)', padding: '0.9rem', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#f87171', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <span>🚨 BEFORE (Baseline)</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 font-mono">
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-              <div className="text-[11px] text-slate-400">Signal Volume</div>
-              <div className="text-xl font-bold text-red-400 mt-0.5">{verification.beforeSignalCount} signals</div>
-              <div className="text-[10px] text-slate-500 mt-1">Multi-channel cluster</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
+            <div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Infrastructure Access Index:</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f87171', fontFamily: 'var(--font-mono)' }}>
+                {impact.baselineMetrics.infrastructureIndex} / 100
+              </div>
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-              <div className="text-[11px] text-slate-400">Priority Score</div>
-              <div className="text-xl font-bold text-red-400 mt-0.5">{verification.beforePriorityScore} / 100</div>
-              <div className="text-[10px] text-red-400/80 font-bold mt-1">P1 CRITICAL</div>
+            <div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Average Travel Distance:</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f87171', fontFamily: 'var(--font-mono)' }}>
+                {impact.baselineMetrics.averageTravelDistanceKm} km
+              </div>
+            </div>
+
+            <div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Demand Pressure:</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f87171', fontFamily: 'var(--font-mono)' }}>
+                {impact.baselineMetrics.demandScore} / 100
+              </div>
             </div>
           </div>
         </div>
 
         {/* AFTER CARD */}
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-emerald-900/50 shadow-inner space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase text-emerald-400 tracking-wider flex items-center gap-1.5">
-              <span>✅ AFTER (Post-Resolution Signals)</span>
-            </span>
-            <span className="text-[11px] font-mono text-emerald-400">Active Audit Window</span>
+        <div style={{ background: 'var(--bg-canvas)', padding: '0.9rem', borderRadius: '10px', border: '1px solid rgba(52, 211, 153, 0.4)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#34d399', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <span>✅ AFTER (Post-Intervention)</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 font-mono">
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-              <div className="text-[11px] text-slate-400">Residual Signals</div>
-              <div className="text-xl font-bold text-emerald-400 mt-0.5">{verification.afterSignalCount} residual signals</div>
-              <div className="text-[10px] text-emerald-400/80 mt-1">-{verification.signalReductionPercent}% volume drop</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
+            <div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Infrastructure Access Index:</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                {impact.postInterventionMetrics.infrastructureIndex} / 100
+              </div>
             </div>
 
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-              <div className="text-[11px] text-slate-400">Priority Score</div>
-              <div className="text-xl font-bold text-emerald-400 mt-0.5">{verification.afterPriorityScore} / 100</div>
-              <div className="text-[10px] text-emerald-400/80 font-bold mt-1">P3 LOW (STABLE)</div>
+            <div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Average Travel Distance:</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                {impact.postInterventionMetrics.averageTravelDistanceKm} km
+              </div>
+            </div>
+
+            <div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Demand Pressure:</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                {impact.postInterventionMetrics.demandScore} / 100
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Summary Metrics Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono">
-        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
-          <div className="text-[11px] text-slate-400">Signal Volume Reduction</div>
-          <div className="text-lg font-bold text-emerald-400 mt-0.5">-{verification.signalReductionPercent}%</div>
-        </div>
+        {/* MEASURED IMPACT SUMMARY CARDS */}
+        <div style={{ background: 'var(--bg-canvas)', padding: '0.9rem', borderRadius: '10px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cyan-400)', marginBottom: '0.5rem' }}>
+            MEASURED IMPACT METRICS
+          </div>
 
-        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
-          <div className="text-[11px] text-slate-400">Total Resolution Time</div>
-          <div className="text-lg font-bold text-amber-400 mt-0.5">{verification.timeToResolutionFormatted}</div>
-        </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Infrastructure Improvement:</span>
+              <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+                +{impact.change.infrastructureIndexImprovement}
+              </strong>
+            </div>
 
-        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
-          <div className="text-[11px] text-slate-400">Verification Confidence</div>
-          <div className="text-lg font-bold text-blue-400 mt-0.5">{verification.verificationConfidenceScore}%</div>
-        </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Average Travel Reduction:</span>
+              <strong style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+                {impact.change.averageTravelDistanceReductionPercent}%
+              </strong>
+            </div>
 
-        <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
-          <div className="text-[11px] text-slate-400">Verification Status</div>
-          <div className={`text-lg font-bold mt-0.5 ${isVerified ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {verification.outcome}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Demand Pressure Reduction:</span>
+              <strong style={{ color: '#34d399', fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
+                {impact.change.demandPressureReductionPercent}%
+              </strong>
+            </div>
           </div>
         </div>
+
       </div>
 
-      {/* AI Conclusion Box */}
-      <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-1">
-        <div className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
-          <span>AI Verification Conclusion</span>
+      {/* GEMINI FACTUALLY BOUNDED SUMMARY NARRATIVE */}
+      <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '0.85rem', borderRadius: '8px', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 800, color: '#a5b4fc', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+          <Sparkles size={14} />
+          Gemini AI Impact Evaluation Summary
         </div>
-        <p className="text-xs text-slate-200 font-sans italic leading-relaxed">
-          "{verification.aiConclusion}"
-        </p>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontStyle: 'italic', lineHeight: 1.45 }}>
+          "{impact.aiSummary}"
+        </div>
       </div>
 
-      {/* MANDATORY SIGNAL-BASED VERIFICATION DISCLAIMER BANNER */}
-      <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-3 text-amber-200">
-        <div className="text-lg shrink-0 mt-0.5">🛡️</div>
+      {/* MEASURABLE FEEDBACK NOTICE BANNER */}
+      <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: '#fde68a' }}>
+        <ShieldAlert size={16} color="#fbbf24" style={{ flexShrink: 0 }} />
         <div>
-          <div className="text-xs font-bold uppercase tracking-wide text-amber-300 mb-0.5">
-            Signal-Based Verification Notice
-          </div>
-          <p className="text-[11px] font-sans text-amber-200/90 leading-normal">
-            {verification.disclaimerText}
-          </p>
+          <strong>Measurable Feedback Loop Notice:</strong> Impact figures are computed from multi-channel citizen demand pressure drops and deterministic infrastructure indices.
         </div>
       </div>
 
-      {/* Officer Control Buttons */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800 pt-3">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={handleSimulatePostSignal}
-            className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-blue-400 rounded-xl text-xs font-semibold border border-slate-800 transition flex items-center gap-1.5"
-            title="Simulate adding a post-resolution confirmation signal to live telemetry"
-          >
-            <span>📡 Ingest Post-Signal</span>
-          </button>
-
-          <button
-            onClick={handleFlagReinspection}
-            className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl text-xs font-semibold border border-slate-800 transition flex items-center gap-1.5"
-          >
-            <span>⚠️ Flag Re-Inspection</span>
-          </button>
-        </div>
-
+      {/* Interactive Simulation Trigger */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.85rem' }}>
         <button
-          onClick={handleConfirmVerified}
-          className="w-full sm:w-auto px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition"
+          onClick={handleSimulatePostSignal}
+          style={{
+            padding: '0.5rem 0.9rem',
+            borderRadius: '6px',
+            background: 'var(--bg-canvas)',
+            border: '1px solid var(--cyan-400)',
+            color: 'var(--cyan-400)',
+            fontWeight: 700,
+            fontSize: '0.74rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
         >
-          <span>✓ Confirm & Mark Verified</span>
+          <span>📡 Ingest Post-Intervention Verification Signal</span>
         </button>
       </div>
+
     </div>
   );
 };
-

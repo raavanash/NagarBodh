@@ -377,7 +377,7 @@ export const LiveMap: React.FC = () => {
         <div style="font-family: var(--font-sans); color: var(--text-primary); min-width: 250px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: ${isCritical ? '#ef4444' : '#0284c7'};">
-              ${inc.category.toUpperCase()} • ${inc.status.toUpperCase()}
+              ${inc.category.toUpperCase()} DEMAND HOTSPOT
             </span>
             <span style="font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: ${isCritical ? '#b91c1c' : '#0369a1'}; background: ${isCritical ? '#fee2e2' : '#e0f2fe'}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isCritical ? '#fca5a5' : '#bae6fd'};">
               PRIORITY ${inc.priority.overallScore}/100
@@ -385,7 +385,7 @@ export const LiveMap: React.FC = () => {
           </div>
 
           ${isEmergingNow ? `<div style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #dc2626; font-size: 0.68rem; font-weight: 800; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-            🔥 ACCELERATING SIGNAL VELOCITY (+${inc.velocitySurgePercent}%/hr)
+            🔥 SURGING CITIZEN DEMAND (+${inc.velocitySurgePercent}%/hr)
           </div>` : ''}
 
           <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; color: var(--text-primary); line-height: 1.3;">
@@ -406,7 +406,7 @@ export const LiveMap: React.FC = () => {
             id="popup-btn-${inc.id}"
             style="width: 100%; padding: 7px 10px; background: #2563eb; border: none; border-radius: 6px; color: #fff; font-weight: 700; font-size: 0.76rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25); transition: background 0.15s ease;"
           >
-            Inspect Intelligence Dossier →
+            Inspect Demand Intelligence Dossier →
           </button>
         </div>
       `);

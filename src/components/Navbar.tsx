@@ -2,6 +2,8 @@ import {
   Activity,
   AlertTriangle,
   Building2,
+  CheckCircle2,
+  Database,
   Globe2,
   MapPin,
   Moon,
@@ -9,6 +11,7 @@ import {
   ShieldAlert,
   Sparkles,
   Sun,
+  TrendingUp,
   UserCheck
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
@@ -22,7 +25,8 @@ export const Navbar: React.FC = () => {
     ingestionMode,
     setIngestionMode,
     theme,
-    toggleTheme
+    toggleTheme,
+    persistenceStatus
   } = useCivic();
 
   const criticalCount = incidents.filter(i => i.priority.overallScore >= 80).length;
@@ -49,13 +53,13 @@ export const Navbar: React.FC = () => {
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 700
               }}>
-                DEVELOPMENT & INVESTMENT INTELLIGENCE
+                CITIZEN DEVELOPMENT INTELLIGENCE
               </span>
             </div>
 
             <div className="brand-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
               <Building2 size={11} color="#2563eb" />
-              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>BRICS Innovation Track • Digital Public Good</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>BRICS Innovation Track • Digital Public Infrastructure</span>
               <span>•</span>
               <span style={{ color: '#059669', fontWeight: 700 }}>National Policy Command</span>
             </div>
@@ -122,6 +126,31 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
 
+          {/* Persistence Layer Status Badge */}
+          <div
+            className="navbar-persistence-badge"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '16px',
+              background: persistenceStatus?.isLive ? '#d1fae5' : '#eff6ff',
+              border: `1px solid ${persistenceStatus?.isLive ? '#6ee7b7' : '#bfdbfe'}`,
+              color: persistenceStatus?.isLive ? '#047857' : '#1e40af',
+              fontSize: '0.68rem',
+              fontWeight: 700
+            }}
+            title={
+              persistenceStatus?.isLive
+                ? 'Firebase Firestore live persistence active'
+                : 'Firebase environment unconfigured. Operating in deterministic Replay/Simulation fallback mode.'
+            }
+          >
+            <Database size={11} color={persistenceStatus?.isLive ? '#047857' : '#2563eb'} />
+            <span>{persistenceStatus?.isLive ? 'FIREBASE LIVE' : 'DEMO FALLBACK'}</span>
+          </div>
+
           <div className="sim-clock-badge navbar-clock-badge" title="Operational Clock">
             <span style={{
               width: '6px',
@@ -184,43 +213,52 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs — Reframed for BRICS Citizen Development Intelligence */}
       <nav className="nav-tabs" aria-label="Command Views">
         <button
-          className={`nav-tab-btn ${activeTab === 'live_map' ? 'active' : ''}`}
-          onClick={() => setActiveTab('live_map')}
-          title="What’s happening? · Citywide geospatial situation awareness"
+          className={`nav-tab-btn ${activeTab === 'development_map' || activeTab === 'live_map' ? 'active' : ''}`}
+          onClick={() => setActiveTab('development_map')}
+          title="Where is development demand concentrated? · Geospatial Hotspots"
         >
           <MapPin size={14} />
-          <span>Live Map</span>
+          <span>Development Map</span>
           {criticalCount > 0 && <span className="nav-tab-badge">{criticalCount}</span>}
         </button>
 
         <button
-          className={`nav-tab-btn ${activeTab === 'dossier' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dossier')}
-          title="Why does it matter? · Explainable priority & contextual risk breakdown"
+          className={`nav-tab-btn ${activeTab === 'demand_intelligence' || activeTab === 'dossier' ? 'active' : ''}`}
+          onClick={() => setActiveTab('demand_intelligence')}
+          title="What development need is emerging? · Priority & Context Analysis"
         >
           <ShieldAlert size={14} />
-          <span>Incident Intelligence</span>
+          <span>Demand Intelligence</span>
         </button>
 
         <button
-          className={`nav-tab-btn ${activeTab === 'signals' ? 'active' : ''}`}
-          onClick={() => setActiveTab('signals')}
-          title="What evidence supports it? · Multi-channel citizen reports & NLP fact separation"
+          className={`nav-tab-btn ${activeTab === 'citizen_signals' || activeTab === 'signals' ? 'active' : ''}`}
+          onClick={() => setActiveTab('citizen_signals')}
+          title="What are citizens asking for? · Voice, Text & Messaging Requests"
         >
           <Activity size={14} />
-          <span>Signal Explorer</span>
+          <span>Citizen Signals</span>
         </button>
 
         <button
-          className={`nav-tab-btn ${activeTab === 'dispatch' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dispatch')}
-          title="What should we do? · SOP recommendations & human-in-the-loop dispatch"
+          className={`nav-tab-btn ${activeTab === 'investment_gaps' ? 'active' : ''}`}
+          onClick={() => setActiveTab('investment_gaps')}
+          title="Where is demand not matched by infrastructure/investment? · Gap Analysis"
+        >
+          <TrendingUp size={14} />
+          <span>Investment Gaps</span>
+        </button>
+
+        <button
+          className={`nav-tab-btn ${activeTab === 'project_priorities' || activeTab === 'dispatch' ? 'active' : ''}`}
+          onClick={() => setActiveTab('project_priorities')}
+          title="What should policymakers consider? · Candidate Development Projects"
         >
           <Send size={14} />
-          <span>Response Planner</span>
+          <span>Project Priorities</span>
           {pendingDispatchCount > 0 && (
             <span style={{
               background: '#fef3c7',
@@ -237,21 +275,21 @@ export const Navbar: React.FC = () => {
         </button>
 
         <button
-          className={`nav-tab-btn ${activeTab === 'authority' ? 'active' : ''}`}
-          onClick={() => setActiveTab('authority')}
-          title="Where should we focus resources? · Cross-ward readiness & resource allocation"
+          className={`nav-tab-btn ${activeTab === 'policy_board' || activeTab === 'authority' ? 'active' : ''}`}
+          onClick={() => setActiveTab('policy_board')}
+          title="Where should national/state policymakers focus? · Multi-State Leaderboard"
         >
           <Sparkles size={14} />
-          <span>Authority Board</span>
+          <span>Policy Board</span>
         </button>
 
         <button
-          className={`nav-tab-btn ${activeTab === 'timeline' ? 'active' : ''}`}
-          onClick={() => setActiveTab('timeline')}
-          title="Did it work? · Post-incident signal reduction & resolution verification"
+          className={`nav-tab-btn ${activeTab === 'impact' || activeTab === 'timeline' ? 'active' : ''}`}
+          onClick={() => setActiveTab('impact')}
+          title="Did the intervention reduce the gap? · Development Impact Feedback Loop"
         >
-          <AlertTriangle size={14} />
-          <span>Resolution Verification</span>
+          <CheckCircle2 size={14} />
+          <span>Impact</span>
         </button>
       </nav>
     </header>

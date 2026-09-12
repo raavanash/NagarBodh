@@ -5,6 +5,8 @@ import { AdminBoundaryContextProvider } from './providers/AdminBoundaryContextPr
 import { CriticalAssetContextProvider } from './providers/CriticalAssetContextProvider';
 import { HistoricalIncidentContextProvider } from './providers/HistoricalIncidentContextProvider';
 import { GeospatialRiskContextProvider } from './providers/GeospatialRiskContextProvider';
+import { LocationContextEngine } from '../location/LocationContextEngine';
+import type { CanonicalLocation, UnifiedLocationContext } from '../../types/location';
 
 export interface ProviderModesConfig {
   weather: ProviderMode;
@@ -20,6 +22,7 @@ export class CivicContextDataLayer {
   private criticalAssetProvider: CriticalAssetContextProvider;
   private historicalIncidentProvider: HistoricalIncidentContextProvider;
   private geospatialRiskProvider: GeospatialRiskContextProvider;
+  private locationContextEngine: LocationContextEngine;
 
   constructor(defaultMode: ProviderMode = 'cached') {
     this.weatherProvider = new WeatherContextProvider(defaultMode);
@@ -27,6 +30,14 @@ export class CivicContextDataLayer {
     this.criticalAssetProvider = new CriticalAssetContextProvider(defaultMode);
     this.historicalIncidentProvider = new HistoricalIncidentContextProvider(defaultMode);
     this.geospatialRiskProvider = new GeospatialRiskContextProvider(defaultMode);
+    this.locationContextEngine = new LocationContextEngine(defaultMode === 'live' ? 'live' : 'cached');
+  }
+
+  public async getLocationContext(
+    location: CanonicalLocation,
+    mode: 'LIVE' | 'REPLAY' | 'SIMULATION' = 'SIMULATION'
+  ): Promise<UnifiedLocationContext> {
+    return this.locationContextEngine.getUnifiedLocationContext(location, mode);
   }
 
   public setGlobalMode(mode: ProviderMode) {

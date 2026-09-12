@@ -340,6 +340,8 @@ export interface SimulationStep {
     rainfallMmPerHour: number;
     alertLevel: 'none' | 'yellow' | 'orange' | 'red';
     description: string;
+    temperatureCelsius?: number;
+    condition?: string;
   };
   description: string;
 }

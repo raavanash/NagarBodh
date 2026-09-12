@@ -165,11 +165,11 @@ export const ResponsePlannerView: React.FC = () => {
               <Building2 size={22} color="var(--cyan-400)" />
             </div>
             <div>
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                Project Recommendation & Policy Review Engine
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                Project Priorities
               </h2>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Transforms high-priority Development Hotspots into explainable, evidence-backed candidate development projects.
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
+                "What should policymakers consider?"
               </p>
             </div>
           </div>

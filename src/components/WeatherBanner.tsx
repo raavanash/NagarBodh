@@ -107,15 +107,15 @@ export const WeatherBanner: React.FC = () => {
         >
           {isLiveMode && liveModeStatus === 'live' ? (
             <>
-              <Radio size={10} className="pulse" /> LIVE OPENWEATHER
+              <Radio size={10} className="pulse" /> {liveWeatherEnvelope?.source?.includes('Google') ? 'LIVE GOOGLE WEATHER' : 'LIVE OPENWEATHER'}
             </>
           ) : hasError ? (
             <>
-              <AlertTriangle size={10} /> WEATHER API ERROR
+              <AlertTriangle size={10} /> WEATHER API ERROR (REPLAY ACTIVE)
             </>
           ) : (
             <>
-              <Info size={10} /> SIMULATION MODE
+              <Info size={10} /> REPLAY / SIMULATION MODE
             </>
           )}
         </span>
