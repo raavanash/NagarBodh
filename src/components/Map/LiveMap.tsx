@@ -40,7 +40,6 @@ export const LiveMap: React.FC = () => {
   const prevSignalsCountRef = useRef<number>(0);
 
   const [isLegendMinimized, setIsLegendMinimized] = useState<boolean>(false);
-  const [isQuickNavMinimized, setIsQuickNavMinimized] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 900);
   const [isTimelineMinimized, setIsTimelineMinimized] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 900);
   const [timelinePos, setTimelinePos] = useState<{ x: number; y: number } | null>(null);
   const isDraggingTimelineRef = useRef(false);
@@ -109,7 +108,8 @@ export const LiveMap: React.FC = () => {
     jumpToStep,
     resetSimulation,
     triggerSector15Surge,
-    setPlaybackSpeed
+    setPlaybackSpeed,
+    ingestionMode
   } = useCivic();
 
   // Initialize Leaflet Map with OpenFreeMap vector layer
@@ -441,30 +441,6 @@ export const LiveMap: React.FC = () => {
     }
   }, [selectedIncidentId]);
 
-  const focusGurugramCyberCity = () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([28.4950, 77.0880], 15, { duration: 1.2 });
-    }
-  };
-
-  const focusGurugramSubhashChowk = () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([28.4290, 77.0415], 15, { duration: 1.2 });
-    }
-  };
-
-  const focusSector15 = () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([28.5833, 77.3185], 16, { duration: 1.2 });
-    }
-  };
-
-  const fitOverview = () => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([28.53, 77.12], 11, { duration: 1.2 });
-    }
-  };
-
   return (
     <div className="map-canvas-wrapper" style={{ display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', height: '100%' }}>
       {/* Main Leaflet Map Canvas (rendered first so overlay controls sit on top) */}
@@ -586,182 +562,36 @@ export const LiveMap: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Right Side: Quick Corridor Jump Controls (Minimizable) */}
-        {isQuickNavMinimized ? (
-          <button
-            onClick={() => setIsQuickNavMinimized(false)}
-            style={{
-              pointerEvents: 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              background: 'var(--bg-surface)',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '8px',
-              border: '1px solid var(--border-medium)',
-              boxShadow: 'var(--shadow-md)',
-              backdropFilter: 'blur(12px)',
-              cursor: 'pointer',
-              color: 'var(--text-primary)',
-              fontSize: '0.74rem',
-              fontWeight: 700
-            }}
-            title="Expand Quick Corridors"
-          >
-            <Compass size={13} color="#2563eb" />
-            <span>Quick Corridors</span>
-            <ChevronDown size={13} color="var(--text-muted)" />
-          </button>
-        ) : (
-          <div
-            style={{
-              pointerEvents: 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: 'var(--bg-surface)',
-              padding: '0.35rem 0.5rem',
-              borderRadius: '10px',
-              border: '1px solid var(--border-medium)',
-              boxShadow: 'var(--shadow-md)',
-              backdropFilter: 'blur(12px)'
-            }}
-          >
-            <button
-              onClick={focusGurugramCyberCity}
-              className="sim-btn"
-              style={{ fontSize: '0.74rem', background: '#eff6ff', borderColor: '#bfdbfe', color: '#0284c7' }}
-              title="Focus Gurugram Cyber City & Rapid Metro Hub"
-            >
-              🏢 Cyber City
-            </button>
-            <button
-              onClick={focusGurugramSubhashChowk}
-              className="sim-btn"
-              style={{ fontSize: '0.74rem', background: '#fef3c7', borderColor: '#fcd34d', color: '#b45309' }}
-              title="Focus Gurugram Subhash Chowk Underpass Corridor"
-            >
-              📍 Subhash Chowk
-            </button>
-            <button
-              onClick={focusSector15}
-              className="sim-btn"
-              style={{ fontSize: '0.74rem', background: '#fee2e2', borderColor: '#fca5a5', color: '#dc2626' }}
-              title="Focus Sector 15 Emergency Inundation Zone"
-            >
-              📍 Sector 15
-            </button>
-            <button
-              onClick={fitOverview}
-              className="sim-btn"
-              style={{ fontSize: '0.74rem' }}
-              title="Zoom out to NCR regional overview"
-            >
-              🌐 NCR View
-            </button>
-            <button
-              onClick={() => setIsQuickNavMinimized(true)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '2px',
-                borderRadius: '4px',
-                marginLeft: '2px'
-              }}
-              title="Minimize Quick Corridors"
-            >
-              <ChevronUp size={14} />
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Floating Replay & Time Slider Control Bar (Draggable across screen & Minimizable) */}
-      <div
-        ref={timelineRef}
-        className="live-map-timeline-dock"
-        style={{
-          position: timelinePos ? 'fixed' : 'absolute',
-          left: timelinePos ? `${timelinePos.x}px` : '50%',
-          top: timelinePos ? `${timelinePos.y}px` : undefined,
-          bottom: timelinePos ? undefined : '1.25rem',
-          transform: timelinePos ? 'none' : 'translateX(-50%)',
-          zIndex: 1100,
-          width: isTimelineMinimized ? 'auto' : 'calc(100% - 340px)',
-          maxWidth: isTimelineMinimized ? '440px' : '820px',
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-medium)',
-          borderRadius: '12px',
-          padding: isTimelineMinimized ? '0.45rem 0.85rem' : '0.65rem 1.15rem',
-          backdropFilter: 'blur(16px)',
-          boxShadow: 'var(--shadow-lg)',
-          color: 'var(--text-primary)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: isTimelineMinimized ? '0' : '0.45rem'
-        }}
-      >
-        {isTimelineMinimized ? (
-          /* Minimized Compact Timeline Bar */
-          <div
-            onPointerDown={handleTimelinePointerDown}
-            onPointerMove={handleTimelinePointerMove}
-            onPointerUp={handleTimelinePointerUp}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              cursor: isDraggingTimelineRef.current ? 'grabbing' : 'grab',
-              userSelect: 'none',
-              touchAction: 'none'
-            }}
-            title="Drag to reposition timeline anywhere on screen"
-          >
-            <GripHorizontal size={14} color="#94a3b8" />
-            <Clock size={13} color="#2563eb" />
-            <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#2563eb' }}>
-              {currentStep.simulatedTime}
-            </strong>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
-            </span>
-            <button
-              onClick={isPlaying ? pause : play}
-              style={{
-                background: isPlaying ? '#fee2e2' : 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                border: isPlaying ? '1px solid #fca5a5' : 'none',
-                borderRadius: '50%',
-                width: 26,
-                height: 26,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: isPlaying ? '#dc2626' : '#fff'
-              }}
-              title={isPlaying ? 'Pause replay' : 'Play replay'}
-            >
-              {isPlaying ? <Pause size={12} /> : <Play size={12} style={{ marginLeft: 1 }} />}
-            </button>
-            <button
-              onClick={() => setIsTimelineMinimized(false)}
-              className="sim-btn"
-              style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem', gap: '0.25rem' }}
-              title="Expand timeline controls"
-            >
-              <Maximize2 size={11} />
-              <span>Expand</span>
-            </button>
-          </div>
-        ) : (
-          /* Expanded Timeline Control Bar */
-          <>
-            {/* Drag Handle & Status Header */}
+      {/* Floating Replay & Time Slider Control Bar (Visible only in SIMULATION mode) */}
+      {ingestionMode === 'SIMULATION' && (
+        <div
+          ref={timelineRef}
+          className="live-map-timeline-dock"
+          style={{
+            position: timelinePos ? 'fixed' : 'absolute',
+            left: timelinePos ? `${timelinePos.x}px` : '50%',
+            top: timelinePos ? `${timelinePos.y}px` : undefined,
+            bottom: timelinePos ? undefined : '1.25rem',
+            transform: timelinePos ? 'none' : 'translateX(-50%)',
+            zIndex: 1100,
+            width: isTimelineMinimized ? 'auto' : 'calc(100% - 340px)',
+            maxWidth: isTimelineMinimized ? '440px' : '820px',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '12px',
+            padding: isTimelineMinimized ? '0.45rem 0.85rem' : '0.65rem 1.15rem',
+            backdropFilter: 'blur(16px)',
+            boxShadow: 'var(--shadow-lg)',
+            color: 'var(--text-primary)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: isTimelineMinimized ? '0' : '0.45rem'
+          }}
+        >
+          {isTimelineMinimized ? (
+            /* Minimized Compact Timeline Bar */
             <div
               onPointerDown={handleTimelinePointerDown}
               onPointerMove={handleTimelinePointerMove}
@@ -769,112 +599,201 @@ export const LiveMap: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                gap: '0.65rem',
                 cursor: isDraggingTimelineRef.current ? 'grabbing' : 'grab',
-                paddingBottom: '0.35rem',
-                borderBottom: '1px solid var(--border-subtle)',
                 userSelect: 'none',
                 touchAction: 'none'
               }}
               title="Drag to reposition timeline anywhere on screen"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
-                <GripHorizontal size={15} color="#94a3b8" />
-                <Clock size={14} color="#2563eb" />
-                <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#2563eb' }}>
-                  {currentStep.simulatedTime}
-                </strong>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.74rem' }}>
-                  • {currentStep.description}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rainfall:</span>
-                <strong style={{ fontSize: '0.75rem', color: currentStep.weatherCondition.rainfallMmPerHour > 50 ? '#dc2626' : '#0284c7', fontFamily: 'var(--font-mono)' }}>
-                  {currentStep.weatherCondition.rainfallMmPerHour} mm/hr
-                </strong>
-                <button
-                  onClick={() => setIsTimelineMinimized(true)}
-                  className="sim-btn"
-                  style={{ padding: '0.15rem 0.45rem', fontSize: '0.68rem', gap: '0.2rem' }}
-                  title="Minimize timeline to compact bar"
-                >
-                  <Minus size={11} />
-                  <span>Minimize</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Timeline Slider Track */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <GripHorizontal size={14} color="#94a3b8" />
+              <Clock size={13} color="#2563eb" />
+              <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#2563eb' }}>
+                {currentStep.simulatedTime}
+              </strong>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
+              </span>
               <button
                 onClick={isPlaying ? pause : play}
                 style={{
                   background: isPlaying ? '#fee2e2' : 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
                   border: isPlaying ? '1px solid #fca5a5' : 'none',
                   borderRadius: '50%',
-                  width: 32,
-                  height: 32,
+                  width: 26,
+                  height: 26,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: isPlaying ? '#dc2626' : '#fff',
-                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)'
+                  color: isPlaying ? '#dc2626' : '#fff'
                 }}
-                title={isPlaying ? 'Pause simulation replay' : 'Play simulation replay'}
+                title={isPlaying ? 'Pause replay' : 'Play replay'}
               >
-                {isPlaying ? <Pause size={14} /> : <Play size={14} style={{ marginLeft: 2 }} />}
+                {isPlaying ? <Pause size={12} /> : <Play size={12} style={{ marginLeft: 1 }} />}
               </button>
-
               <button
-                onClick={stepForward}
+                onClick={() => setIsTimelineMinimized(false)}
                 className="sim-btn"
-                style={{
-                  padding: '0.35rem 0.55rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.2rem',
-                  fontSize: '0.72rem'
-                }}
-                title="Advance one simulation step"
+                style={{ padding: '0.2rem 0.5rem', fontSize: '0.68rem', gap: '0.25rem' }}
+                title="Expand timeline controls"
               >
-                <SkipForward size={12} />
-              </button>
-
-              {/* Interactive Range Slider */}
-              <input
-                type="range"
-                min="0"
-                max={SIMULATION_STEPS.length - 1}
-                value={currentStepIndex}
-                onChange={e => jumpToStep(Number(e.target.value))}
-                style={{ flex: 1, accentColor: '#2563eb', height: 6, cursor: 'pointer' }}
-              />
-
-              <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
-              </span>
-
-              <button
-                onClick={resetSimulation}
-                className="sim-btn"
-                style={{
-                  padding: '0.35rem 0.55rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.2rem',
-                  fontSize: '0.72rem'
-                }}
-                title="Reset simulation to initial baseline"
-              >
-                <RotateCcw size={12} />
+                <Maximize2 size={11} />
+                <span>Expand</span>
               </button>
             </div>
-          </>
-        )}
-      </div>
+          ) : (
+            /* Expanded Timeline Control Bar */
+            <>
+              {/* Drag Handle & Status Header */}
+              <div
+                onPointerDown={handleTimelinePointerDown}
+                onPointerMove={handleTimelinePointerMove}
+                onPointerUp={handleTimelinePointerUp}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: isDraggingTimelineRef.current ? 'grabbing' : 'grab',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  userSelect: 'none',
+                  touchAction: 'none'
+                }}
+                title="Drag to reposition timeline anywhere on screen"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem' }}>
+                  <GripHorizontal size={15} color="#94a3b8" />
+                  <Clock size={14} color="#2563eb" />
+                  <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#2563eb' }}>
+                    {currentStep.simulatedTime}
+                  </strong>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.74rem' }}>
+                    • {currentStep.description}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rainfall:</span>
+                  <strong style={{ fontSize: '0.75rem', color: currentStep.weatherCondition.rainfallMmPerHour > 50 ? '#dc2626' : '#0284c7', fontFamily: 'var(--font-mono)' }}>
+                    {currentStep.weatherCondition.rainfallMmPerHour} mm/hr
+                  </strong>
+                  <button
+                    onClick={() => setIsTimelineMinimized(true)}
+                    className="sim-btn"
+                    style={{ padding: '0.15rem 0.45rem', fontSize: '0.68rem', gap: '0.2rem' }}
+                    title="Minimize timeline dock"
+                  >
+                    <Minus size={12} />
+                    <span>Minimize</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scrubber controls & Speed selection */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <button
+                  onClick={isPlaying ? pause : play}
+                  className="sim-btn sim-btn-play"
+                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                  title={isPlaying ? 'Pause replay' : 'Play replay'}
+                >
+                  {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+                  <span>{isPlaying ? 'Pause' : 'Play'}</span>
+                </button>
+
+                <button
+                  onClick={stepForward}
+                  className="sim-btn"
+                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                  title="Step to next timeline frame"
+                >
+                  <SkipForward size={13} />
+                  <span>Step</span>
+                </button>
+
+                {/* Speed buttons */}
+                <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', borderRadius: '6px', border: '1px solid var(--border-subtle)', padding: '2px', gap: '2px' }}>
+                  <button
+                    onClick={() => setPlaybackSpeed(1)}
+                    style={{
+                      border: 'none',
+                      background: playbackSpeed === 1 ? 'var(--cyan-500)' : 'transparent',
+                      color: playbackSpeed === 1 ? 'var(--outer-950)' : 'var(--text-secondary)',
+                      borderRadius: '4px',
+                      padding: '0.15rem 0.4rem',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    1x
+                  </button>
+                  <button
+                    onClick={() => setPlaybackSpeed(5)}
+                    style={{
+                      border: 'none',
+                      background: playbackSpeed === 5 ? 'var(--cyan-500)' : 'transparent',
+                      color: playbackSpeed === 5 ? 'var(--outer-950)' : 'var(--text-secondary)',
+                      borderRadius: '4px',
+                      padding: '0.15rem 0.4rem',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    5x
+                  </button>
+                  <button
+                    onClick={() => setPlaybackSpeed(10)}
+                    style={{
+                      border: 'none',
+                      background: playbackSpeed === 10 ? 'var(--cyan-500)' : 'transparent',
+                      color: playbackSpeed === 10 ? 'var(--outer-950)' : 'var(--text-secondary)',
+                      borderRadius: '4px',
+                      padding: '0.15rem 0.4rem',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    10x
+                  </button>
+                </div>
+
+                {/* Scrubber Track */}
+                <input
+                  type="range"
+                  min={0}
+                  max={SIMULATION_STEPS.length - 1}
+                  value={currentStepIndex}
+                  onChange={e => jumpToStep(Number(e.target.value))}
+                  style={{ flex: 1, accentColor: '#2563eb', height: 6, cursor: 'pointer' }}
+                />
+
+                <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                  Step {currentStepIndex + 1}/{SIMULATION_STEPS.length}
+                </span>
+
+                <button
+                  onClick={resetSimulation}
+                  className="sim-btn"
+                  style={{
+                    padding: '0.35rem 0.55rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.2rem',
+                    fontSize: '0.72rem'
+                  }}
+                  title="Reset simulation to initial baseline"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

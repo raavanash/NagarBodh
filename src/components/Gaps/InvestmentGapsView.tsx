@@ -116,9 +116,10 @@ export const InvestmentGapsView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '1.25rem', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      
-      {/* Screen Question Header Banner */}
+    <div className="investment-gaps-container" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-canvas)' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        
+        {/* Screen Question Header Banner */}
       <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', boxShadow: 'var(--shadow-sm)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
@@ -286,7 +287,7 @@ export const InvestmentGapsView: React.FC = () => {
           </table>
         </div>
       </div>
-
     </div>
-  );
+  </div>
+);
 };

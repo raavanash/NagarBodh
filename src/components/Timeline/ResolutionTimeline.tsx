@@ -16,7 +16,7 @@ import { useCivic } from '../../context/CivicContext';
 import { ResolutionVerificationPanel } from '../Verification/ResolutionVerificationPanel';
 
 export const ResolutionTimeline: React.FC = () => {
-  const { auditLogs, selectedIncident } = useCivic();
+  const { auditLogs, selectedIncident, incidents } = useCivic();
   const [filterType, setFilterType] = useState<string>('all');
 
   const filteredLogs = auditLogs.filter(log => {
@@ -32,7 +32,7 @@ export const ResolutionTimeline: React.FC = () => {
     <div className="timeline-view-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* 1. Development Impact Measurement Dashboard */}
-      <ResolutionVerificationPanel incident={selectedIncident} />
+      <ResolutionVerificationPanel incident={selectedIncident || incidents[0]} />
 
       {/* 2. Audit Trail Stream */}
       <div>

@@ -16,7 +16,7 @@ import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { Activity, AlertTriangle, Building2, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { activeTab, incidents } = useCivic();
+  const { activeTab, incidents, ingestionMode } = useCivic();
 
   const totalHotspots = incidents.length;
   const criticalP1Count = incidents.filter(i => i.priority.overallScore >= 80).length;
@@ -92,8 +92,8 @@ const AppContent: React.FC = () => {
       {/* Responsive Mobile Bottom Navigation Dock */}
       <MobileBottomNav />
 
-      {/* Floating Demo Control Pill */}
-      <DemoCommandCenter />
+      {/* Floating Demo Control Pill (Visible only in SIMULATION mode) */}
+      {ingestionMode === 'SIMULATION' && <DemoCommandCenter />}
 
       {/* Global Human Approval Modal */}
       <HumanApprovalModal />

@@ -54,6 +54,7 @@ interface CivicContextType {
   isPlaying: boolean;
   playbackSpeed: 1 | 5 | 10;
   auditLogs: AuditLogEntry[];
+  operationalClock: string;
 
   // Incident & Map Filters
   mapMode: 'civic_signals' | 'ai_priority';
@@ -249,6 +250,18 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const currentStep = SIMULATION_STEPS[currentStepIndex] || SIMULATION_STEPS[0];
   const currentWeather = currentStep.weatherCondition;
+
+  // Real-time operational clock ticker (syncs to real time in LIVE mode)
+  const [realTimeClock, setRealTimeClock] = useState<string>(() => {
+    return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRealTimeClock(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Keep a ref to the previous incidents list so clustering can compare and detect transitions
   const prevIncidentsRef = useRef<ClusteredIncident[]>([]);
@@ -818,6 +831,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('nagar_bodh_ingestion_mode') as IngestionMode;
     return saved || 'LIVE';
   });
+
+  const operationalClock = ingestionMode === 'LIVE' ? realTimeClock : currentStep.simulatedTime;
   const [liveWeatherEnvelope, setLiveWeatherEnvelope] = useState<ExternalDataPointEnvelope<any> | null>(null);
 
   // Weather Refresh Logic
@@ -1087,6 +1102,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isPlaying,
         playbackSpeed,
         auditLogs,
+        operationalClock,
         mapMode,
         setMapMode,
         categoryFilter,

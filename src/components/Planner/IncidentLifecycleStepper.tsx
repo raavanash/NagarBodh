@@ -8,15 +8,15 @@ interface Props {
 }
 
 const STAGES: Array<{ status: IncidentStatus; label: string; icon: string; description: string }> = [
-  { status: 'emerging', label: '1. Emerging', icon: '📡', description: 'Raw signal cluster formed' },
-  { status: 'triaged', label: '2. Triaged', icon: '📋', description: 'Signal velocity verified' },
-  { status: 'dispatch_pending', label: '3. Dispatch Pending', icon: '⚡', description: 'AI plan staged' },
-  { status: 'approved', label: '4. Approved', icon: '✅', description: 'Human officer authorized' },
-  { status: 'dispatched', label: '5. Dispatched', icon: '🚨', description: 'Units en route to centroid' },
-  { status: 'on_site', label: '6. On-Site', icon: '📍', description: 'Perimeter established' },
-  { status: 'resolving', label: '7. Resolving', icon: '⚙️', description: 'Mitigation active' },
-  { status: 'resolved', label: '8. Resolved', icon: '🏁', description: 'Field work finished' },
-  { status: 'verified', label: '9. Verified', icon: '🔍', description: 'AI/Citizen verified' }
+  { status: 'emerging', label: '1. Signal Cluster', icon: '📡', description: 'Raw demand signals formed' },
+  { status: 'triaged', label: '2. Triaged Gap', icon: '📋', description: 'Development gap verified' },
+  { status: 'dispatch_pending', label: '3. Plan Staged', icon: '⚡', description: 'Candidate SOP project generated' },
+  { status: 'approved', label: '4. Policy Approved', icon: '✅', description: 'Policymaker authorized' },
+  { status: 'dispatched', label: '5. Budget Allocated', icon: '💰', description: 'Capital budget allocated' },
+  { status: 'on_site', label: '6. Work Commenced', icon: '📍', description: 'Field work / construction active' },
+  { status: 'resolving', label: '7. Infra Active', icon: '⚙️', description: 'Infrastructure operational' },
+  { status: 'resolved', label: '8. Project Completed', icon: '🏁', description: 'Asset deployed to community' },
+  { status: 'verified', label: '9. Impact Verified', icon: '🔍', description: 'Measurable gap reduction confirmed' }
 ];
 
 export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact = false }) => {
@@ -85,39 +85,66 @@ export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact 
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl text-slate-100 space-y-5">
+    <div
+      style={{
+        background: 'var(--bg-surface-elevated)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '1.25rem',
+        boxShadow: 'var(--shadow-xl)',
+        color: 'var(--text-primary)'
+      }}
+      className="space-y-5"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-              Incident Lifecycle & Governance Pipeline
+          <div className="flex items-center gap-2.5">
+            <h3
+              className="text-xs font-bold uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}
+            >
+              Development Project & Policy Governance Pipeline
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/40">
+            <span
+              className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase"
+              style={{
+                background: 'rgba(6, 182, 212, 0.15)',
+                color: 'var(--cyan-300)',
+                border: '1px solid rgba(6, 182, 212, 0.3)'
+              }}
+            >
               {inc.status.toUpperCase()}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5 font-mono">
-            Every lifecycle transition is timestamped, actor-bound, and recorded in audit logs.
+          <p className="text-xs mt-1 font-mono" style={{ color: 'var(--text-secondary)' }}>
+            Every lifecycle transition is timestamped, actor-bound, and recorded in civic governance audit logs.
           </p>
         </div>
 
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="text-xs text-slate-400 hover:text-slate-200 underline font-mono"
+          className="text-xs underline font-mono transition-colors"
+          style={{ color: 'var(--cyan-400)' }}
         >
-          {showHistory ? 'Hide Transition Audit History' : `View Transition History (${inc.statusHistory?.length || 0})`}
+          {showHistory ? 'Hide Governance Audit Trail' : `View Audit Trail (${inc.statusHistory?.length || 0})`}
         </button>
       </div>
 
       {/* 9-State Stepper Bar */}
       <div className="overflow-x-auto pb-2">
-        <div className="flex items-center min-w-[760px] justify-between relative">
+        <div className="flex items-center min-w-[760px] justify-between relative py-2">
           {/* Connector Line behind steps */}
-          <div className="absolute left-6 right-6 top-4 h-1 bg-slate-800 -z-0 rounded" />
           <div
-            className="absolute left-6 top-4 h-1 bg-gradient-to-r from-blue-500 via-emerald-500 to-teal-400 -z-0 rounded transition-all duration-500"
-            style={{ width: `${Math.max(0, (currentStatusIndex / (STAGES.length - 1)) * 95)}%` }}
+            className="absolute left-6 right-6 top-6 h-1 rounded -z-0"
+            style={{ background: 'var(--border-subtle)' }}
+          />
+          <div
+            className="absolute left-6 top-6 h-1 rounded -z-0 transition-all duration-500"
+            style={{
+              width: `${Math.max(0, (currentStatusIndex / (STAGES.length - 1)) * 95)}%`,
+              background: 'linear-gradient(90deg, var(--cyan-500) 0%, var(--emerald-500) 50%, var(--indigo-500) 100%)'
+            }}
           />
 
           {STAGES.map((s, idx) => {
@@ -127,21 +154,49 @@ export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact 
             return (
               <div key={s.status} className="flex flex-col items-center text-center z-10 w-20">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border transition-all ${
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                  style={
                     isCurrent
-                      ? 'bg-blue-600 text-white border-blue-400 ring-4 ring-blue-500/30 scale-110 shadow-lg'
+                      ? {
+                          background: 'var(--cyan-500)',
+                          color: '#ffffff',
+                          border: '2px solid var(--cyan-300)',
+                          boxShadow: '0 0 12px rgba(6, 182, 212, 0.5)',
+                          transform: 'scale(1.15)'
+                        }
                       : isCompleted
-                      ? 'bg-emerald-600 text-white border-emerald-400'
-                      : 'bg-slate-900 text-slate-500 border-slate-700'
-                  }`}
+                      ? {
+                          background: 'var(--emerald-600)',
+                          color: '#ffffff',
+                          border: '1px solid var(--emerald-400)'
+                        }
+                      : {
+                          background: 'var(--bg-surface)',
+                          color: 'var(--text-tertiary)',
+                          border: '1px solid var(--border-subtle)'
+                        }
+                  }
                 >
                   {isCompleted ? '✓' : s.icon}
                 </div>
-                <div className={`text-[11px] font-semibold mt-1.5 leading-tight ${isCurrent ? 'text-blue-300 font-bold' : isCompleted ? 'text-emerald-300' : 'text-slate-500'}`}>
+                <div
+                  className="text-[11px] font-semibold mt-2 leading-tight"
+                  style={{
+                    color: isCurrent
+                      ? 'var(--cyan-300)'
+                      : isCompleted
+                      ? 'var(--emerald-400)'
+                      : 'var(--text-secondary)',
+                    fontWeight: isCurrent ? '700' : '500'
+                  }}
+                >
                   {s.label}
                 </div>
                 {!compact && (
-                  <div className="text-[9px] text-slate-400 mt-0.5 leading-none hidden md:block">
+                  <div
+                    className="text-[9px] mt-0.5 leading-none hidden md:block"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
                     {s.description}
                   </div>
                 )}
@@ -152,13 +207,22 @@ export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact 
       </div>
 
       {/* Action Controls Box */}
-      <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+      <div
+        className="p-4 rounded-xl space-y-3"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)'
+        }}
+      >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-            Current Stage Action Controls ({inc.status.toUpperCase()})
+          <span
+            className="text-xs font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}
+          >
+            Current Governance Action ({inc.status.toUpperCase()})
           </span>
-          <span className="text-xs text-amber-400 font-mono">
-            {inc.status === 'dispatch_pending' ? '⚠️ Human Officer Approval Mandatory' : 'Officer/Field Action Available'}
+          <span className="text-xs font-mono font-medium" style={{ color: 'var(--amber-400)' }}>
+            {inc.status === 'dispatch_pending' ? '⚠️ Policymaker Approval Mandatory' : 'Governance / Field Action Available'}
           </span>
         </div>
 
@@ -168,8 +232,13 @@ export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact 
             type="text"
             value={notesInput}
             onChange={e => setNotesInput(e.target.value)}
-            placeholder="Enter actor transition notes / details before executing stage action..."
-            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+            placeholder="Enter governance notes / approval rationale before executing stage transition..."
+            className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none transition-colors"
+            style={{
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-primary)'
+            }}
           />
 
           {/* Action Button based on status */}
@@ -177,78 +246,96 @@ export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact 
             {inc.status === 'emerging' && (
               <button
                 onClick={handleTriage}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold shadow transition"
+                className="px-4 py-2 text-white rounded-lg text-xs font-bold shadow transition hover:opacity-90"
+                style={{ background: 'var(--cyan-600)' }}
               >
-                📋 Triage Incident
+                📋 Triage Development Gap
               </button>
             )}
 
             {inc.status === 'triaged' && (
               <button
                 onClick={handleStagePlan}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow transition"
+                className="px-4 py-2 text-white rounded-lg text-xs font-bold shadow transition hover:opacity-90"
+                style={{ background: 'var(--amber-600)' }}
               >
-                ⚡ Stage Response Plan
+                ⚡ Stage SOP Project
               </button>
             )}
 
             {inc.status === 'dispatch_pending' && (
               <button
                 onClick={handleOpenReviewModal}
-                className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-amber-950/60 flex items-center gap-2 transition animate-pulse"
+                className="px-5 py-2 text-white rounded-lg text-xs font-bold shadow-lg flex items-center gap-2 transition animate-pulse"
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                  boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)'
+                }}
               >
-                <span>🛡️ Review & Approve Plan (Human Review)</span>
+                <span>🛡️ Review & Approve Project (Policy Review)</span>
               </button>
             )}
 
             {inc.status === 'approved' && (
               <button
                 onClick={handleDispatch}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition"
+                className="px-5 py-2 text-white rounded-lg text-xs font-bold shadow-lg flex items-center gap-2 transition hover:opacity-90"
+                style={{ background: 'var(--emerald-600)' }}
               >
-                <span>🚨 Dispatch Field Crews</span>
+                <span>💰 Allocate Capital & Mobilize</span>
               </button>
             )}
 
             {inc.status === 'dispatched' && (
               <button
                 onClick={handleMarkOnSite}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow transition"
+                className="px-4 py-2 text-white rounded-lg text-xs font-bold shadow transition hover:opacity-90"
+                style={{ background: 'var(--indigo-600)' }}
               >
-                📍 Mark Crew On-Site
+                📍 Mark Construction Active
               </button>
             )}
 
             {inc.status === 'on_site' && (
               <button
                 onClick={handleStartResolving}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow transition"
+                className="px-4 py-2 text-white rounded-lg text-xs font-bold shadow transition hover:opacity-90"
+                style={{ background: '#9333ea' }}
               >
-                ⚙️ Start Resolution Work
+                ⚙️ Activate Infrastructure
               </button>
             )}
 
             {inc.status === 'resolving' && (
               <button
                 onClick={handleResolve}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-xs font-bold shadow transition"
+                className="px-4 py-2 text-white rounded-lg text-xs font-bold shadow transition hover:opacity-90"
+                style={{ background: '#0d9488' }}
               >
-                🏁 Mark Field Resolved
+                🏁 Complete Project Deployment
               </button>
             )}
 
             {inc.status === 'resolved' && (
               <button
                 onClick={handleAiVerify}
-                className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold shadow transition"
+                className="px-5 py-2 text-white rounded-lg text-xs font-bold shadow transition hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, var(--cyan-600) 0%, var(--indigo-600) 100%)' }}
               >
-                🔍 Trigger AI Verification
+                🔍 Trigger Impact Verification
               </button>
             )}
 
             {inc.status === 'verified' && (
-              <div className="px-4 py-2 bg-emerald-950 border border-emerald-600 text-emerald-300 rounded-lg text-xs font-bold font-mono">
-                ✓ Verified & SLA Closed
+              <div
+                className="px-4 py-2 rounded-lg text-xs font-bold font-mono"
+                style={{
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid var(--emerald-500)',
+                  color: 'var(--emerald-300)'
+                }}
+              >
+                ✓ Verified & Governance SLA Closed
               </div>
             )}
           </div>
@@ -257,31 +344,56 @@ export const IncidentLifecycleStepper: React.FC<Props> = ({ incidentId, compact 
 
       {/* Transition Audit Log History List */}
       {showHistory && (
-        <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 animate-in fade-in duration-150">
-          <h4 className="text-xs font-bold text-slate-300 uppercase font-mono mb-2">
-            Audit Trail History ({inc.statusHistory?.length || 0} Transitions Recorded)
+        <div
+          className="p-4 rounded-xl space-y-2 animate-in fade-in duration-150"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)'
+          }}
+        >
+          <h4
+            className="text-xs font-bold uppercase font-mono mb-2"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Audit Trail History ({inc.statusHistory?.length || 0} Governance Transitions Recorded)
           </h4>
 
           {inc.statusHistory && inc.statusHistory.length > 0 ? (
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1 font-mono text-xs">
               {inc.statusHistory.map(rec => (
-                <div key={rec.id} className="p-2.5 rounded bg-slate-900 border border-slate-850 flex items-start justify-between gap-3">
+                <div
+                  key={rec.id}
+                  className="p-2.5 rounded flex items-start justify-between gap-3"
+                  style={{
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-subtle)'
+                  }}
+                >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-blue-400">{rec.previousState.toUpperCase()} → {rec.newState.toUpperCase()}</span>
-                      <span className="text-slate-400">by {rec.actor}</span>
+                      <span className="font-bold" style={{ color: 'var(--cyan-400)' }}>
+                        {rec.previousState.toUpperCase()} → {rec.newState.toUpperCase()}
+                      </span>
+                      <span style={{ color: 'var(--text-tertiary)' }}>by {rec.actor}</span>
                     </div>
-                    <p className="text-slate-300 text-[11px] font-sans mt-0.5">{rec.notes}</p>
+                    <p className="text-[11px] font-sans mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                      {rec.notes}
+                    </p>
                   </div>
-                  <span className="text-[10px] text-slate-500 shrink-0">{rec.simulatedTimeLabel}</span>
+                  <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                    {rec.simulatedTimeLabel}
+                  </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-500 italic">No previous manual transitions recorded for this incident cluster.</p>
+            <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
+              No previous governance transitions recorded for this development gap cluster.
+            </p>
           )}
         </div>
       )}
     </div>
   );
 };
+

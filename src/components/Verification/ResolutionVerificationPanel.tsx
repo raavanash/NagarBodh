@@ -33,10 +33,10 @@ interface Props {
 export type ImpactDataMode = 'REAL' | 'REPLAY' | 'SIMULATION' | 'PROJECTED';
 
 export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propIncident }) => {
-  const { selectedIncident, addCustomSignal } = useCivic();
+  const { selectedIncident, incidents, addCustomSignal } = useCivic();
   const [dataMode, setDataMode] = useState<ImpactDataMode>('SIMULATION');
 
-  const inc = propIncident || selectedIncident;
+  const inc = propIncident || selectedIncident || incidents[0];
   if (!inc) return null;
 
   // Resolve or generate project recommendation and development impact model

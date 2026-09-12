@@ -26,7 +26,8 @@ export const Navbar: React.FC = () => {
     setIngestionMode,
     theme,
     toggleTheme,
-    persistenceStatus
+    persistenceStatus,
+    operationalClock
   } = useCivic();
 
   const criticalCount = incidents.filter(i => i.priority.overallScore >= 80).length;
@@ -43,7 +44,7 @@ export const Navbar: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
               <h1 className="brand-title">NagarBodh</h1>
-              <span style={{
+              <span className="brand-tag-badge" style={{
                 background: '#eff6ff',
                 color: '#2563eb',
                 border: '1px solid #bfdbfe',
@@ -151,14 +152,14 @@ export const Navbar: React.FC = () => {
             <span>{persistenceStatus?.isLive ? 'FIREBASE LIVE' : 'DEMO FALLBACK'}</span>
           </div>
 
-          <div className="sim-clock-badge navbar-clock-badge" title="Operational Clock">
+          <div className="sim-clock-badge navbar-clock-badge" title={ingestionMode === 'LIVE' ? 'Real-Time Synced Operational Clock' : 'Simulated Step Operational Clock'}>
             <span style={{
               width: '6px',
               height: '6px',
               borderRadius: '50%',
-              background: '#10b981'
+              background: ingestionMode === 'LIVE' ? '#10b981' : '#3b82f6'
             }} />
-            <span>{currentStep.simulatedTime}</span>
+            <span>{operationalClock}</span>
           </div>
 
           {/* Commander Badge */}
