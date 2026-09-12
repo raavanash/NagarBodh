@@ -12,6 +12,7 @@ import { HumanApprovalModal } from './components/Planner/HumanApprovalModal';
 import { AuthorityDashboard } from './components/Authority/AuthorityDashboard';
 import { ResolutionTimeline } from './components/Timeline/ResolutionTimeline';
 import { DemoCommandCenter } from './components/Demo/DemoCommandCenter';
+import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { Activity, AlertTriangle, Building2, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -87,6 +88,9 @@ const AppContent: React.FC = () => {
 
         {(activeTab === 'impact' || activeTab === 'timeline') && <ResolutionTimeline />}
       </main>
+
+      {/* Responsive Mobile Bottom Navigation Dock */}
+      <MobileBottomNav />
 
       {/* Floating Demo Control Pill */}
       <DemoCommandCenter />

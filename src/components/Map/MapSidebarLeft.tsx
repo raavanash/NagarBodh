@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { WARDS_DATA } from '../../data/wardsData';
+import { PriorityBadge } from '../common';
 
 export const MapSidebarLeft: React.FC = () => {
   const {
@@ -282,9 +283,7 @@ export const MapSidebarLeft: React.FC = () => {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                  <span className={`badge ${badgeClass}`} style={{ fontSize: '0.68rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
-                    {badgeLabel}
-                  </span>
+                  <PriorityBadge score={score} compact={true} />
 
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                     <TrendingUp size={11} color="#2563eb" />

@@ -25,6 +25,7 @@ import {
   PolicyLeaderboardRow
 } from '../../engine/policyBoardEngine';
 import { DevelopmentContext, DevelopmentDemandHotspot } from '../../types/development';
+import { PriorityBadge, GeminiExplanationCard, HumanReviewStateBadge } from '../common';
 
 export const AuthorityDashboard: React.FC = () => {
   const { signals, setSelectedIncidentId, setActiveTab } = useCivic();
@@ -86,8 +87,30 @@ export const AuthorityDashboard: React.FC = () => {
   return (
     <div className="policy-board-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
       
-      {/* Header */}
+      {/* Header & AI Governance Framing Banner */}
       <div style={{ marginBottom: '1.25rem' }}>
+        {/* AI Governance Advisory Banner */}
+        <div style={{
+          background: 'rgba(6, 182, 212, 0.08)',
+          border: '1px solid rgba(6, 182, 212, 0.3)',
+          borderRadius: '8px',
+          padding: '0.55rem 0.85rem',
+          marginBottom: '0.85rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.74rem', fontWeight: 800, color: 'var(--cyan-400)', fontFamily: 'var(--font-mono)' }}>
+            <Sparkles size={15} />
+            <span>AI-ASSISTED DEVELOPMENT PRIORITIZATION PLATFORM</span>
+          </div>
+          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontStyle: 'italic' }}>
+            * Human-in-the-Loop Decision Intelligence • Inspectable Rationale Engine
+          </span>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid var(--border-accent)' }}>
@@ -286,17 +309,14 @@ export const AuthorityDashboard: React.FC = () => {
                         {row.affectedPopulation.toLocaleString()}
                       </td>
                       <td style={{ padding: '0.65rem 0.6rem' }}>
-                        <span style={{
-                          fontSize: '0.74rem',
-                          fontWeight: 800,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          background: row.priorityScore >= 80 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                          color: row.priorityScore >= 80 ? '#f87171' : '#fbbf24',
-                          fontFamily: 'var(--font-mono)'
-                        }}>
-                          {row.priorityScore} ({row.priorityLevel})
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                          <PriorityBadge score={row.priorityScore} level={row.priorityLevel} compact={true} />
+                          <HumanReviewStateBadge
+                            state={((row.hotspot?.status as string) === 'approved' || (row.hotspot?.status as string) === 'investment_approved') ? 'approved' : 'pending_policy_review'}
+                            approvedBy={((row.hotspot?.status as string) === 'approved' || (row.hotspot?.status as string) === 'investment_approved') ? 'Municipal Commander' : undefined}
+                            compact={true}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -312,29 +332,33 @@ export const AuthorityDashboard: React.FC = () => {
             
             {/* Header */}
             <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.4rem' }}>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--cyan-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   POLICY INTELLIGENCE DOSSIER #{selectedRow.rank}
                 </span>
-                <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', fontWeight: 800 }}>
-                  PRIORITY: {selectedRow.priorityScore}/100
-                </span>
+                <HumanReviewStateBadge
+                  state={((selectedRow.hotspot?.status as string) === 'approved' || (selectedRow.hotspot?.status as string) === 'investment_approved') ? 'approved' : 'pending_policy_review'}
+                  approvedBy={((selectedRow.hotspot?.status as string) === 'approved' || (selectedRow.hotspot?.status as string) === 'investment_approved') ? 'Municipal Commander' : undefined}
+                  compact={true}
+                />
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {selectedRow.district}, {selectedRow.state}
-              </h3>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  {selectedRow.district}, {selectedRow.state}
+                </h3>
+                <PriorityBadge score={selectedRow.priorityScore} level={selectedRow.priorityLevel} />
+              </div>
             </div>
 
-            {/* CONCISE GEMINI POLICYMAKER EXPLANATION */}
-            <div style={{ background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '0.85rem', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--cyan-400)', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
-                <Sparkles size={14} />
-                Gemini Policymaker Explanation Narrative
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.45, fontStyle: 'italic' }}>
-                "{selectedRow.geminiExplanation}"
-              </div>
-            </div>
+            {/* CONCISE GEMINI POLICYMAKER EXPLANATION CARD */}
+            <GeminiExplanationCard
+              explanation={selectedRow.geminiExplanation}
+              confidence={0.967}
+              sourcesCount={selectedRow.hotspot?.requestCount || 18}
+              modelName="Google Gemini 1.5 Pro (Public Sector Fine-tuned)"
+              auditBlock={`0x${selectedRow.id.slice(0, 8)}...`}
+            />
 
             {/* POLICY BREAKDOWN CARDS */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.78rem' }}>
@@ -393,9 +417,29 @@ export const AuthorityDashboard: React.FC = () => {
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '3px', fontStyle: 'italic' }}>
                     "{selectedRow.recommendedProject.recommendedIntervention}"
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', fontSize: '0.7rem', color: '#34d399', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', fontSize: '0.7rem', color: '#34d399', fontWeight: 700, flexWrap: 'wrap' }}>
                     <span>Cost: ₹{selectedRow.recommendedProject.estimatedCostLakhs} Lakhs</span>
                     <span>• Beneficiaries: {selectedRow.recommendedProject.expectedBeneficiaries.toLocaleString()}</span>
+                  </div>
+
+                  <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      onClick={() => {
+                        if (selectedRow.hotspot?.id) setSelectedIncidentId(selectedRow.hotspot.id);
+                        setActiveTab('development_map');
+                      }}
+                      className="sim-btn"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.72rem', background: '#eff6ff', borderColor: '#bfdbfe', color: '#0284c7' }}
+                    >
+                      🗺️ Inspect Hotspot Map
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('project_priorities')}
+                      className="sim-btn"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.72rem', background: 'var(--civic-blue-600)', color: '#fff', border: 'none' }}
+                    >
+                      ⚡ Review Intervention →
+                    </button>
                   </div>
                 </div>
               )}
