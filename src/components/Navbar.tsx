@@ -283,15 +283,6 @@ export const Navbar: React.FC = () => {
           <Sparkles size={14} />
           <span>Policy Board</span>
         </button>
-
-        <button
-          className={`nav-tab-btn ${activeTab === 'impact' || activeTab === 'timeline' ? 'active' : ''}`}
-          onClick={() => setActiveTab('impact')}
-          title="Did the intervention reduce the gap? · Development Impact Feedback Loop"
-        >
-          <CheckCircle2 size={14} />
-          <span>Impact</span>
-        </button>
       </nav>
     </header>
   );

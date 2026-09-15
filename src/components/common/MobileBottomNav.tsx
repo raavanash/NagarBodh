@@ -131,27 +131,6 @@ export const MobileBottomNav: React.FC = () => {
         <Sparkles size={18} />
         <span>Policy</span>
       </button>
-
-      {/* 5. Impact */}
-      <button
-        onClick={() => setActiveTab('impact')}
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '2px',
-          background: 'none',
-          border: 'none',
-          color: activeTab === 'impact' || activeTab === 'timeline' ? 'var(--civic-blue-600)' : 'var(--text-muted)',
-          fontSize: '0.65rem',
-          fontWeight: 700,
-          cursor: 'pointer'
-        }}
-      >
-        <CheckCircle2 size={18} />
-        <span>Impact</span>
-      </button>
     </nav>
   );
 };
