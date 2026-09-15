@@ -15,7 +15,13 @@ import {
   ShieldAlert,
   Sparkles,
   TrendingUp,
-  Users
+  Users,
+  AlertTriangle,
+  Droplets,
+  Wallet,
+  Search,
+  Hourglass,
+  ArrowUpRight
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { DevelopmentContextDataLayer } from '../../engine/context/DevelopmentContextDataLayer';
@@ -34,6 +40,7 @@ export const AuthorityDashboard: React.FC = () => {
   const [selectedState, setSelectedState] = useState<string>('ALL');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Policy Board Data State
   const [leaderboardRows, setLeaderboardRows] = useState<PolicyLeaderboardRow[]>([]);
@@ -60,7 +67,7 @@ export const AuthorityDashboard: React.FC = () => {
 
       if (isMounted) {
         setLeaderboardRows(rows);
-        if (rows.length > 0 && !selectedRow) {
+        if (rows.length > 0) {
           setSelectedRow(rows[0]);
         }
         setIsLoading(false);
@@ -78,6 +85,17 @@ export const AuthorityDashboard: React.FC = () => {
   const availableStates = ['ALL', 'Delhi NCR', 'Maharashtra', 'Karnataka', 'Uttar Pradesh', 'Tamil Nadu'];
   const availableDistricts = ['ALL', 'Central Delhi', 'East Delhi', 'Mumbai Suburban', 'Bengaluru Urban', 'Gautam Buddha Nagar'];
 
+  // Filtered Rows by search query
+  const filteredRows = leaderboardRows.filter(r => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      r.district.toLowerCase().includes(query) ||
+      r.state.toLowerCase().includes(query) ||
+      r.developmentNeed.toLowerCase().includes(query)
+    );
+  });
+
   // Summary Metrics
   const p1Count = leaderboardRows.filter(r => r.priorityLevel === 'P1').length;
   const totalPopulation = leaderboardRows.reduce((sum, r) => sum + r.affectedPopulation, 0);
@@ -85,371 +103,393 @@ export const AuthorityDashboard: React.FC = () => {
   const topSector = leaderboardRows.length > 0 ? leaderboardRows[0].developmentNeed : 'Healthcare Access';
 
   return (
-    <div className="policy-board-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
+    <div className="bg-slate-100 text-on-surface font-body antialiased flex flex-col h-full overflow-y-auto select-none p-4 md:p-6 space-y-4">
       
-      {/* Header & AI Governance Framing Banner */}
-      <div style={{ marginBottom: '1.25rem' }}>
-        {/* AI Governance Advisory Banner */}
-        <div style={{
-          background: 'rgba(6, 182, 212, 0.08)',
-          border: '1px solid rgba(6, 182, 212, 0.3)',
-          borderRadius: '8px',
-          padding: '0.55rem 0.85rem',
-          marginBottom: '0.85rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.5rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.74rem', fontWeight: 800, color: 'var(--cyan-400)', fontFamily: 'var(--font-mono)' }}>
-            <Sparkles size={15} />
-            <span>AI-ASSISTED DEVELOPMENT PRIORITIZATION PLATFORM</span>
+      {/* ================= SUB-HEADER BANNER & BREADCRUMB (Stitch Screen 03) ================= */}
+      <div className="bg-white rounded-xl border border-outline-variant/40 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span className="font-medium text-slate-700">BRICS Development Intelligence</span>
+            <ChevronRight size={14} className="text-slate-400" />
+            <span>National Executive Council</span>
+            <ChevronRight size={14} className="text-slate-400" />
+            <span className="text-primary font-semibold">Policy Board & Decision Intelligence Workstation</span>
           </div>
-          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontStyle: 'italic' }}>
-            * Human-in-the-Loop Decision Intelligence • Inspectable Rationale Engine
-          </span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-headline font-extrabold text-slate-900 tracking-tight">
+              NagarBodh — Policy Board & Decision Intelligence Workstation
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+              DPG Sovereign Engine v4.2
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            National & State Policymaker Decision Leaderboard • AI-Assisted Recommendation & Human Policy Review
+          </p>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid var(--border-accent)' }}>
-              <Globe size={22} color="var(--cyan-400)" />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                  Policy Board
-                </h2>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, background: 'rgba(6, 182, 212, 0.2)', color: 'var(--cyan-400)', padding: '2px 8px', borderRadius: '999px', fontFamily: 'var(--font-mono)' }}>
-                  INDIA DEVELOPMENT POLICY BOARD
-                </span>
-              </div>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
-                "Where should national/state policymakers focus?"
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CASCADING GEOGRAPHIC HIERARCHY FILTER BAR */}
-      <div className="card" style={{ padding: '0.9rem 1.2rem', marginBottom: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-            <Compass size={16} color="var(--cyan-400)" />
-            <span>GEOGRAPHY:</span>
-          </div>
-
-          {/* Country (India Fixed) */}
-          <div style={{ background: 'var(--bg-canvas)', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span>🇮🇳 India</span>
-          </div>
-
-          <ChevronRight size={14} color="var(--text-muted)" />
-
-          {/* State Selector */}
-          <div>
-            <select
-              value={selectedState}
-              onChange={e => {
-                setSelectedState(e.target.value);
-                setSelectedDistrict('ALL');
-              }}
-              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-accent)', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 600, outline: 'none' }}
-            >
-              <option value="ALL">All States (National View)</option>
-              {availableStates.filter(s => s !== 'ALL').map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          <ChevronRight size={14} color="var(--text-muted)" />
-
-          {/* District Selector */}
-          <div>
-            <select
-              value={selectedDistrict}
-              onChange={e => setSelectedDistrict(e.target.value)}
-              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-accent)', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 600, outline: 'none' }}
-            >
-              <option value="ALL">All Districts</option>
-              {availableDistricts.filter(d => d !== 'ALL').map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Sector Category Selector */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Filter size={14} color="var(--text-muted)" />
-            <select
-              value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
-              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 600, outline: 'none' }}
-            >
-              <option value="ALL">All Development Sectors</option>
-              <option value="HEALTHCARE">Healthcare Access</option>
-              <option value="EDUCATION">Education Capacity</option>
-              <option value="WATER">Drinking Water & Drainage</option>
-              <option value="ROADS">Roads & Transport Corridor</option>
-              <option value="SANITATION">Sanitation & Waste</option>
-              <option value="ELECTRICITY">Power Grid Reliability</option>
-            </select>
-          </div>
-
-        </div>
-      </div>
-
-      {/* POLICY EXECUTIVE KPI CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
         
-        <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #ef4444' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>P1 National High Priority</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f87171', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-            {p1Count} Regions
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Crossed 80/100 Priority Threshold</div>
+        {/* Banner Actions */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+            <FileSpreadsheet size={15} className="text-slate-500" />
+            Export Intelligence (JSON)
+          </button>
+          <button className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer">
+            <Sparkles size={15} className="text-amber-400" />
+            Simulate Interventions
+          </button>
         </div>
-
-        <div className="card" style={{ padding: '1rem', borderLeft: '4px solid var(--cyan-400)' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Top Development Need</div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--cyan-400)', marginTop: '4px' }}>
-            {topSector}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Highest nationwide deficit score</div>
-        </div>
-
-        <div className="card" style={{ padding: '1rem' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Target Affected Population</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-            {totalPopulation.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Citizens across target districts</div>
-        </div>
-
-        <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Unfunded Investment Gap</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fbbf24', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-            ₹{(totalInvestmentGapLakhs / 100).toFixed(1)} Cr
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>₹{totalInvestmentGapLakhs.toLocaleString()} Lakhs Capital Deficit</div>
-        </div>
-
       </div>
 
-      {/* MAIN TWO-COLUMN VIEW: LEADERBOARD TABLE (LEFT) & POLICY DETAIL DRAWER (RIGHT) */}
-      <div style={{ display: 'grid', gridTemplateColumns: selectedRow ? '1.4fr 1fr' : '1fr', gap: '1.25rem', alignItems: 'start' }}>
-        
-        {/* LEADERBOARD TABLE */}
-        <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              National Development Priority Leaderboard
-            </h3>
-            <span style={{ fontSize: '0.72rem', color: 'var(--cyan-400)', fontFamily: 'var(--font-mono)' }}>
-              {leaderboardRows.length} Regions Ranked
+      {/* ================= CASCADING GEOGRAPHIC & SECTOR FILTER BAR ================= */}
+      <section className="bg-white rounded-xl border border-outline-variant/30 px-6 py-3 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Geo Cascades */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-md font-semibold text-emerald-800">
+              <ShieldAlert size={14} className="text-emerald-600" />
+              <span>India 🇮🇳 (DPG Certified)</span>
+            </div>
+            
+            <div className="flex items-center">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1.5">State:</label>
+              <select
+                value={selectedState}
+                onChange={e => {
+                  setSelectedState(e.target.value);
+                  setSelectedDistrict('ALL');
+                }}
+                className="text-xs font-semibold bg-slate-50 border border-slate-300 text-slate-800 rounded-md pl-2.5 pr-7 py-1 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer outline-none"
+              >
+                <option value="ALL">All States (National View)</option>
+                {availableStates.filter(s => s !== 'ALL').map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1.5">District:</label>
+              <select
+                value={selectedDistrict}
+                onChange={e => setSelectedDistrict(e.target.value)}
+                className="text-xs font-semibold bg-slate-50 border border-slate-300 text-slate-800 rounded-md pl-2.5 pr-7 py-1 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer outline-none"
+              >
+                <option value="ALL">All Districts</option>
+                {availableDistricts.filter(d => d !== 'ALL').map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            <span className="text-[11px] font-mono text-slate-500 hidden xl:inline-flex items-center gap-1 ml-2">
+              <Sparkles size={13} className="text-amber-500" />
+              Matrix Cycle: 2026-Q3 (Active Run)
             </span>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1.5px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Rank</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>State</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>District</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Development Need</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Demand</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Infra Gap</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Investment Gap</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Affected Pop.</th>
-                  <th style={{ padding: '0.5rem 0.6rem' }}>Priority</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboardRows.map(row => {
-                  const isSelected = selectedRow?.id === row.id;
-
-                  return (
-                    <tr
-                      key={row.id}
-                      onClick={() => setSelectedRow(row)}
-                      style={{
-                        borderBottom: '1px solid var(--border-subtle)',
-                        background: isSelected ? 'var(--civic-blue-50)' : 'transparent',
-                        cursor: 'pointer',
-                        transition: 'background 0.15s ease'
-                      }}
-                    >
-                      <td style={{ padding: '0.65rem 0.6rem', fontWeight: 800, color: row.rank === 1 ? '#ef4444' : row.rank <= 3 ? '#f59e0b' : 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                        #{row.rank}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {row.state}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', color: 'var(--cyan-400)', fontWeight: 700 }}>
-                        {row.district}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', color: 'var(--text-primary)' }}>
-                        {row.developmentNeed}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                        {row.demandScore}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', fontFamily: 'var(--font-mono)' }}>
-                        {row.infrastructureGap}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', fontFamily: 'var(--font-mono)', color: '#fbbf24' }}>
-                        ₹{row.investmentGapLakhs} L
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem', fontFamily: 'var(--font-mono)' }}>
-                        {row.affectedPopulation.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.6rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                          <PriorityBadge score={row.priorityScore} level={row.priorityLevel} compact={true} />
-                          <HumanReviewStateBadge
-                            state={((row.hotspot?.status as string) === 'approved' || (row.hotspot?.status as string) === 'investment_approved') ? 'approved' : 'pending_policy_review'}
-                            approvedBy={((row.hotspot?.status as string) === 'approved' || (row.hotspot?.status as string) === 'investment_approved') ? 'Municipal Commander' : undefined}
-                            compact={true}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* Sector Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+            <button
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer ${
+                selectedCategory === 'ALL'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
+                  : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              All Sectors ({leaderboardRows.length})
+            </button>
+            <button
+              onClick={() => setSelectedCategory('WATER')}
+              className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer ${
+                selectedCategory === 'WATER'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
+                  : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Water & Sanitation
+            </button>
+            <button
+              onClick={() => setSelectedCategory('HEALTHCARE')}
+              className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer ${
+                selectedCategory === 'HEALTHCARE'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
+                  : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Healthcare Access
+            </button>
+            <button
+              onClick={() => setSelectedCategory('ROADS')}
+              className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer ${
+                selectedCategory === 'ROADS'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
+                  : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Roads & Corridor
+            </button>
+            <button
+              onClick={() => setSelectedCategory('ELECTRICITY')}
+              className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors cursor-pointer ${
+                selectedCategory === 'ELECTRICITY'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
+                  : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Power Grid
+            </button>
           </div>
         </div>
+      </section>
 
-        {/* POLICY INTELLIGENCE DETAIL DRAWER */}
-        {selectedRow && (
-          <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--cyan-400)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            
-            {/* Header */}
-            <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--cyan-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  POLICY INTELLIGENCE DOSSIER #{selectedRow.rank}
+      {/* ================= TOP SUMMARY KPI CARDS (4 GRID STITCH) ================= */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1 */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs relative overflow-hidden">
+          <div className="absolute right-3 top-3 w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+            <AlertTriangle size={22} />
+          </div>
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            P1 National High Priority Regions
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-headline font-extrabold text-slate-900 font-mono">{p1Count} Regions</span>
+            <span className="text-xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">Critical Escalation</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-mono">
+            <AlertCircle size={13} className="text-red-500" />
+            &gt;80 Vulnerability Score • Immediate Action Mandate
+          </p>
+        </div>
+
+        {/* Card 2 */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs relative overflow-hidden">
+          <div className="absolute right-3 top-3 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-primary">
+            <Building2 size={22} />
+          </div>
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Top Macro Sector Need
+          </div>
+          <div className="text-base font-headline font-bold text-slate-900 truncate">
+            {topSector}
+          </div>
+          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+            <MapPin size={13} className="text-slate-400" />
+            Highest nationwide infrastructure deficit score
+          </p>
+        </div>
+
+        {/* Card 3 */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs relative overflow-hidden">
+          <div className="absolute right-3 top-3 w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-700">
+            <Users size={22} />
+          </div>
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Target Affected Population
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-headline font-extrabold text-slate-900 font-mono">{totalPopulation.toLocaleString()}</span>
+            <span className="text-xs text-slate-500">Citizens</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-mono">
+            <PieChart size={13} className="text-purple-600" />
+            High Vulnerability Ratio 28.4%
+          </p>
+        </div>
+
+        {/* Card 4 */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs relative overflow-hidden">
+          <div className="absolute right-3 top-3 w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <TrendingUp size={22} />
+          </div>
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Total Unfunded Investment Gap
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-headline font-extrabold text-slate-900 font-mono">₹{(totalInvestmentGapLakhs / 100).toFixed(1)} Cr</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-mono">
+            <span className="text-emerald-700 font-bold">₹{totalInvestmentGapLakhs.toLocaleString()} Lakhs</span>
+            <span>Capital Pool Gap</span>
+          </p>
+        </div>
+      </section>
+
+      {/* ================= MAIN TWO-COLUMN WORKSPACE (8 COLS TABLE + 4 COLS DRAWER) ================= */}
+      <main className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        {/* LEFT COLUMN: Policy Leaderboard Table (8 of 12 cols) */}
+        <section className={`${selectedRow ? 'lg:col-span-7 xl:col-span-8' : 'col-span-12'} bg-white border border-slate-200/90 rounded-xl shadow-xs flex flex-col overflow-hidden`}>
+          
+          {/* Table Header & Search */}
+          <div className="p-4 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 bg-white">
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-headline font-bold text-slate-900 flex items-center gap-2">
+                <span>National & State Policy Leaderboard</span>
+                <span className="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded-full font-mono font-medium">
+                  {filteredRows.length} Regions Ranked
                 </span>
-                <HumanReviewStateBadge
-                  state={((selectedRow.hotspot?.status as string) === 'approved' || (selectedRow.hotspot?.status as string) === 'investment_approved') ? 'approved' : 'pending_policy_review'}
-                  approvedBy={((selectedRow.hotspot?.status as string) === 'approved' || (selectedRow.hotspot?.status as string) === 'investment_approved') ? 'Municipal Commander' : undefined}
-                  compact={true}
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="relative w-48 sm:w-56">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search Ward / District..."
+                  className="w-full pl-8 pr-2 py-1 text-xs bg-slate-50 border border-slate-300 rounded-md focus:ring-1 focus:ring-primary focus:border-primary outline-none"
                 />
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                  {selectedRow.district}, {selectedRow.state}
-                </h3>
-                <PriorityBadge score={selectedRow.priorityScore} level={selectedRow.priorityLevel} />
-              </div>
-            </div>
-
-            {/* CONCISE GEMINI POLICYMAKER EXPLANATION CARD */}
-            <GeminiExplanationCard
-              explanation={selectedRow.geminiExplanation}
-              confidence={0.967}
-              sourcesCount={selectedRow.hotspot?.requestCount || 18}
-              modelName="Google Gemini 1.5 Pro (Public Sector Fine-tuned)"
-              auditBlock={`0x${selectedRow.id.slice(0, 8)}...`}
-            />
-
-            {/* POLICY BREAKDOWN CARDS */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.78rem' }}>
-              
-              {/* Citizen Demand */}
-              <div style={{ background: 'var(--bg-canvas)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>1. Citizen Demand Context</div>
-                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-                  Demand Score: <span style={{ color: 'var(--cyan-400)' }}>{selectedRow.demandScore}/100</span>
-                </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '2px' }}>
-                  {selectedRow.hotspot ? `${selectedRow.hotspot.requestCount} citizen reports (+${selectedRow.hotspot.requestVelocity} req/h)` : 'High citizen demand volume'}
-                </div>
-              </div>
-
-              {/* Demographics */}
-              <div style={{ background: 'var(--bg-canvas)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>2. Demographics & Vulnerability</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
-                  Population: <strong>{selectedRow.affectedPopulation.toLocaleString()}</strong>
-                </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '2px' }}>
-                  Vulnerable Population: <strong>{selectedRow.context.demographic.vulnerablePopulation.toLocaleString()}</strong> ({((selectedRow.context.demographic.vulnerablePopulation / selectedRow.affectedPopulation) * 100).toFixed(0)}%)
-                </div>
-              </div>
-
-              {/* Infrastructure */}
-              <div style={{ background: 'var(--bg-canvas)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>3. Infrastructure Indices</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
-                  Deficit Index: <strong style={{ color: '#f87171' }}>{selectedRow.infrastructureGap}/100</strong>
-                </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '2px' }}>
-                  Healthcare: {selectedRow.context.infrastructure.healthcareIndex}/100 • Education: {selectedRow.context.infrastructure.educationIndex}/100 • Water: {selectedRow.context.infrastructure.waterIndex}/100
-                </div>
-              </div>
-
-              {/* Investment */}
-              <div style={{ background: 'var(--bg-canvas)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>4. Public Investment Deficit</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
-                  Unfunded Gap: <strong style={{ color: '#fbbf24' }}>₹{selectedRow.investmentGapLakhs} Lakhs</strong>
-                </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '2px' }}>
-                  Existing Outlay: ₹{selectedRow.context.investment.existingInvestment} Lakhs | Planned: ₹{selectedRow.context.investment.plannedInvestment} Lakhs
-                </div>
-              </div>
-
-              {/* Recommended Project */}
-              {selectedRow.recommendedProject && (
-                <div style={{ background: 'var(--bg-canvas)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cyan-400)' }}>
-                  <div style={{ color: 'var(--cyan-400)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>5. Recommended Candidate Project</div>
-                  <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px', fontSize: '0.84rem' }}>
-                    {selectedRow.recommendedProject.title}
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '3px', fontStyle: 'italic' }}>
-                    "{selectedRow.recommendedProject.recommendedIntervention}"
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', fontSize: '0.7rem', color: '#34d399', fontWeight: 700, flexWrap: 'wrap' }}>
-                    <span>Cost: ₹{selectedRow.recommendedProject.estimatedCostLakhs} Lakhs</span>
-                    <span>• Beneficiaries: {selectedRow.recommendedProject.expectedBeneficiaries.toLocaleString()}</span>
-                  </div>
-
-                  <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.4rem' }}>
-                    <button
-                      onClick={() => {
-                        if (selectedRow.hotspot?.id) setSelectedIncidentId(selectedRow.hotspot.id);
-                        setActiveTab('development_map');
-                      }}
-                      className="sim-btn"
-                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.72rem', background: '#eff6ff', borderColor: '#bfdbfe', color: '#0284c7' }}
-                    >
-                      🗺️ Inspect Hotspot Map
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('project_priorities')}
-                      className="sim-btn"
-                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.72rem', background: 'var(--civic-blue-600)', color: '#fff', border: 'none' }}
-                    >
-                      ⚡ Review Intervention →
-                    </button>
-                  </div>
-                </div>
-              )}
-
             </div>
           </div>
+
+          {/* Table Container */}
+          {isLoading ? (
+            <div className="py-16 text-center text-slate-400 text-xs font-semibold">
+              Loading Sovereign Policy Matrix...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider font-label">
+                    <th className="py-2.5 px-3 text-center w-12">Rank</th>
+                    <th className="py-2.5 px-3">Territory / District</th>
+                    <th className="py-2.5 px-3">Primary Sector Need</th>
+                    <th className="py-2.5 px-3 text-center">Priority</th>
+                    <th className="py-2.5 px-3 text-center">Infra Deficit</th>
+                    <th className="py-2.5 px-3 text-right">Unfunded CapEx</th>
+                    <th className="py-2.5 px-3 text-right">Affected Citizens</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredRows.map(row => {
+                    const isSelected = selectedRow?.id === row.id;
+                    return (
+                      <tr
+                        key={row.id}
+                        onClick={() => setSelectedRow(row)}
+                        className={`transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-50/90 font-semibold border-l-4 border-l-primary'
+                            : 'hover:bg-slate-50/80'
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-900">
+                          <span className={`w-6 h-6 inline-flex items-center justify-center rounded-full text-xs ${isSelected ? 'bg-primary text-white' : 'bg-slate-100 text-slate-700'}`}>
+                            #{row.rank}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-slate-900 text-xs">{row.district}</div>
+                          <div className="text-[11px] text-slate-500 font-mono">{row.state}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-medium text-slate-800">{row.developmentNeed}</div>
+                          <div className="text-[10px] text-slate-500">{row.category}</div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <PriorityBadge level={row.priorityLevel} score={row.priorityScore} />
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono font-semibold text-slate-800">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>{row.priorityScore}%</span>
+                            <div className="w-12 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${row.priorityLevel === 'P1' ? 'bg-red-600' : row.priorityLevel === 'P2' ? 'bg-amber-500' : 'bg-blue-600'}`}
+                                style={{ width: `${row.priorityScore}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                          ₹{row.investmentGapLakhs} L
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono text-slate-700">
+                          {row.affectedPopulation.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* RIGHT COLUMN: Policy Detail Drawer (4 of 12 cols) */}
+        {selectedRow && (
+          <aside className="lg:col-span-5 xl:col-span-4 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 flex flex-col gap-4 sticky top-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  RANK #{selectedRow.rank} REGION DOSSIER
+                </span>
+                <h3 className="text-lg font-headline font-extrabold text-slate-900 mt-1">
+                  {selectedRow.district}
+                </h3>
+                <p className="text-xs text-slate-500">{selectedRow.state} • India</p>
+              </div>
+              <PriorityBadge level={selectedRow.priorityLevel} score={selectedRow.priorityScore} />
+            </div>
+
+            {/* Metric Grid */}
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                <div className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Primary Need</div>
+                <div className="font-bold text-slate-900 mt-0.5 truncate">{selectedRow.developmentNeed}</div>
+              </div>
+              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                <div className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Affected Citizens</div>
+                <div className="font-mono font-bold text-slate-900 mt-0.5">{selectedRow.affectedPopulation.toLocaleString()}</div>
+              </div>
+              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                <div className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Infra Deficit Index</div>
+                <div className="font-mono font-bold text-red-600 mt-0.5">{selectedRow.priorityScore}/100</div>
+              </div>
+              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                <div className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Capital Deficit</div>
+                <div className="font-mono font-bold text-amber-700 mt-0.5">₹{selectedRow.investmentGapLakhs} Lakhs</div>
+              </div>
+            </div>
+
+            {/* Gemini Rationale Card */}
+            <GeminiExplanationCard
+              explanation={selectedRow.geminiExplanation || `High priority candidate for state capital intervention in ${selectedRow.developmentNeed}. Recommend immediate project feasibility allocation.`}
+            />
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+              <button
+                onClick={() => {
+                  setSelectedIncidentId(selectedRow.id);
+                  setActiveTab('demand_intelligence');
+                }}
+                className="flex-1 py-2 px-3 text-xs font-bold text-white bg-primary hover:bg-blue-900 rounded-lg shadow-xs transition-colors text-center cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Inspect Demand Dossier</span>
+                <ArrowUpRight size={14} />
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('project_priorities');
+                }}
+                className="flex-1 py-2 px-3 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-center cursor-pointer"
+              >
+                Draft Project Proposal
+              </button>
+            </div>
+          </aside>
         )}
 
-      </div>
-
+      </main>
     </div>
   );
 };
+
+export default AuthorityDashboard;

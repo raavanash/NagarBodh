@@ -11,9 +11,52 @@
     content="Understand the city. Prioritize what matters. Act where it counts. Real-time civic intelligence and automated multi-agency incident response." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: ["class", '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: "#1e3a8a",
+              container: "#dbeafe",
+              foreground: "#ffffff"
+            },
+            surface: {
+              DEFAULT: "#ffffff",
+              variant: "#f8fafc",
+              container: {
+                lowest: "#ffffff",
+                low: "#f1f5f9",
+                DEFAULT: "#e2e8f0",
+                high: "#cbd5e1",
+                highest: "#94a3b8"
+              }
+            },
+            "on-surface": "#0f172a",
+            "on-surface-variant": "#475569",
+            "outline-variant": "#cbd5e1",
+            critical: "#b91c1c",
+            warning: "#d97706",
+            success: "#15803d",
+            cyanaccent: "#0284c7"
+          },
+          fontFamily: {
+            headline: ["Plus Jakarta Sans", "sans-serif"],
+            display: ["Plus Jakarta Sans", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
 </head>
 
 <body>

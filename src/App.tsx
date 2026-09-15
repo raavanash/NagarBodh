@@ -47,7 +47,7 @@ const AppContent: React.FC = () => {
               {/* Bottom Operational City Metrics Strip */}
               <div className="bottom-metrics-strip">
                 <div className="metric-item">
-                  <Activity size={13} color="#2563eb" />
+                  <Activity size={13} color="#1e3a8a" />
                   <span>Demand Hotspots: <strong>{totalHotspots}</strong></span>
                 </div>
                 <div className="metric-item">

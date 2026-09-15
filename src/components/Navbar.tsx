@@ -45,12 +45,12 @@ export const Navbar: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
               <h1 className="brand-title">NagarBodh</h1>
               <span className="brand-tag-badge" style={{
-                background: '#eff6ff',
-                color: '#2563eb',
-                border: '1px solid #bfdbfe',
+                background: 'rgba(30, 58, 138, 0.08)',
+                color: '#1e3a8a',
+                border: '1px solid rgba(30, 58, 138, 0.25)',
                 fontSize: '0.6rem',
                 padding: '0.1rem 0.35rem',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 700
               }}>
@@ -59,7 +59,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="brand-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-              <Building2 size={11} color="#2563eb" />
+              <Building2 size={11} color="#1e3a8a" />
               <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>BRICS Innovation Track • Digital Public Infrastructure</span>
               <span>•</span>
               <span style={{ color: '#059669', fontWeight: 700 }}>National Policy Command</span>

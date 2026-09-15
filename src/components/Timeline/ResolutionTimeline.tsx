@@ -29,97 +29,63 @@ export const ResolutionTimeline: React.FC = () => {
   });
 
   return (
-    <div className="timeline-view-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="timeline-view-container bg-slate-50 min-h-screen text-slate-900 p-4 md:p-6 overflow-y-auto font-body flex flex-col gap-6">
       
-      {/* 1. Development Impact Measurement Dashboard */}
+      {/* 1. Development Impact Measurement Dashboard (Stitch Screen 04 Split) */}
       <ResolutionVerificationPanel incident={selectedIncident || incidents[0]} />
 
-      {/* 2. Audit Trail Stream */}
-      <div>
-        <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* 2. Auditable Impact Audit Trail Stream */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
+        <div className="mb-5 flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-4">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-              <Clock size={20} color="var(--cyan-400)" />
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                Auditable Impact Audit Trail
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="text-primary" size={20} />
+              <h2 className="text-lg font-headline font-extrabold text-slate-900">
+                Auditable Impact & Resolution Audit Trail
               </h2>
             </div>
+            <p className="text-xs text-slate-500 font-medium">Immutable verification log tracking demand lifecycle and satellite evidence</p>
           </div>
 
           {/* Filter Pills */}
-          <div className="timeline-filter-pills" style={{ display: 'flex', gap: '0.4rem', background: 'var(--bg-surface)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+          <div className="timeline-filter-pills flex gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 flex-wrap text-xs">
             <button
               onClick={() => setFilterType('all')}
-              style={{
-                border: 'none',
-                borderRadius: '6px',
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: filterType === 'all' ? 'var(--cyan-500)' : 'transparent',
-                color: filterType === 'all' ? 'var(--outer-950)' : 'var(--text-secondary)'
-              }}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                filterType === 'all' ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
               All Events ({auditLogs.length})
             </button>
             <button
               onClick={() => setFilterType('priority_spike')}
-              style={{
-                border: 'none',
-                borderRadius: '6px',
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: filterType === 'priority_spike' ? '#ef4444' : 'transparent',
-                color: filterType === 'priority_spike' ? '#fff' : 'var(--text-secondary)'
-              }}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                filterType === 'priority_spike' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
               Priority & Triaged
             </button>
             <button
               onClick={() => setFilterType('clustering')}
-              style={{
-                border: 'none',
-                borderRadius: '6px',
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: filterType === 'clustering' ? '#8b5cf6' : 'transparent',
-                color: filterType === 'clustering' ? '#fff' : 'var(--text-secondary)'
-              }}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                filterType === 'clustering' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
               Clustering & SOPs
             </button>
             <button
               onClick={() => setFilterType('dispatch')}
-              style={{
-                border: 'none',
-                borderRadius: '6px',
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: filterType === 'dispatch' ? '#10b981' : 'transparent',
-                color: filterType === 'dispatch' ? '#fff' : 'var(--text-secondary)'
-              }}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                filterType === 'dispatch' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
               Dispatches Executed
             </button>
             <button
               onClick={() => setFilterType('resolution')}
-              style={{
-                border: 'none',
-                borderRadius: '6px',
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: filterType === 'resolution' ? '#06b6d4' : 'transparent',
-                color: filterType === 'resolution' ? '#fff' : 'var(--text-secondary)'
-              }}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                filterType === 'resolution' ? 'bg-cyan-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
               Resolutions & Verifications
             </button>
@@ -127,122 +93,77 @@ export const ResolutionTimeline: React.FC = () => {
         </div>
 
         {/* Timeline Stream */}
-        <div className="timeline-stream-container" style={{ position: 'relative', paddingLeft: '2.5rem' }}>
+        <div className="timeline-stream-container relative pl-8 md:pl-10">
           {/* Continuous vertical line */}
           <div
-            className="timeline-vertical-line"
-            style={{
-              position: 'absolute',
-              left: '17px',
-              top: '8px',
-              bottom: '8px',
-              width: '2px',
-              background: 'linear-gradient(180deg, #06b6d4 0%, #3b82f6 50%, #10b981 100%)',
-              opacity: 0.4
-            }}
+            className="timeline-vertical-line absolute left-4 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-600 via-purple-500 to-emerald-500 opacity-30"
           />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div className="flex flex-col gap-4">
             {filteredLogs.map(log => {
               const isSpike = log.type === 'priority_spike' || log.type === 'incident_triaged';
               const isDispatch = log.type === 'dispatch_approved' || log.type === 'crew_dispatched';
               const isResolution = log.type === 'resolution_confirmed' || log.type === 'field_verification' || log.type === 'resolution_begun';
               const isCluster = log.type === 'cluster_formed' || log.type === 'cluster_updated' || log.type === 'response_plan_generated';
 
-              let nodeColor = 'var(--bg-surface-elevated)';
-              let borderColor = 'var(--border-accent)';
+              let nodeBg = 'bg-slate-800';
+              let nodeBorder = 'border-slate-300';
               let icon = <Activity size={16} />;
-              let badgeBg = 'rgba(6, 182, 212, 0.2)';
-              let badgeColor = '#cffafe';
+              let badgeStyle = 'bg-slate-100 text-slate-700 border-slate-200';
 
               if (isSpike) {
-                nodeColor = '#ef4444';
-                borderColor = '#fecaca';
+                nodeBg = 'bg-red-600';
+                nodeBorder = 'border-red-200';
                 icon = <Flame size={18} />;
-                badgeBg = 'rgba(239, 68, 68, 0.2)';
-                badgeColor = '#fca5a5';
+                badgeStyle = 'bg-red-50 text-red-700 border-red-200';
               } else if (isDispatch) {
-                nodeColor = '#10b981';
-                borderColor = '#a7f3d0';
+                nodeBg = 'bg-emerald-600';
+                nodeBorder = 'border-emerald-200';
                 icon = <Send size={16} />;
-                badgeBg = 'rgba(16, 185, 129, 0.2)';
-                badgeColor = '#a7f3d0';
+                badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
               } else if (isResolution) {
-                nodeColor = '#06b6d4';
-                borderColor = '#67e8f9';
+                nodeBg = 'bg-cyan-600';
+                nodeBorder = 'border-cyan-200';
                 icon = <CheckCircle2 size={18} />;
-                badgeBg = 'rgba(6, 182, 212, 0.2)';
-                badgeColor = '#67e8f9';
+                badgeStyle = 'bg-cyan-50 text-cyan-700 border-cyan-200';
               } else if (isCluster) {
-                nodeColor = '#8b5cf6';
-                borderColor = '#c4b5fd';
+                nodeBg = 'bg-purple-600';
+                nodeBorder = 'border-purple-200';
                 icon = <Zap size={16} />;
-                badgeBg = 'rgba(139, 92, 246, 0.2)';
-                badgeColor = '#ddd6fe';
+                badgeStyle = 'bg-purple-50 text-purple-700 border-purple-200';
               }
 
               return (
-                <div key={log.id} style={{ position: 'relative' }} className="animate-fade-in">
+                <div key={log.id} className="relative group">
                   {/* Node icon */}
                   <div
-                    className="timeline-node-icon"
-                    style={{
-                      position: 'absolute',
-                      left: '-2.5rem',
-                      top: '2px',
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: nodeColor,
-                      border: `2px solid ${borderColor}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fff',
-                      boxShadow: isSpike ? '0 0 16px rgba(239, 68, 68, 0.6)' : isDispatch ? '0 0 16px rgba(16, 185, 129, 0.6)' : 'none'
-                    }}
+                    className={`timeline-node-icon absolute -left-8 md:-left-10 top-1 w-8 h-8 rounded-full ${nodeBg} border-2 ${nodeBorder} flex items-center justify-center text-white shadow-xs z-10`}
                   >
                     {icon}
                   </div>
 
                   {/* Event Card */}
-                  <div
-                    className="card"
-                    style={{
-                      padding: '1.1rem',
-                      borderLeft: `4px solid ${nodeColor === 'var(--bg-surface-elevated)' ? 'var(--cyan-500)' : nodeColor}`
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span
-                          style={{
-                            fontSize: '0.68rem',
-                            fontWeight: 800,
-                            textTransform: 'uppercase',
-                            padding: '0.15rem 0.5rem',
-                            borderRadius: '4px',
-                            background: badgeBg,
-                            color: badgeColor
-                          }}
-                        >
+                  <div className="bg-slate-50 hover:bg-white border border-slate-200 rounded-xl p-4 transition-colors shadow-xs">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${badgeStyle}`}>
                           {log.type.replace(/_/g, ' ')}
                         </span>
-                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                          Actor: <strong style={{ color: 'var(--text-secondary)' }}>{log.actor}</strong>
+                        <span className="text-xs text-slate-500">
+                          Actor: <strong className="text-slate-800 font-semibold">{log.actor}</strong>
                         </span>
                       </div>
 
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--cyan-400)', fontWeight: 700 }}>
+                      <div className="font-mono text-xs text-blue-900 font-bold">
                         ⏱ {log.timeLabel}
                       </div>
                     </div>
 
-                    <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+                    <h3 className="text-sm font-headline font-bold text-slate-900 mb-1">
                       {log.title}
                     </h3>
 
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.45 }}>
+                    <p className="text-xs text-slate-600 leading-relaxed">
                       {log.description}
                     </p>
                   </div>
@@ -256,4 +177,4 @@ export const ResolutionTimeline: React.FC = () => {
   );
 };
 
-
+export default ResolutionTimeline;

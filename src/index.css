@@ -40,12 +40,14 @@
   --border-medium: #cbd5e1;
   --border-accent: #93c5fd;
 
-  /* Brand Accents - Civic Blue */
+  /* Brand Accents - Civic Blue / Stitch Primary (#1e3a8a) */
+  --stitch-primary: #1e3a8a;
   --civic-blue-50: #eff6ff;
   --civic-blue-100: #dbeafe;
-  --civic-blue-500: #3b82f6;
-  --civic-blue-600: #2563eb;
-  --civic-blue-700: #1d4ed8;
+  --civic-blue-500: #2563eb;
+  --civic-blue-600: #1e3a8a;
+  --civic-blue-700: #172554;
+  --radius-stitch: 8px;
 
   --cyan-300: #0284c7;
   --cyan-400: #0369a1;
@@ -86,6 +88,38 @@
   --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.12);
   --shadow-glow-cyan: 0 0 20px rgba(37, 99, 235, 0.2);
   --shadow-glow-rose: 0 0 25px rgba(239, 68, 68, 0.2);
+}
+
+/* ==========================================================================
+   Stitch Design System Animations & Utilities
+   ========================================================================== */
+@keyframes radar-pulse {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  50% { transform: scale(2.2); opacity: 0.15; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
+.animate-radar {
+  animation: radar-pulse 2.6s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.topo-grid {
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(203, 213, 225, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(203, 213, 225, 0.4) 1px, transparent 1px);
+}
+
+.font-headline {
+  font-family: var(--font-heading);
+}
+
+.font-body {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 /* ==========================================================================
