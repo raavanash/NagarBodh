@@ -122,6 +122,13 @@
   font-family: var(--font-mono);
 }
 
+/* Mobile Bottom Navigation Dock - strictly hidden on desktop (>= 768px) */
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
 /* ==========================================================================
    Dark Tactical Theme Token Overrides
    ========================================================================== */
@@ -527,7 +534,9 @@ body,
 }
 
 .map-sidebar-left {
-  width: 320px;
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
   height: 100%;
   background: var(--bg-surface);
   border-right: 1px solid var(--border-subtle);
@@ -545,7 +554,9 @@ body,
 }
 
 .map-dossier-right {
-  width: 440px;
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
   height: 100%;
   background: var(--bg-surface);
   border-left: 1px solid var(--border-subtle);

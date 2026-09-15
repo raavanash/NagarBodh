@@ -9,7 +9,7 @@ export const MobileBottomNav: React.FC = () => {
 
   return (
     <nav
-      className="mobile-bottom-nav"
+      className="mobile-bottom-nav md:hidden"
       style={{
         position: 'fixed',
         bottom: 0,

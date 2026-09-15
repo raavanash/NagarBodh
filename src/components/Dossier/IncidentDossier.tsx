@@ -77,51 +77,48 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
       }}
     >
       {/* Screen Question Header Banner */}
-      <div style={{ padding: '0.85rem 1.15rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-elevated)' }}>
+      <div style={{ padding: '0.65rem 0.85rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-elevated)' }}>
         {/* Navigation Flow Breadcrumbs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontFamily: 'var(--font-mono)' }}>
           <button
             onClick={() => setActiveTab('development_map')}
-            style={{ background: 'transparent', border: 'none', color: '#2563eb', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+            style={{ background: 'transparent', border: 'none', color: '#1e3a8a', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
           >
-            🗺️ Development Map
+            🗺️ Map
           </button>
           <span>&gt;</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>📍 Hotspot Detail</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>📍 Hotspot</span>
           <span>&gt;</span>
           <button
             onClick={() => setActiveTab('project_priorities')}
             style={{ background: 'transparent', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
           >
-            ⚡ Recommendation
+            ⚡ Action
           </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-          <span style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
-            HOTSPOT DETAIL & DOSSIER
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+          <span style={{ background: 'rgba(30, 58, 138, 0.08)', color: '#1e3a8a', border: '1px solid rgba(30, 58, 138, 0.25)', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: '999px', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+            HOTSPOT DOSSIER
           </span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>• BRICS Development Intelligence</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>• BRICS Intel</span>
         </div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 0.15rem 0', color: 'var(--text-primary)' }}>
-          Development Hotspot Analysis
+        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 0.1rem 0', color: 'var(--text-primary)' }}>
+          Hotspot Demand Analysis
         </h3>
-        <p style={{ margin: 0, fontSize: '0.82rem', color: '#0284c7', fontWeight: 600 }}>
-          "What is the complete multi-pillar evidence profile for this hotspot?"
-        </p>
       </div>
 
-      {/* Top Header Hierarchy (Ordered: Title -> Priority -> Human Review State -> Location) */}
-      <div style={{ padding: '1rem 1.15rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
+      {/* Top Header Hierarchy */}
+      <div style={{ padding: '0.75rem 0.85rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
         {/* 1. Incident Title */}
         <h2 style={{
-          fontSize: '1.25rem',
+          fontSize: '1.1rem',
           fontFamily: 'var(--font-heading)',
           fontWeight: 800,
           color: 'var(--text-primary)',
           letterSpacing: '-0.02em',
           lineHeight: 1.25,
-          margin: '0 0 0.6rem 0'
+          margin: '0 0 0.5rem 0'
         }}>
           {incident.title}
         </h2>
