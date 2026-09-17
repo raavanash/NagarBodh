@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Activity,
   AlertTriangle,
@@ -214,55 +215,65 @@ export const Navbar: React.FC = () => {
           </button>
         </div>
 
-        {/* Hamburger Dropdown Drawer Navigation */}
-        {isMenuOpen && (
-          <div className="fixed top-14 left-4 z-[99999] w-72 bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-xl shadow-2xl border border-[var(--border-medium)] p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="px-3 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] font-mono">
-                Command Navigation
-              </span>
-              <span className="text-[10px] bg-blue-500/20 text-blue-400 font-bold px-1.5 py-0.5 rounded border border-blue-500/30">
-                6 VIEWS
-              </span>
-            </div>
+        {/* Hamburger Dropdown Drawer Navigation (Portaled to document.body for top-level z-index) */}
+        {isMenuOpen && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[999999] flex flex-col">
+            {/* Dark Backdrop Overlay */}
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+              onClick={() => setIsMenuOpen(false)}
+            />
 
-            <div className="py-1 flex flex-col gap-1">
-              {navItems.map(item => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id || (item.id === 'development_map' && activeTab === 'live_map') || (item.id === 'demand_intelligence' && activeTab === 'dossier') || (item.id === 'citizen_signals' && activeTab === 'signals') || (item.id === 'project_priorities' && activeTab === 'dispatch') || (item.id === 'policy_board' && activeTab === 'authority');
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-[var(--civic-blue-50)] text-[var(--text-accent)] border border-[var(--border-accent)]'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Icon size={16} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
-                      <span>{item.label}</span>
-                    </div>
+            {/* Top-Level Drawer Container */}
+            <div className="fixed top-14 left-4 z-[1000000] w-72 bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-xl shadow-2xl border border-[var(--border-medium)] p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="px-3 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] font-mono">
+                  Command Navigation
+                </span>
+                <span className="text-[10px] bg-blue-500/20 text-blue-400 font-bold px-1.5 py-0.5 rounded border border-blue-500/30">
+                  6 VIEWS
+                </span>
+              </div>
 
-                    {item.badge !== undefined && (
-                      <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${item.badgeBg}`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              <div className="py-1 flex flex-col gap-1">
+                {navItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id || (item.id === 'development_map' && activeTab === 'live_map') || (item.id === 'demand_intelligence' && activeTab === 'dossier') || (item.id === 'citizen_signals' && activeTab === 'signals') || (item.id === 'project_priorities' && activeTab === 'dispatch') || (item.id === 'policy_board' && activeTab === 'authority');
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id as any);
+                        setIsMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                        isActive
+                          ? 'bg-[var(--civic-blue-50)] text-[var(--text-accent)] border border-[var(--border-accent)]'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon size={16} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
+                        <span>{item.label}</span>
+                      </div>
 
-            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] px-3 py-1 flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
-              <span>Mode: <strong className="text-[var(--text-primary)]">{ingestionMode}</strong></span>
-              <span>Clock: <strong className="text-[var(--text-primary)]">{operationalClock}</strong></span>
+                      {item.badge !== undefined && (
+                        <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${item.badgeBg}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] px-3 py-1 flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
+                <span>Mode: <strong className="text-[var(--text-primary)]">{ingestionMode}</strong></span>
+                <span>Clock: <strong className="text-[var(--text-primary)]">{operationalClock}</strong></span>
+              </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </header>
