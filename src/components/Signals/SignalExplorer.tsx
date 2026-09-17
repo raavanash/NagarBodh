@@ -100,104 +100,70 @@ export const SignalExplorer: React.FC = () => {
   };
 
   return (
-    <div className="signals-view-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
-      {/* Top Header & Action Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="signals-view-container bg-[var(--bg-canvas)] min-h-screen text-[var(--text-primary)] p-4 md:p-6 overflow-y-auto font-body space-y-4">
+      {/* Top Header & Action Controls (Stitch Screen 05) */}
+      <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-subtle)] p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-            <Activity size={20} color="var(--cyan-400)" />
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              Citizen Signals
-            </h2>
-            <span style={{
-              background: 'rgba(6, 182, 212, 0.15)',
-              color: 'var(--cyan-400)',
-              fontSize: '0.74rem',
-              padding: '0.15rem 0.5rem',
-              borderRadius: '999px',
-              fontWeight: 700,
-              fontFamily: 'var(--font-mono)'
-            }}>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <Activity size={20} className="text-primary" />
+            <h1 className="text-xl font-headline font-extrabold text-[var(--text-primary)]">
+              Citizen Signals & Ingestion Feed
+            </h1>
+            <span className="bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold">
               Mode: {ingestionMode}
             </span>
 
             {ingestionMode === 'LIVE' && (
-              <span style={{
-                background: isBskyLive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                color: isBskyLive ? '#10b981' : '#f87171',
-                border: isBskyLive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
-                fontSize: '0.74rem',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '999px',
-                fontWeight: 700,
-                fontFamily: 'var(--font-mono)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem'
-              }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isBskyLive ? '#10b981' : '#ef4444' }} />
+              <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold inline-flex items-center gap-1.5 ${
+                isBskyLive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/15 text-red-400 border border-red-500/30'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isBskyLive ? 'bg-emerald-500' : 'bg-red-500'}`} />
                 {isBskyLive ? 'Bluesky · LIVE' : 'Bluesky · Disconnected'}
-                {lastEventStr && <span style={{ opacity: 0.8, fontSize: '0.65rem' }}>({lastEventStr})</span>}
+                {lastEventStr && <span className="opacity-75 text-[10px]">({lastEventStr})</span>}
               </span>
             )}
           </div>
-          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
-            "What are citizens asking for?"
+          <p className="text-xs text-[var(--text-muted)] font-medium">
+            Multilingual Voice, Text & Messaging Demands • Automated Sentiment & Category Ingestion
           </p>
         </div>
 
         {/* Action Controls & File Import */}
-        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="flex items-center gap-2.5 flex-wrap">
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileUpload}
             accept=".csv,.json"
-            style={{ display: 'none' }}
+            className="hidden"
           />
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="sim-btn"
-            style={{
-              background: 'var(--bg-surface-elevated)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-accent)',
-              padding: '0.55rem 0.85rem',
-              fontSize: '0.82rem',
-              fontWeight: 600
-            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-surface-elevated)] border border-[var(--border-medium)] rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer"
             title="Import offline CSV or JSON dataset into unified ingestion pipeline"
           >
-            <Upload size={15} color="var(--cyan-400)" />
+            <Upload size={15} className="text-primary" />
             <span>Upload Dataset (CSV/JSON)</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-surface)', padding: '0.3rem 0.6rem', borderRadius: '6px', border: geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid var(--border-subtle)' }}>
-            <Sparkles size={14} color={geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? '#34d399' : 'var(--cyan-400)'} />
+          <div className="flex items-center gap-1.5 bg-[var(--bg-surface-elevated)] px-3 py-1.5 rounded-lg border border-[var(--border-medium)]">
+            <Sparkles size={14} className={geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? 'text-emerald-500' : 'text-amber-500'} />
             <input
               type="password"
               placeholder="Google Gemini Key..."
               value={geminiApiKey}
               onChange={e => setGeminiApiKey(e.target.value)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-primary)',
-                fontSize: '0.74rem',
-                outline: 'none',
-                width: '140px',
-                fontFamily: 'var(--font-mono)'
-              }}
+              className="bg-transparent border-none text-[var(--text-primary)] text-xs outline-none w-32 font-mono"
               title="Enter Google Gemini API Key for live multimodal NLP parsing"
             />
             {geminiApiKey && geminiApiKey !== 'your_gemini_api_key_here' ? (
-              <span style={{ fontSize: '0.62rem', color: '#34d399', fontWeight: 800, fontFamily: 'var(--font-mono)', background: 'rgba(16, 185, 129, 0.2)', padding: '1px 5px', borderRadius: '3px' }}>
+              <span className="text-[10px] text-emerald-400 font-bold font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/30">
                 LIVE
               </span>
             ) : (
-              <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontWeight: 800, fontFamily: 'var(--font-mono)', background: 'rgba(245, 158, 11, 0.2)', padding: '1px 5px', borderRadius: '3px' }}>
-                RULE ENGINE
+              <span className="text-[10px] text-amber-400 font-bold font-mono bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                RULE
               </span>
             )}
           </div>

@@ -31,12 +31,12 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '0.3rem',
+        gap: '0.35rem',
         fontSize: compact ? '0.65rem' : '0.72rem',
         fontWeight: 800,
         fontFamily: 'var(--font-mono)',
-        padding: compact ? '0.1rem 0.35rem' : '0.2rem 0.55rem',
-        borderRadius: '4px',
+        padding: compact ? '0.12rem 0.45rem' : '0.22rem 0.65rem',
+        borderRadius: '8px',
         background: bg,
         color: color,
         border: border,
@@ -50,7 +50,8 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
           width: '6px',
           height: '6px',
           borderRadius: '50%',
-          background: color
+          background: color,
+          flexShrink: 0
         }}
       />
       <span>{labelText}</span>

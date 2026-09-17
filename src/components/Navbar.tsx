@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -6,13 +7,15 @@ import {
   Database,
   Globe2,
   MapPin,
+  Menu,
   Moon,
   Send,
   ShieldAlert,
   Sparkles,
   Sun,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  X
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 
@@ -20,7 +23,6 @@ export const Navbar: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
-    currentStep,
     incidents,
     ingestionMode,
     setIngestionMode,
@@ -30,260 +32,241 @@ export const Navbar: React.FC = () => {
     operationalClock
   } = useCivic();
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const criticalCount = incidents.filter(i => i.priority.overallScore >= 80).length;
   const pendingDispatchCount = incidents.filter(i => i.actionPlan?.status === 'pending_review' && i.priority.overallScore >= 70).length;
 
+  const navItems = [
+    {
+      id: 'development_map',
+      label: 'Development Map',
+      icon: MapPin,
+      badge: criticalCount > 0 ? criticalCount : undefined,
+      badgeBg: 'bg-red-500 text-white',
+      title: 'Geospatial Hotspots Map'
+    },
+    {
+      id: 'demand_intelligence',
+      label: 'Demand Intelligence',
+      icon: ShieldAlert,
+      title: 'Priority & Context Analysis Dossier'
+    },
+    {
+      id: 'citizen_signals',
+      label: 'Citizen Signals',
+      icon: Activity,
+      title: 'Multilingual Citizen Requests'
+    },
+    {
+      id: 'investment_gaps',
+      label: 'Investment Gaps',
+      icon: TrendingUp,
+      title: 'Infrastructure Deficit & Capital Gap Analysis'
+    },
+    {
+      id: 'project_priorities',
+      label: 'Project Priorities',
+      icon: Send,
+      badge: pendingDispatchCount > 0 ? pendingDispatchCount : undefined,
+      badgeBg: 'bg-amber-400 text-slate-900',
+      title: 'Candidate Development Projects & Governance Pipeline'
+    },
+    {
+      id: 'policy_board',
+      label: 'Policy Board',
+      icon: Sparkles,
+      title: 'National & State Policymaker Leaderboard Workstation'
+    }
+  ];
+
   return (
-    <header className="navbar">
-      <div className="navbar-top-bar">
+    <header className="navbar bg-[#1e3a8a] text-white px-4 h-14 flex items-center justify-between sticky top-0 z-50 shadow-md">
+      <div className="navbar-top-bar flex items-center justify-between w-full gap-4 relative">
+        
         {/* Brand & City Selector */}
-        <div className="brand-section">
-          <div className="logo-badge">
+        <div className="brand-section flex items-center gap-3 flex-shrink-0">
+          {/* Hamburger Menu Toggle Button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1.5 rounded-lg bg-blue-900/80 border border-blue-700/60 text-white hover:bg-blue-800 transition-colors cursor-pointer flex items-center justify-center"
+            title="Toggle Command Menu"
+            aria-label="Toggle Command Menu"
+          >
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          <div className="logo-badge w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-headline font-black shadow-sm border border-blue-400/30">
             <Globe2 size={20} />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
-              <h1 className="brand-title">NagarBodh</h1>
-              <span className="brand-tag-badge" style={{
-                background: 'rgba(30, 58, 138, 0.08)',
-                color: '#1e3a8a',
-                border: '1px solid rgba(30, 58, 138, 0.25)',
-                fontSize: '0.6rem',
-                padding: '0.1rem 0.35rem',
-                borderRadius: '8px',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700
-              }}>
-                CITIZEN DEVELOPMENT INTELLIGENCE
+            <div className="flex items-center gap-2">
+              <h1 className="brand-title text-base font-headline font-extrabold text-white tracking-tight">
+                NagarBodh
+              </h1>
+              <span className="brand-tag-badge text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-900/60 border border-blue-400/30 text-blue-200">
+                BRICS INTEL NODE
               </span>
             </div>
 
-            <div className="brand-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-              <Building2 size={11} color="#1e3a8a" />
-              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>BRICS Innovation Track • Digital Public Infrastructure</span>
-              <span>•</span>
-              <span style={{ color: '#059669', fontWeight: 700 }}>National Policy Command</span>
+            <div className="brand-subtitle flex items-center gap-1.5 text-[11px] text-blue-200/80 font-medium mt-0.5">
+              <Building2 size={11} className="text-blue-300" />
+              <span>National Policy Command • Digital Public Infrastructure</span>
             </div>
           </div>
         </div>
 
+        {/* Desktop Navigation Tabs */}
+        <nav className="nav-tabs hidden lg:flex items-center gap-1 bg-blue-950/60 p-1 rounded-lg border border-blue-800/60" aria-label="Command Views">
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id || (item.id === 'development_map' && activeTab === 'live_map') || (item.id === 'demand_intelligence' && activeTab === 'dossier') || (item.id === 'citizen_signals' && activeTab === 'signals') || (item.id === 'project_priorities' && activeTab === 'dispatch') || (item.id === 'policy_board' && activeTab === 'authority');
+            return (
+              <button
+                key={item.id}
+                className={`nav-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-white text-[#1e3a8a] shadow-sm font-extrabold'
+                    : 'text-blue-100 hover:bg-blue-900/50 hover:text-white'
+                }`}
+                onClick={() => setActiveTab(item.id as any)}
+                title={item.title}
+              >
+                <Icon size={14} />
+                <span>{item.label}</span>
+                {item.badge !== undefined && (
+                  <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${item.badgeBg}`}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
         {/* Right User & Operational Controls */}
-        <div className="navbar-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="navbar-right-controls flex items-center gap-2 flex-shrink-0">
           {/* LIVE vs SIMULATION Ingestion Mode Switcher */}
-          <div
-            className="navbar-mode-switch"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '20px',
-              padding: '2px',
-              gap: '2px'
-            }}
-          >
+          <div className="hidden sm:flex items-center bg-blue-950/70 p-1 rounded-lg border border-blue-800/60 text-xs font-semibold">
             <button
               onClick={() => setIngestionMode('LIVE')}
-              style={{
-                background: ingestionMode === 'LIVE' ? '#d1fae5' : 'transparent',
-                color: ingestionMode === 'LIVE' ? '#047857' : 'var(--text-muted)',
-                border: ingestionMode === 'LIVE' ? '1px solid #6ee7b7' : 'none',
-                borderRadius: '16px',
-                padding: '0.2rem 0.55rem',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                transition: 'all 0.2s ease'
-              }}
+              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
+                ingestionMode === 'LIVE' ? 'bg-emerald-500 text-white shadow-xs' : 'text-blue-200 hover:text-white'
+              }`}
               title="Live ingestion via OpenWeather and Bluesky Jetstream WebSocket"
             >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ingestionMode === 'LIVE' ? '#10b981' : '#94a3b8' }} />
-              LIVE
+              <span className={`w-2 h-2 rounded-full ${ingestionMode === 'LIVE' ? 'bg-white animate-pulse' : 'bg-blue-300'}`} />
+              <span>LIVE</span>
             </button>
 
             <button
               onClick={() => setIngestionMode('SIMULATION')}
-              style={{
-                background: ingestionMode === 'SIMULATION' ? '#eff6ff' : 'transparent',
-                color: ingestionMode === 'SIMULATION' ? '#2563eb' : 'var(--text-muted)',
-                border: ingestionMode === 'SIMULATION' ? '1px solid #bfdbfe' : 'none',
-                borderRadius: '16px',
-                padding: '0.2rem 0.55rem',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                transition: 'all 0.2s ease'
-              }}
+              className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
+                ingestionMode === 'SIMULATION' ? 'bg-blue-600 text-white shadow-xs' : 'text-blue-200 hover:text-white'
+              }`}
               title="Use deterministic simulation steps and demo dataset"
             >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ingestionMode === 'SIMULATION' ? '#2563eb' : '#94a3b8' }} />
-              SIM
+              <span className={`w-2 h-2 rounded-full ${ingestionMode === 'SIMULATION' ? 'bg-white' : 'bg-blue-300'}`} />
+              <span>SIM</span>
             </button>
           </div>
 
           {/* Persistence Layer Status Badge */}
           <div
-            className="navbar-persistence-badge"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.55rem',
-              borderRadius: '16px',
-              background: persistenceStatus?.isLive ? '#d1fae5' : '#eff6ff',
-              border: `1px solid ${persistenceStatus?.isLive ? '#6ee7b7' : '#bfdbfe'}`,
-              color: persistenceStatus?.isLive ? '#047857' : '#1e40af',
-              fontSize: '0.68rem',
-              fontWeight: 700
-            }}
+            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold ${
+              persistenceStatus?.isLive
+                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                : 'bg-blue-900/60 border-blue-400/30 text-blue-200'
+            }`}
             title={
               persistenceStatus?.isLive
                 ? 'Firebase Firestore live persistence active'
-                : 'Firebase environment unconfigured. Operating in deterministic Replay/Simulation fallback mode.'
+                : 'Operating in deterministic Replay/Simulation fallback mode.'
             }
           >
-            <Database size={11} color={persistenceStatus?.isLive ? '#047857' : '#2563eb'} />
+            <Database size={12} className={persistenceStatus?.isLive ? 'text-emerald-400' : 'text-blue-300'} />
             <span>{persistenceStatus?.isLive ? 'FIREBASE LIVE' : 'DEMO FALLBACK'}</span>
           </div>
 
-          <div className="sim-clock-badge navbar-clock-badge" title={ingestionMode === 'LIVE' ? 'Real-Time Synced Operational Clock' : 'Simulated Step Operational Clock'}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: ingestionMode === 'LIVE' ? '#10b981' : '#3b82f6'
-            }} />
+          {/* Clock Badge */}
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-950/60 border border-blue-800/60 text-[11px] font-mono font-bold text-blue-100">
+            <span className={`w-1.5 h-1.5 rounded-full ${ingestionMode === 'LIVE' ? 'bg-emerald-400' : 'bg-blue-400'}`} />
             <span>{operationalClock}</span>
           </div>
 
           {/* Commander Badge */}
-          <div className="navbar-commander-badge" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.35rem 0.6rem',
-            borderRadius: '7px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            fontSize: '0.72rem',
-            color: 'var(--text-primary)'
-          }}>
-            <UserCheck size={13} color="#2563eb" />
-            <span style={{ fontWeight: 600 }}>Commander</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-900/60 border border-blue-700/60 text-xs font-bold text-white">
+            <UserCheck size={14} className="text-blue-300" />
+            <span className="hidden sm:inline">Commander</span>
           </div>
 
           {/* Theme Switcher Toggle Button */}
           <button
-            className="navbar-theme-btn"
+            className="p-1.5 rounded-lg bg-blue-900/60 border border-blue-700/60 text-blue-200 hover:bg-blue-800 hover:text-white transition-colors cursor-pointer"
             onClick={toggleTheme}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.35rem 0.65rem',
-              borderRadius: '7px',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-medium)',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: 'var(--shadow-sm)'
-            }}
-            title={theme === 'light' ? 'Switch to Dark Tactical Command Theme' : 'Switch to Light Gov-Tech Theme'}
+            title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
           >
             {theme === 'light' ? (
-              <>
-                <Sun size={14} color="#d97706" />
-                <span className="navbar-theme-label">Light</span>
-              </>
+              <Sun size={15} className="text-amber-300" />
             ) : (
-              <>
-                <Moon size={14} color="#38bdf8" />
-                <span className="navbar-theme-label">Dark</span>
-              </>
+              <Moon size={15} className="text-sky-300" />
             )}
           </button>
         </div>
+
+        {/* Hamburger Dropdown Drawer Navigation */}
+        {isMenuOpen && (
+          <div className="fixed top-14 left-4 z-[99999] w-72 bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-xl shadow-2xl border border-[var(--border-medium)] p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="px-3 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] font-mono">
+                Command Navigation
+              </span>
+              <span className="text-[10px] bg-blue-500/20 text-blue-400 font-bold px-1.5 py-0.5 rounded border border-blue-500/30">
+                6 VIEWS
+              </span>
+            </div>
+
+            <div className="py-1 flex flex-col gap-1">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id || (item.id === 'development_map' && activeTab === 'live_map') || (item.id === 'demand_intelligence' && activeTab === 'dossier') || (item.id === 'citizen_signals' && activeTab === 'signals') || (item.id === 'project_priorities' && activeTab === 'dispatch') || (item.id === 'policy_board' && activeTab === 'authority');
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-[var(--civic-blue-50)] text-[var(--text-accent)] border border-[var(--border-accent)]'
+                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon size={16} className={isActive ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'} />
+                      <span>{item.label}</span>
+                    </div>
+
+                    {item.badge !== undefined && (
+                      <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${item.badgeBg}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] px-3 py-1 flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
+              <span>Mode: <strong className="text-[var(--text-primary)]">{ingestionMode}</strong></span>
+              <span>Clock: <strong className="text-[var(--text-primary)]">{operationalClock}</strong></span>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Navigation Tabs — Reframed for BRICS Citizen Development Intelligence */}
-      <nav className="nav-tabs" aria-label="Command Views">
-        <button
-          className={`nav-tab-btn ${activeTab === 'development_map' || activeTab === 'live_map' ? 'active' : ''}`}
-          onClick={() => setActiveTab('development_map')}
-          title="Where is development demand concentrated? · Geospatial Hotspots"
-        >
-          <MapPin size={14} />
-          <span>Development Map</span>
-          {criticalCount > 0 && <span className="nav-tab-badge">{criticalCount}</span>}
-        </button>
-
-        <button
-          className={`nav-tab-btn ${activeTab === 'demand_intelligence' || activeTab === 'dossier' ? 'active' : ''}`}
-          onClick={() => setActiveTab('demand_intelligence')}
-          title="What development need is emerging? · Priority & Context Analysis"
-        >
-          <ShieldAlert size={14} />
-          <span>Demand Intelligence</span>
-        </button>
-
-        <button
-          className={`nav-tab-btn ${activeTab === 'citizen_signals' || activeTab === 'signals' ? 'active' : ''}`}
-          onClick={() => setActiveTab('citizen_signals')}
-          title="What are citizens asking for? · Voice, Text & Messaging Requests"
-        >
-          <Activity size={14} />
-          <span>Citizen Signals</span>
-        </button>
-
-        <button
-          className={`nav-tab-btn ${activeTab === 'investment_gaps' ? 'active' : ''}`}
-          onClick={() => setActiveTab('investment_gaps')}
-          title="Where is demand not matched by infrastructure/investment? · Gap Analysis"
-        >
-          <TrendingUp size={14} />
-          <span>Investment Gaps</span>
-        </button>
-
-        <button
-          className={`nav-tab-btn ${activeTab === 'project_priorities' || activeTab === 'dispatch' ? 'active' : ''}`}
-          onClick={() => setActiveTab('project_priorities')}
-          title="What should policymakers consider? · Candidate Development Projects"
-        >
-          <Send size={14} />
-          <span>Project Priorities</span>
-          {pendingDispatchCount > 0 && (
-            <span style={{
-              background: '#fef3c7',
-              color: '#b45309',
-              border: '1px solid #fcd34d',
-              fontSize: '0.65rem',
-              padding: '0.05rem 0.35rem',
-              borderRadius: '999px',
-              fontWeight: 700
-            }}>
-              {pendingDispatchCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          className={`nav-tab-btn ${activeTab === 'policy_board' || activeTab === 'authority' ? 'active' : ''}`}
-          onClick={() => setActiveTab('policy_board')}
-          title="Where should national/state policymakers focus? · Multi-State Leaderboard"
-        >
-          <Sparkles size={14} />
-          <span>Policy Board</span>
-        </button>
-      </nav>
     </header>
   );
 };
+
+export default Navbar;

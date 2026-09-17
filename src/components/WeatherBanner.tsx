@@ -35,7 +35,7 @@ export const WeatherBanner: React.FC = () => {
   const isAlert = alertLevel === 'orange' || alertLevel === 'red' || hasError;
 
   // Calculate freshness label
-  let freshnessLabel = 'Simulation Static Baseline';
+  let freshnessLabel = 'Simulation Baseline';
   if (isLiveMode && liveWeatherEnvelope) {
     if (liveWeatherEnvelope.timestamp) {
       const elapsedMs = Date.now() - new Date(liveWeatherEnvelope.timestamp).getTime();
@@ -56,21 +56,24 @@ export const WeatherBanner: React.FC = () => {
       className="weather-alert-strip"
       style={{
         background: hasError
-          ? '#fee2e2'
+          ? 'rgba(239, 68, 68, 0.15)'
           : alertLevel === 'red'
-          ? '#fee2e2'
+          ? 'rgba(239, 68, 68, 0.15)'
           : alertLevel === 'orange'
-          ? '#fef3c7'
-          : '#eff6ff',
-        borderBottom: isAlert
-          ? alertLevel === 'red' || hasError ? '1px solid #fca5a5' : '1px solid #fcd34d'
-          : '1px solid #dbeafe',
-        color: hasError || alertLevel === 'red' ? '#b91c1c' : alertLevel === 'orange' ? '#b45309' : '#1e3a8a',
+          ? 'rgba(245, 158, 11, 0.15)'
+          : 'var(--bg-surface-elevated)',
+        borderBottom: hasError || alertLevel === 'red'
+          ? '1px solid rgba(239, 68, 68, 0.4)'
+          : alertLevel === 'orange'
+          ? '1px solid rgba(245, 158, 11, 0.4)'
+          : '1px solid var(--border-subtle)',
+        color: hasError || alertLevel === 'red' ? '#f87171' : alertLevel === 'orange' ? '#fbbf24' : 'var(--text-primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0.45rem 1rem',
-        fontSize: '0.8rem'
+        fontSize: '0.8rem',
+        transition: 'all 0.2s ease'
       }}
     >
       {/* Left Section: Mode Badge, Title & Condition */}

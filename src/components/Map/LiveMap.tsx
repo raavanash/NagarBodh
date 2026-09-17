@@ -80,7 +80,7 @@ export const LiveMap: React.FC = () => {
       isDraggingTimelineRef.current = false;
       try {
         (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-      } catch {}
+      } catch { }
     }
   };
 

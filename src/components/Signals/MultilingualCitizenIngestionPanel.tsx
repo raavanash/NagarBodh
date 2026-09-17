@@ -280,8 +280,8 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
               fontSize: '0.78rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: activeTab === 'text' ? 'var(--cyan-500)' : 'transparent',
-              color: activeTab === 'text' ? '#fff' : 'var(--text-muted)',
+              background: activeTab === 'text' ? '#1e3a8a' : 'transparent',
+              color: activeTab === 'text' ? '#fff' : '#64748b',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem'
@@ -300,8 +300,8 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
               fontSize: '0.78rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: activeTab === 'voice' ? 'var(--cyan-500)' : 'transparent',
-              color: activeTab === 'voice' ? '#fff' : 'var(--text-muted)',
+              background: activeTab === 'voice' ? '#1e3a8a' : 'transparent',
+              color: activeTab === 'voice' ? '#fff' : '#64748b',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem'
@@ -320,8 +320,8 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
               fontSize: '0.78rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: activeTab === 'messaging' ? 'var(--cyan-500)' : 'transparent',
-              color: activeTab === 'messaging' ? '#fff' : 'var(--text-muted)',
+              background: activeTab === 'messaging' ? '#1e3a8a' : 'transparent',
+              color: activeTab === 'messaging' ? '#fff' : '#64748b',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem'
@@ -340,8 +340,8 @@ export const MultilingualCitizenIngestionPanel: React.FC<MultilingualCitizenInge
               fontSize: '0.78rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: activeTab === 'social' ? 'var(--cyan-500)' : 'transparent',
-              color: activeTab === 'social' ? '#fff' : 'var(--text-muted)',
+              background: activeTab === 'social' ? '#1e3a8a' : 'transparent',
+              color: activeTab === 'social' ? '#fff' : '#64748b',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem'

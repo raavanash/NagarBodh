@@ -87,237 +87,177 @@ export const DevelopmentContextPanel: React.FC<Props> = ({
     investment
   );
 
-  // Provenance label
   const provenanceLabel = ingestionMode === 'LIVE'
     ? 'LIVE TELEMETRY'
     : ingestionMode === 'REPLAY'
     ? 'REPLAY RECORDING'
     : 'REALISTIC SAMPLE DATA';
 
-  const provenanceBadgeStyle = {
-    fontSize: '0.6rem',
-    fontWeight: 800 as const,
-    padding: '0.1rem 0.4rem',
-    borderRadius: '4px',
-    background: ingestionMode === 'LIVE' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(37, 99, 235, 0.15)',
-    color: ingestionMode === 'LIVE' ? '#047857' : '#1d4ed8',
-    border: `1px solid ${ingestionMode === 'LIVE' ? '#6ee7b7' : '#bfdbfe'}`,
-    fontFamily: 'var(--font-mono)'
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="flex flex-col gap-3 font-body">
 
       {/* SECTION HEADER & PROVENANCE ADVISORY */}
-      <div style={{
-        padding: '0.75rem 0.9rem',
-        background: 'var(--bg-surface-elevated)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '0.5rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Layers size={15} color="#2563eb" />
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
+      <div className="p-3 bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] rounded-lg flex items-center justify-between flex-wrap gap-2 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Layers size={15} className="text-primary" />
+          <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[11px]">
             Multi-Pillar Development Intelligence
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <Database size={11} color="#0284c7" />
-          <span style={provenanceBadgeStyle}>{provenanceLabel}</span>
+        <div className="flex items-center gap-1.5">
+          <Database size={11} className="text-blue-400" />
+          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+            ingestionMode === 'LIVE' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+          }`}>
+            {provenanceLabel}
+          </span>
         </div>
       </div>
 
       {/* 5-PILLAR CONTEXT CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.75rem' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
 
         {/* 1. DEMAND CONTEXT */}
-        <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div className="bg-[var(--bg-surface-elevated)] p-3 rounded-lg border border-[var(--border-subtle)]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold uppercase text-blue-400 flex items-center gap-1">
               <Activity size={12} />
               1. Citizen Demand
             </span>
-            <span style={provenanceBadgeStyle}>DEMAND</span>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400">DEMAND</span>
           </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+          <div className="text-sm font-headline font-extrabold text-[var(--text-primary)] font-mono">
             {incident.signalIds?.length || 0} Signals
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            Velocity: <strong style={{ color: '#dc2626' }}>+{(incident.velocityPerHour || 0).toFixed(1)} req/hr</strong>
+          <div className="text-xs text-[var(--text-secondary)] mt-1">
+            Velocity: <strong className="text-red-500">+{(incident.velocityPerHour || 0).toFixed(1)} req/hr</strong>
           </div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          <div className="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono">
             Demand Score: <strong>{gapResult.demandGapScore}/30 pts</strong>
           </div>
         </div>
 
         {/* 2. DEMOGRAPHIC CONTEXT */}
-        <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div className="bg-[var(--bg-surface-elevated)] p-3 rounded-lg border border-[var(--border-subtle)]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold uppercase text-purple-400 flex items-center gap-1">
               <Users size={12} />
               2. Demographics
             </span>
-            <span style={provenanceBadgeStyle}>CENSUS</span>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-400">CENSUS</span>
           </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+          <div className="text-sm font-headline font-extrabold text-[var(--text-primary)] font-mono">
             {(demographics.population || 148000).toLocaleString()} Pop.
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+          <div className="text-xs text-[var(--text-secondary)] mt-1">
             Density: <strong>{(demographics.populationDensity || 14200).toLocaleString()} / km²</strong>
           </div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          <div className="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono">
             Vulnerable Ratio: <strong>{Math.round(((demographics.vulnerablePopulation || 38000) / (demographics.population || 148000)) * 100)}%</strong>
           </div>
         </div>
 
         {/* 3. CATEGORY-AWARE INFRASTRUCTURE CONTEXT */}
-        <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid #fca5a5' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div className="bg-[var(--bg-surface-elevated)] p-3 rounded-lg border border-red-500/30">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold uppercase text-red-400 flex items-center gap-1">
               <Building2 size={12} />
               3. {catUpper} Infra.
             </span>
-            <span style={provenanceBadgeStyle}>REGISTRY</span>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-red-500/20 text-red-400">REGISTRY</span>
           </div>
           {catUpper === 'HEALTHCARE' ? (
             <>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+              <div className="text-sm font-headline font-extrabold text-red-400 font-mono">
                 Healthcare: {infrastructure.healthcareIndex ?? 38}/100
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
                 Nearest PHC: <strong>{infrastructure.nearestFacilityDistanceMeters ?? 850}m</strong>
               </div>
             </>
           ) : catUpper === 'EDUCATION' ? (
             <>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+              <div className="text-sm font-headline font-extrabold text-red-400 font-mono">
                 Education: {infrastructure.educationIndex ?? 45}/100
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
                 Capacity Overload: <strong>{infrastructure.capacityUtilizationPercent ?? 85}%</strong>
               </div>
             </>
           ) : (catUpper === 'WATER' || catUpper === 'WATERLOGGING' || catUpper === 'DRAINAGE') ? (
             <>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+              <div className="text-sm font-headline font-extrabold text-red-400 font-mono">
                 Water/Drainage: {infrastructure.waterIndex ?? 35}/100
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
                 Capacity Surcharge: <strong>{infrastructure.capacityUtilizationPercent ?? 88}%</strong>
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+              <div className="text-sm font-headline font-extrabold text-red-400 font-mono">
                 Transport: {infrastructure.transportIndex ?? 48}/100
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div className="text-xs text-[var(--text-secondary)] mt-1">
                 Terminal Capacity: <strong>{infrastructure.capacityUtilizationPercent ?? 80}%</strong>
               </div>
             </>
           )}
-          <div style={{ fontSize: '0.68rem', color: '#dc2626', marginTop: '0.2rem', fontWeight: 700 }}>
+          <div className="text-[11px] font-mono font-bold text-red-400 mt-1">
             Infra Deficit Score: {gapResult.infrastructureDeficitScore}/25 pts
           </div>
         </div>
 
         {/* 4. PUBLIC INVESTMENT CONTEXT */}
-        <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#b45309', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div className="bg-[var(--bg-surface-elevated)] p-3 rounded-lg border border-[var(--border-subtle)]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold uppercase text-amber-400 flex items-center gap-1">
               <DollarSign size={12} />
               4. Public Investment
             </span>
-            <span style={provenanceBadgeStyle}>BUDGET</span>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400">BUDGET</span>
           </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#b45309', fontFamily: 'var(--font-mono)' }}>
+          <div className="text-sm font-headline font-extrabold text-amber-400 font-mono">
             Unfunded: ₹{investment.investmentGapLakhs || 350} Lakhs
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+          <div className="text-xs text-[var(--text-secondary)] mt-1">
             Approved Budget: <strong>₹{investment.existingInvestment || 250} L</strong>
           </div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          <div className="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono">
             Investment Deficit: <strong>{gapResult.investmentDeficitScore}/15 pts</strong>
           </div>
         </div>
 
-        {/* 5. WEATHER & ENVIRONMENTAL CONTEXT */}
-        <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <CloudRain size={12} />
-              5. Weather Context
-            </span>
-            <span style={provenanceBadgeStyle}>{ingestionMode === 'LIVE' ? 'GOOGLE WEATHER' : 'DETERMINISTIC'}</span>
-          </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0284c7', fontFamily: 'var(--font-mono)' }}>
-            {currentWeather?.rainfallMmPerHour ?? 25} mm/hr
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            Condition: <strong>{currentWeather?.condition || 'Monsoon Showers'}</strong>
-          </div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-            Environmental Risk: <strong>{gapResult.environmentalRiskScore}/10 pts</strong>
-          </div>
-        </div>
       </div>
 
-      {/* FACTOR CONTRIBUTION BREAKDOWN CARD (OUT OF 100) */}
-      <div style={{
-        padding: '0.9rem',
-        background: 'var(--bg-card)',
-        borderRadius: '8px',
-        border: '1px solid var(--border-medium)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-          <div style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', color: '#2563eb', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Calculator size={14} />
-            <span>Deterministic Priority Breakdown (Factor Contributions / 100)</span>
+      {/* FACTOR CONTRIBUTION BREAKDOWN CARD */}
+      <div className="p-3 bg-[var(--bg-surface)] rounded-lg border border-[var(--border-subtle)] shadow-xs">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[11px] font-bold uppercase text-primary tracking-wider flex items-center gap-1.5">
+            <Calculator size={13} />
+            <span>Deterministic Priority Breakdown (/ 100)</span>
           </div>
-          <span style={{
-            fontSize: '0.8rem',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 800,
-            padding: '2px 8px',
-            borderRadius: '4px',
-            background: priorityResult.priorityScore >= 80 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-            color: priorityResult.priorityScore >= 80 ? '#dc2626' : '#d97706',
-            border: `1px solid ${priorityResult.priorityScore >= 80 ? '#fca5a5' : '#fcd34d'}`
-          }}>
-            PRIORITY: {priorityResult.priorityScore}/100 ({priorityResult.priorityLevel})
+          <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+            priorityResult.priorityScore >= 80 ? 'bg-red-500/15 text-red-400 border border-red-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+          }`}>
+            SCORE: {priorityResult.priorityScore}/100 ({priorityResult.priorityLevel})
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.5rem', fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.64rem' }}>Citizen Demand</span>
-            <strong style={{ color: '#2563eb' }}>{gapResult.demandGapScore} / 30 pts</strong>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
+          <div className="bg-[var(--bg-surface-elevated)] p-2 rounded border border-[var(--border-subtle)]">
+            <span className="text-[var(--text-muted)] block text-[10px]">Demand</span>
+            <strong className="text-blue-400">{gapResult.demandGapScore} / 30 pts</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.64rem' }}>Infra. Deficit</span>
-            <strong style={{ color: '#dc2626' }}>{gapResult.infrastructureDeficitScore} / 25 pts</strong>
+          <div className="bg-[var(--bg-surface-elevated)] p-2 rounded border border-[var(--border-subtle)]">
+            <span className="text-[var(--text-muted)] block text-[10px]">Infra. Deficit</span>
+            <strong className="text-red-400">{gapResult.infrastructureDeficitScore} / 25 pts</strong>
           </div>
 
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.64rem' }}>Pop. Vulnerability</span>
-            <strong style={{ color: '#7c3aed' }}>{gapResult.demographicVulnerabilityScore} / 20 pts</strong>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.64rem' }}>Investment Gap</span>
-            <strong style={{ color: '#b45309' }}>{gapResult.investmentDeficitScore} / 15 pts</strong>
-          </div>
-
-          <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.64rem' }}>Environmental Risk</span>
-            <strong style={{ color: '#0284c7' }}>{gapResult.environmentalRiskScore} / 10 pts</strong>
+          <div className="bg-[var(--bg-surface-elevated)] p-2 rounded border border-[var(--border-subtle)]">
+            <span className="text-[var(--text-muted)] block text-[10px]">Vulnerability</span>
+            <strong className="text-purple-400">{gapResult.demographicVulnerabilityScore} / 20 pts</strong>
           </div>
         </div>
       </div>
@@ -325,3 +265,5 @@ export const DevelopmentContextPanel: React.FC<Props> = ({
     </div>
   );
 };
+
+export default DevelopmentContextPanel;

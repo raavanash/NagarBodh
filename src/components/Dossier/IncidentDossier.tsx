@@ -67,64 +67,49 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
 
   return (
     <div
-      className="animate-fade-in"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        background: standalone ? 'var(--bg-canvas)' : 'var(--bg-surface)',
-        overflowY: 'auto'
-      }}
+      className="animate-fade-in bg-[var(--bg-surface)] border-l border-[var(--border-subtle)] flex flex-col h-full text-[var(--text-primary)] overflow-y-auto shadow-sm"
     >
       {/* Screen Question Header Banner */}
-      <div style={{ padding: '0.65rem 0.85rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-elevated)' }}>
+      <div className="p-3.5 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)]">
         {/* Navigation Flow Breadcrumbs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontFamily: 'var(--font-mono)' }}>
+        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-1 font-mono">
           <button
             onClick={() => setActiveTab('development_map')}
-            style={{ background: 'transparent', border: 'none', color: '#1e3a8a', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+            className="bg-transparent border-none text-[var(--text-accent)] font-bold cursor-pointer p-0 flex items-center gap-1 hover:underline"
           >
             🗺️ Map
           </button>
           <span>&gt;</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>📍 Hotspot</span>
+          <span className="text-[var(--text-primary)] font-bold">📍 Hotspot</span>
           <span>&gt;</span>
           <button
             onClick={() => setActiveTab('project_priorities')}
-            style={{ background: 'transparent', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+            className="bg-transparent border-none text-blue-400 font-bold cursor-pointer p-0 flex items-center gap-1 hover:underline"
           >
             ⚡ Action
           </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
-          <span style={{ background: 'rgba(30, 58, 138, 0.08)', color: '#1e3a8a', border: '1px solid rgba(30, 58, 138, 0.25)', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: '999px', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] px-2 py-0.5 rounded-full font-mono font-extrabold uppercase">
             HOTSPOT DOSSIER
           </span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>• BRICS Intel</span>
+          <span className="text-xs text-[var(--text-muted)] font-semibold">• BRICS Intel</span>
         </div>
-        <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 0.1rem 0', color: 'var(--text-primary)' }}>
+        <h3 className="text-base font-extrabold text-[var(--text-primary)] m-0">
           Hotspot Demand Analysis
         </h3>
       </div>
 
       {/* Top Header Hierarchy */}
-      <div style={{ padding: '0.75rem 0.85rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
+      <div className="p-3.5 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         {/* 1. Incident Title */}
-        <h2 style={{
-          fontSize: '1.1rem',
-          fontFamily: 'var(--font-heading)',
-          fontWeight: 800,
-          color: 'var(--text-primary)',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.25,
-          margin: '0 0 0.5rem 0'
-        }}>
+        <h2 className="text-lg font-headline font-black text-[var(--text-primary)] tracking-tight leading-snug mb-2">
           {incident.title}
         </h2>
 
         {/* 2 & 3. Priority & Human Review Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+        <div className="flex items-center gap-2 flex-wrap mb-3">
           <PriorityBadge score={score} />
 
           <HumanReviewStateBadge
@@ -133,55 +118,27 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
             compact={true}
           />
 
-          <span style={{
-            fontSize: '0.7rem',
-            fontWeight: 800,
-            padding: '0.2rem 0.55rem',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-elevated)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border-medium)',
-            textTransform: 'uppercase',
-            fontFamily: 'var(--font-mono)'
-          }}>
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-medium)] font-mono uppercase">
             STATUS: {incident.status.toUpperCase()}
           </span>
 
-          <span style={{
-            fontSize: '0.7rem',
-            color: 'var(--text-secondary)',
-            marginLeft: 'auto',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 600
-          }}>
+          <span className="text-xs font-mono font-bold text-[var(--text-muted)] ml-auto">
             {incident.signalIds.length} signals • ↑{incident.velocitySurgePercent}% surge
           </span>
         </div>
 
         {/* 4. Geographic Concentration & Location */}
-        <div style={{
-          fontSize: '0.8rem',
-          color: 'var(--text-secondary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.35rem',
-          background: 'var(--bg-surface-elevated)',
-          padding: '0.5rem 0.75rem',
-          borderRadius: '6px',
-          border: '1px solid var(--border-subtle)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <MapPin size={14} color="#2563eb" style={{ flexShrink: 0 }} />
-            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+        <div className="text-xs text-[var(--text-secondary)] flex items-center justify-between flex-wrap gap-1.5 bg-[var(--bg-surface-elevated)] p-2.5 rounded-lg border border-[var(--border-subtle)]">
+          <div className="flex items-center gap-1.5">
+            <MapPin size={14} className="text-blue-400 flex-shrink-0" />
+            <span className="text-[var(--text-primary)] font-bold">
               {(incident.location as any)?.name || incident.locationName || incident.title}
             </span>
-            <span style={{ color: 'var(--text-muted)' }}>• {incident.ward}</span>
+            <span className="text-[var(--text-muted)]">• {incident.ward}</span>
           </div>
 
-          <div style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 600 }}>
-            Centroid: <strong>{incident.centroid ? `${incident.centroid.lat.toFixed(4)}°N, ${incident.centroid.lng.toFixed(4)}°E` : '28.5833°N, 77.3185°E'}</strong>
+          <div className="text-[11px] font-mono text-[var(--text-muted)] font-semibold">
+            Centroid: <strong className="text-[var(--text-primary)]">{incident.centroid ? `${incident.centroid.lat.toFixed(4)}°N, ${incident.centroid.lng.toFixed(4)}°E` : '28.5833°N, 77.3185°E'}</strong>
           </div>
         </div>
       </div>

@@ -94,9 +94,20 @@
    Stitch Design System Animations & Utilities
    ========================================================================== */
 @keyframes radar-pulse {
-  0% { transform: scale(0.9); opacity: 0.9; }
-  50% { transform: scale(2.2); opacity: 0.15; }
-  100% { transform: scale(3.2); opacity: 0; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: scale(2.2);
+    opacity: 0.15;
+  }
+
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
 }
 
 .animate-radar {
@@ -105,7 +116,7 @@
 
 .topo-grid {
   background-size: 36px 36px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(203, 213, 225, 0.4) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(203, 213, 225, 0.4) 1px, transparent 1px);
 }
@@ -192,9 +203,11 @@
 [data-theme="dark"] ::-webkit-scrollbar-track {
   background: #090d16;
 }
+
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
   background: #334155;
 }
+
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
@@ -420,9 +433,11 @@ body,
   .brand-tag-badge {
     display: none !important;
   }
+
   .navbar-commander-badge {
     display: none !important;
   }
+
   .nav-tab-btn {
     padding: 0.3rem 0.48rem;
     font-size: 0.74rem;
@@ -433,9 +448,11 @@ body,
   .navbar-persistence-badge span {
     display: none !important;
   }
+
   .navbar-clock-badge span:last-child {
     font-size: 0.68rem;
   }
+
   .navbar-theme-label {
     display: none !important;
   }
@@ -1317,8 +1334,17 @@ body,
 }
 
 @keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
 }
 
 .demo-pill-title {
@@ -1479,18 +1505,42 @@ body,
   color: var(--text-muted);
 }
 
-.demo-cmd-primary { border-color: rgba(16, 185, 129, 0.4); color: #059669; }
-.demo-cmd-danger { border-color: rgba(239, 68, 68, 0.4); color: #dc2626; }
-.demo-cmd-accent { border-color: rgba(2, 132, 199, 0.4); color: #0284c7; }
-.demo-cmd-info { border-color: rgba(37, 99, 235, 0.4); color: #2563eb; }
-.demo-cmd-success { border-color: rgba(16, 185, 129, 0.4); color: #059669; }
-.demo-cmd-verify { border-color: rgba(124, 58, 237, 0.4); color: #7c3aed; }
+.demo-cmd-primary {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #059669;
+}
+
+.demo-cmd-danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #dc2626;
+}
+
+.demo-cmd-accent {
+  border-color: rgba(2, 132, 199, 0.4);
+  color: #0284c7;
+}
+
+.demo-cmd-info {
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #2563eb;
+}
+
+.demo-cmd-success {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #059669;
+}
+
+.demo-cmd-verify {
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #7c3aed;
+}
 
 /* ==========================================================================
    Responsive Mobile & Tablet Polish (390x844, 412x915, 768x1024 viewports)
    ========================================================================== */
 
 @media (max-width: 900px) {
+
   /* Navbar */
   .navbar {
     height: auto !important;
@@ -1633,7 +1683,7 @@ body,
     display: none;
   }
 
-  .planner-queue-container > div:not(:first-child) {
+  .planner-queue-container>div:not(:first-child) {
     min-width: 250px !important;
     flex-shrink: 0 !important;
   }
@@ -1697,6 +1747,7 @@ body,
 }
 
 @media (max-width: 640px) {
+
   /* Smaller mobile viewports (390px, 412px) */
   .planner-view-container,
   .signals-view-container,

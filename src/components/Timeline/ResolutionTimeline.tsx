@@ -29,30 +29,30 @@ export const ResolutionTimeline: React.FC = () => {
   });
 
   return (
-    <div className="timeline-view-container bg-slate-50 min-h-screen text-slate-900 p-4 md:p-6 overflow-y-auto font-body flex flex-col gap-6">
+    <div className="timeline-view-container bg-[var(--bg-canvas)] min-h-screen text-[var(--text-primary)] p-4 md:p-6 overflow-y-auto font-body flex flex-col gap-6">
       
       {/* 1. Development Impact Measurement Dashboard (Stitch Screen 04 Split) */}
       <ResolutionVerificationPanel incident={selectedIncident || incidents[0]} />
 
       {/* 2. Auditable Impact Audit Trail Stream */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-        <div className="mb-5 flex items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-4">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-5 shadow-xs">
+        <div className="mb-5 flex items-center justify-between flex-wrap gap-4 border-b border-[var(--border-subtle)] pb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Clock className="text-primary" size={20} />
-              <h2 className="text-lg font-headline font-extrabold text-slate-900">
+              <h2 className="text-lg font-headline font-extrabold text-[var(--text-primary)]">
                 Auditable Impact & Resolution Audit Trail
               </h2>
             </div>
-            <p className="text-xs text-slate-500 font-medium">Immutable verification log tracking demand lifecycle and satellite evidence</p>
+            <p className="text-xs text-[var(--text-muted)] font-medium">Immutable verification log tracking demand lifecycle and satellite evidence</p>
           </div>
 
           {/* Filter Pills */}
-          <div className="timeline-filter-pills flex gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 flex-wrap text-xs">
+          <div className="timeline-filter-pills flex gap-1.5 bg-[var(--bg-surface-elevated)] p-1 rounded-lg border border-[var(--border-subtle)] flex-wrap text-xs">
             <button
               onClick={() => setFilterType('all')}
               className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'all' ? 'bg-primary text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterType === 'all' ? 'bg-primary text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               All Events ({auditLogs.length})
@@ -60,7 +60,7 @@ export const ResolutionTimeline: React.FC = () => {
             <button
               onClick={() => setFilterType('priority_spike')}
               className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'priority_spike' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterType === 'priority_spike' ? 'bg-red-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Priority & Triaged
@@ -68,7 +68,7 @@ export const ResolutionTimeline: React.FC = () => {
             <button
               onClick={() => setFilterType('clustering')}
               className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'clustering' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterType === 'clustering' ? 'bg-purple-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Clustering & SOPs
@@ -76,7 +76,7 @@ export const ResolutionTimeline: React.FC = () => {
             <button
               onClick={() => setFilterType('dispatch')}
               className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'dispatch' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterType === 'dispatch' ? 'bg-emerald-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Dispatches Executed
@@ -84,7 +84,7 @@ export const ResolutionTimeline: React.FC = () => {
             <button
               onClick={() => setFilterType('resolution')}
               className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'resolution' ? 'bg-cyan-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterType === 'resolution' ? 'bg-cyan-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               Resolutions & Verifications
@@ -107,30 +107,30 @@ export const ResolutionTimeline: React.FC = () => {
               const isCluster = log.type === 'cluster_formed' || log.type === 'cluster_updated' || log.type === 'response_plan_generated';
 
               let nodeBg = 'bg-slate-800';
-              let nodeBorder = 'border-slate-300';
+              let nodeBorder = 'border-[var(--border-medium)]';
               let icon = <Activity size={16} />;
-              let badgeStyle = 'bg-slate-100 text-slate-700 border-slate-200';
+              let badgeStyle = 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] border-[var(--border-subtle)]';
 
               if (isSpike) {
                 nodeBg = 'bg-red-600';
-                nodeBorder = 'border-red-200';
+                nodeBorder = 'border-red-400/50';
                 icon = <Flame size={18} />;
-                badgeStyle = 'bg-red-50 text-red-700 border-red-200';
+                badgeStyle = 'bg-red-500/15 text-red-400 border-red-500/30';
               } else if (isDispatch) {
                 nodeBg = 'bg-emerald-600';
-                nodeBorder = 'border-emerald-200';
+                nodeBorder = 'border-emerald-400/50';
                 icon = <Send size={16} />;
-                badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                badgeStyle = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
               } else if (isResolution) {
                 nodeBg = 'bg-cyan-600';
-                nodeBorder = 'border-cyan-200';
+                nodeBorder = 'border-cyan-400/50';
                 icon = <CheckCircle2 size={18} />;
-                badgeStyle = 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                badgeStyle = 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
               } else if (isCluster) {
                 nodeBg = 'bg-purple-600';
-                nodeBorder = 'border-purple-200';
+                nodeBorder = 'border-purple-400/50';
                 icon = <Zap size={16} />;
-                badgeStyle = 'bg-purple-50 text-purple-700 border-purple-200';
+                badgeStyle = 'bg-purple-500/15 text-purple-400 border-purple-500/30';
               }
 
               return (
@@ -143,27 +143,27 @@ export const ResolutionTimeline: React.FC = () => {
                   </div>
 
                   {/* Event Card */}
-                  <div className="bg-slate-50 hover:bg-white border border-slate-200 rounded-xl p-4 transition-colors shadow-xs">
+                  <div className="bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl p-4 transition-colors shadow-xs">
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${badgeStyle}`}>
                           {log.type.replace(/_/g, ' ')}
                         </span>
-                        <span className="text-xs text-slate-500">
-                          Actor: <strong className="text-slate-800 font-semibold">{log.actor}</strong>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          Actor: <strong className="text-[var(--text-primary)] font-semibold">{log.actor}</strong>
                         </span>
                       </div>
 
-                      <div className="font-mono text-xs text-blue-900 font-bold">
+                      <div className="font-mono text-xs text-[var(--text-accent)] font-bold">
                         ⏱ {log.timeLabel}
                       </div>
                     </div>
 
-                    <h3 className="text-sm font-headline font-bold text-slate-900 mb-1">
+                    <h3 className="text-sm font-headline font-bold text-[var(--text-primary)] mb-1">
                       {log.title}
                     </h3>
 
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                       {log.description}
                     </p>
                   </div>
