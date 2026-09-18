@@ -85,7 +85,7 @@ export const Navbar: React.FC = () => {
     <header className="navbar bg-[#1e3a8a] text-white px-4 h-14 flex items-center justify-between sticky top-0 z-50 shadow-md">
       <div className="navbar-top-bar flex items-center justify-between w-full gap-4 relative">
         
-        {/* Brand & City Selector */}
+        {/* Brand Section */}
         <div className="brand-section flex items-center gap-3 flex-shrink-0">
           {/* Hamburger Menu Toggle Button */}
           <button
@@ -97,12 +97,13 @@ export const Navbar: React.FC = () => {
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <div className="logo-badge w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-headline font-black shadow-sm border border-blue-400/30">
+          <div className="logo-badge w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center border border-blue-400/30 text-white font-headline font-black shadow-sm">
             <Globe2 size={20} />
           </div>
+
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="brand-title text-base font-headline font-extrabold text-white tracking-tight">
+              <h1 className="brand-title text-base font-headline font-extrabold tracking-tight text-white">
                 NagarBodh
               </h1>
               <span className="brand-tag-badge text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-900/60 border border-blue-400/30 text-blue-200">
@@ -117,7 +118,7 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Desktop Navigation Tabs */}
+        {/* Navigation Tabs */}
         <nav className="nav-tabs hidden lg:flex items-center gap-1 bg-blue-950/60 p-1 rounded-lg border border-blue-800/60" aria-label="Command Views">
           {navItems.map(item => {
             const Icon = item.icon;
@@ -127,7 +128,7 @@ export const Navbar: React.FC = () => {
                 key={item.id}
                 className={`nav-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-white text-[#1e3a8a] shadow-sm font-extrabold'
+                    ? 'active bg-white text-[#1e3a8a] shadow-sm font-extrabold'
                     : 'text-blue-100 hover:bg-blue-900/50 hover:text-white'
                 }`}
                 onClick={() => setActiveTab(item.id as any)}
@@ -145,7 +146,7 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* Right User & Operational Controls */}
+        {/* Controls */}
         <div className="navbar-right-controls flex items-center gap-2 flex-shrink-0">
           {/* LIVE vs SIMULATION Ingestion Mode Switcher */}
           <div className="hidden sm:flex items-center bg-blue-950/70 p-1 rounded-lg border border-blue-800/60 text-xs font-semibold">
