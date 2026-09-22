@@ -21,36 +21,88 @@ import { useCivic } from '../../context/CivicContext';
 import { ClusteredIncident, EvidenceItem } from '../../types/civic';
 import { generateIncidentEvidenceChain } from '../../engine/evidenceProvenanceEngine';
 
+export type ProvenanceBadgeType =
+  | 'source'
+  | 'type'
+  | 'observed'
+  | 'calculated'
+  | 'baseline'
+  | 'inference'
+  | 'recommended'
+  | 'projected'
+  | 'simulation'
+  | 'live'
+  | 'replay';
+
 // Reusable Presentation Components
 export const ProvenanceBadge: React.FC<{
   label: string;
-  type?: 'source' | 'type' | 'observed' | 'calculated' | 'inference' | 'recommended' | 'live' | 'replay' | 'simulation';
-}> = ({ label, type = 'source' }) => {
+  type?: ProvenanceBadgeType;
+}> = ({ label, type }) => {
+  const resolveType = (): ProvenanceBadgeType => {
+    if (type) return type;
+    const clean = label.replace(/[\[\]]/g, '').trim().toUpperCase();
+    if (clean.includes('OBSERVED')) return 'observed';
+    if (clean.includes('CALCULATED')) return 'calculated';
+    if (clean.includes('BASELINE')) return 'baseline';
+    if (clean.includes('INFERRED') || clean.includes('INFERENCE')) return 'inference';
+    if (clean.includes('RECOMMENDED')) return 'recommended';
+    if (clean.includes('PROJECTED')) return 'projected';
+    if (clean.includes('SIMULATION')) return 'simulation';
+    if (clean.includes('LIVE')) return 'live';
+    if (clean.includes('REPLAY')) return 'replay';
+    return 'source';
+  };
+
+  const resolved = resolveType();
+
   const getStyle = () => {
-    switch (type) {
+    switch (resolved) {
       case 'observed':
         return { bg: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd' };
       case 'calculated':
         return { bg: '#d1fae5', color: '#059669', border: '1px solid #a7f3d0' };
+      case 'baseline':
+        return { bg: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' };
       case 'inference':
         return { bg: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe' };
       case 'recommended':
         return { bg: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' };
+      case 'projected':
+        return { bg: '#ecfeff', color: '#0891b2', border: '1px solid #a5f3fc' };
+      case 'simulation':
+        return { bg: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d' };
       case 'live':
-        return { bg: '#d1fae5', color: '#047857', border: '1px solid #6ee7b7' };
+        return { bg: '#dcfce7', color: '#166534', border: '1px solid #86efac' };
       case 'replay':
         return { bg: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d' };
-      case 'simulation':
-        return { bg: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe' };
       case 'type':
         return { bg: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d' };
       default:
         return { bg: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' };
     }
   };
+
   const style = getStyle();
   return (
-    <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.12rem 0.45rem', borderRadius: '4px', background: style.bg, color: style.color, border: style.border, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
+    <span
+      style={{
+        fontSize: '0.65rem',
+        fontWeight: 800,
+        padding: '0.12rem 0.45rem',
+        borderRadius: '4px',
+        background: style.bg,
+        color: style.color,
+        border: style.border,
+        textTransform: 'uppercase',
+        fontFamily: 'var(--font-mono)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.2rem',
+        letterSpacing: '0.02em',
+        lineHeight: 1.2
+      }}
+    >
       {label}
     </span>
   );

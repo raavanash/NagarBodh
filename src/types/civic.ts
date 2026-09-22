@@ -4,10 +4,11 @@ import type {
   DevelopmentProjectRecommendation,
   DevelopmentRequestEvidence,
   InfrastructureContext,
+  InterventionRecord,
   InvestmentContext
 } from './development';
 
-export type SignalChannel = 'citizen_app' | 'social_x' | 'social_bluesky' | 'grievance_portal' | 'helpline_311';
+export type SignalChannel = 'citizen_app' | 'social_x' | 'social_bluesky' | 'grievance_portal' | 'helpline_112';
 export type DetectedLanguage = 'hi' | 'hinglish' | 'en';
 export type CivicCategory = 'waterlogging' | 'road_hazard' | 'drainage' | 'garbage' | 'electricity' | 'traffic' | 'healthcare' | 'education' | 'water' | 'sanitation' | 'transport' | 'roads' | 'digital_connectivity' | 'public_safety' | 'other';
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
@@ -318,6 +319,7 @@ export interface ClusteredIncident {
 
   resolutionVerification?: ResolutionVerificationData;
   evidenceChain?: EvidenceItem[];
+  interventionRecord?: InterventionRecord;
   verifiedAt?: string;
   verifiedBy?: string;
 }
@@ -344,4 +346,7 @@ export interface SimulationStep {
     condition?: string;
   };
   description: string;
+  /** Investment-framing narrative shown in DemoCommandCenter for hackathon judging context */
+  investmentNarrative?: string;
 }
+

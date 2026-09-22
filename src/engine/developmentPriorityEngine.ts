@@ -53,8 +53,8 @@ export function calculateDemandScore(input: DemandScoreInput): number {
   const channels = Math.min(6, Math.max(1, input.channelCount ?? 1));
   const hoursElapsed = Math.max(0, input.hoursSinceLatest ?? 0);
 
-  // 1. Volume Factor (max 30 pts)
-  const volumePts = Math.min(30, Math.round(Math.sqrt(count) * 4.5));
+  // 1. Volume Factor (max 35 pts)
+  const volumePts = Math.min(35, Math.round(count <= 0 ? 0 : 5 + Math.sqrt(count - 1) * 5.4));
 
   // 2. Intensity Factor (max 25 pts)
   const intensityPts = Math.round(intensity * 25);
@@ -64,8 +64,8 @@ export function calculateDemandScore(input: DemandScoreInput): number {
   const accelerationPts = Math.min(10, Math.round((surge - 1.0) * 10));
   const velocityPts = Math.min(25, baseVelocityPts + accelerationPts);
 
-  // 4. Source Diversity (max 10 pts)
-  const diversityPts = Math.min(10, Math.round(channels * 2.5));
+  // 4. Source Diversity (max 15 pts)
+  const diversityPts = Math.min(15, Math.round(channels * 2.75));
 
   // 5. Recency Decay (0.0 to 1.0 multiplier)
   const recencyMultiplier = Math.max(0.5, 1.0 - (hoursElapsed * 0.02));
@@ -117,13 +117,15 @@ export function calculateDevelopmentPriority(
   // Population Impact (0 - 100)
   const popEst = demographics.totalPopulationEstimate ?? demographics.population ?? 500000;
   const popDensity = demographics.populationDensityPerSqKm ?? demographics.populationDensity ?? 10000;
-  const popImpactRaw = Math.min(100, Math.round((popEst / 10000) + (popDensity / 500)));
+  const popImpactRaw = demographics.populationImpactIndex ?? Math.min(100, Math.round((popEst / 10000) + (popDensity / 500)));
   const populationImpact = Math.min(100, Math.max(0, Math.round(popImpactRaw)));
 
   // Vulnerability Score (0 - 100)
   const vulnRatio = demographics.vulnerableGroupRatio ??
-    (demographics.population > 0 ? demographics.vulnerablePopulation / demographics.population : 0.25);
-  const vulnerabilityScore = Math.min(100, Math.max(0, Math.round(vulnRatio * 100)));
+    (demographics.population > 0 ? (demographics.vulnerablePopulation ?? 0) / demographics.population : 0.25);
+  const vulnerabilityScore = Math.min(100, Math.max(0, Math.round(
+    demographics.vulnerabilityIndex ?? (vulnRatio * 100)
+  )));
 
   // Investment Gap Score (0 - 100)
   const existingInv = investment.existingInvestment ?? 1000;
@@ -131,7 +133,8 @@ export function calculateDevelopmentPriority(
   const gapLakhs = investment.investmentGapLakhs ?? Math.max(0, plannedInv - existingInv);
   const totalBudget = Math.max(1, existingInv + plannedInv);
   const investGapRatio = Math.min(1.0, gapLakhs / totalBudget);
-  const investmentGap = Math.min(100, Math.max(0, Math.round(investGapRatio * 100)));
+  const investGapRaw = investment.investmentGapIndex ?? (investGapRatio * 100);
+  const investmentGap = Math.min(100, Math.max(0, Math.round(investGapRaw)));
 
   // 2. Weighted Sum (Deterministic 0 - 100)
   const demandContrib = demandScore * weights.demandIntensity;
@@ -153,37 +156,39 @@ export function calculateDevelopmentPriority(
     {
       factor: 'Citizen Demand',
       score: demandScore,
-      contribution: parseFloat(demandContrib.toFixed(2)),
+      contribution: parseFloat(demandContrib.toFixed(1)),
       evidence: `${demandInput.requestCount} requests logged (${demandInput.velocityPerHour.toFixed(1)} req/hr velocity across ${demandInput.channelCount ?? 1} channels)`,
-      source: 'Signal Ingestion Stream & Normalizer'
+      source: 'Multi-channel Citizen Signal Stream [OBSERVED]'
     },
     {
       factor: 'Infrastructure Deficit',
       score: infrastructureGap,
-      contribution: parseFloat(infraContrib.toFixed(2)),
+      contribution: parseFloat(infraContrib.toFixed(1)),
       evidence: `Deficit Index ${infrastructureGap}/100. Nearest facility ${infrastructure.nearestFacilityName || 'facility'} at ${nearestDist}m (${capUtil}% capacity)`,
-      source: 'National Infrastructure Registry'
+      source: 'Ward Infrastructure Baseline Profile [BASELINE CONTEXT]'
     },
     {
       factor: 'Population Impact',
       score: populationImpact,
-      contribution: parseFloat(popContrib.toFixed(2)),
+      contribution: parseFloat(popContrib.toFixed(1)),
       evidence: `${popEst.toLocaleString()} area population with density ${popDensity.toLocaleString()}/km²`,
-      source: 'Demographic Context Layer'
+      source: 'Municipal Demographic Profile [BASELINE CONTEXT]'
     },
     {
       factor: 'Vulnerable Population',
       score: vulnerabilityScore,
-      contribution: parseFloat(vulnContrib.toFixed(2)),
-      evidence: `${Math.round(vulnRatio * 100)}% vulnerable group ratio (${(demographics.vulnerablePopulation ?? 0).toLocaleString()} residents)`,
-      source: 'Demographic Census & Social Vulnerability Index'
+      contribution: parseFloat(vulnContrib.toFixed(1)),
+      evidence: demographics.vulnerabilityIndex !== undefined
+        ? `Vulnerability Index ${vulnerabilityScore}/100 across ${(demographics.vulnerablePopulation ?? 0).toLocaleString()} vulnerable residents (${(vulnRatio * 100).toFixed(1)}% demographic ratio)`
+        : `${(vulnRatio * 100).toFixed(1)}% vulnerable group ratio (${(demographics.vulnerablePopulation ?? 0).toLocaleString()} residents)`,
+      source: 'Ward Socio-Demographic Context [BASELINE CONTEXT]'
     },
     {
       factor: 'Investment Gap',
       score: investmentGap,
-      contribution: parseFloat(investContrib.toFixed(2)),
+      contribution: parseFloat(investContrib.toFixed(1)),
       evidence: `Unfunded gap of ₹${gapLakhs.toLocaleString()} Lakhs (${investment.unaddressedRequestsCount ?? 0} historical unaddressed requests)`,
-      source: 'Public Expenditure & Capital Plan'
+      source: 'Municipal Capital Budget Profile [BASELINE CONTEXT]'
     }
   ];
 

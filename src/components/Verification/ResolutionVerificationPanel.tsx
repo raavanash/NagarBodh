@@ -21,10 +21,11 @@ import {
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { calculateDevelopmentImpact } from '../../engine/developmentImpactEngine';
-import { generateDevelopmentProjectRecommendation } from '../../engine/developmentRecommendationEngine';
+import { generateDevelopmentProjectRecommendation, buildCanonicalInterventionRecord } from '../../engine/developmentRecommendationEngine';
 import { ClusteredIncident } from '../../types/civic';
-import { DevelopmentImpact } from '../../types/development';
+import { DevelopmentImpact, InterventionRecord } from '../../types/development';
 import { ExpandableEvidenceUI } from '../Evidence/ExpandableEvidenceUI';
+import { JudgingJourneyStepper } from '../common/JudgingJourneyStepper';
 
 interface Props {
   incident?: ClusteredIncident | null;
@@ -33,35 +34,154 @@ interface Props {
 export type ImpactDataMode = 'REAL' | 'REPLAY' | 'SIMULATION' | 'PROJECTED';
 
 export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propIncident }) => {
-  const { selectedIncident, incidents, addCustomSignal } = useCivic();
+  const {
+    selectedIncident,
+    incidents,
+    activeIntervention,
+    addCustomSignal,
+    setActiveTab,
+    triggerEmergencyDemo
+  } = useCivic();
   const [dataMode, setDataMode] = useState<ImpactDataMode>('SIMULATION');
 
-  const inc = propIncident || selectedIncident || incidents[0];
-  if (!inc) return null;
+  // Determine the effective incident and whether an intervention exists
+  const hasExplicitIntervention = Boolean(activeIntervention || propIncident);
+  const inc = propIncident || (activeIntervention ? incidents.find(i => i.id === activeIntervention.incidentId) : null) || selectedIncident;
 
-  // Resolve or generate project recommendation and development impact model
-  const project = inc.projectRecommendation || generateDevelopmentProjectRecommendation({
-    hotspotId: inc.id,
-    category: inc.category,
+  // STATE B: No intervention selected yet
+  if (!hasExplicitIntervention && !inc) {
+    return (
+      <div
+        className="card no-intervention-card"
+        style={{
+          padding: '2.5rem 1.5rem',
+          background: 'var(--bg-surface-elevated)',
+          border: '1px solid var(--border-accent)',
+          borderRadius: '12px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1.25rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}
+      >
+        <div
+          style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: '12px',
+            background: 'rgba(37, 99, 235, 0.12)',
+            color: '#2563eb',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <BarChart2 size={28} />
+        </div>
+
+        <div style={{ maxWidth: '560px' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.4rem 0', fontFamily: 'var(--font-heading)' }}>
+            No Intervention Selected Yet
+          </h2>
+          <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+            Select an investment recommendation from the <strong>Civic Investment Board</strong> and approve an intervention to view its projected before-and-after impact outcome.
+          </p>
+        </div>
+
+        {/* 6-Step Inactive Lifecycle Stepper */}
+        <div style={{ maxWidth: '660px', width: '100%' }}>
+          <JudgingJourneyStepper
+            currentStep="INVEST"
+            compact={true}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button
+            onClick={() => setActiveTab('investment_gaps')}
+            style={{
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.65rem 1.25rem',
+              fontSize: '0.85rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            <span>Go to Investment Board</span>
+            <ArrowRight size={14} />
+          </button>
+
+          <button
+            onClick={() => {
+              triggerEmergencyDemo();
+              setActiveTab('investment_gaps');
+            }}
+            style={{
+              background: 'var(--bg-surface)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '8px',
+              padding: '0.65rem 1rem',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+          >
+            <Sparkles size={14} color="#f59e0b" />
+            <span>Load Canonical Sector 15 Scenario</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Resolve project recommendation
+  const effectiveInc = inc || incidents[0];
+  if (!effectiveInc) {
+    return (
+      <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-surface-elevated)', borderRadius: '12px', textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>No incident data available in the current session.</p>
+        <button onClick={() => setActiveTab('investment_gaps')} className="sim-btn" style={{ marginTop: '0.5rem' }}>
+          Go to Investment Board
+        </button>
+      </div>
+    );
+  }
+
+  const project = effectiveInc.projectRecommendation || generateDevelopmentProjectRecommendation({
+    hotspotId: effectiveInc.id,
+    category: effectiveInc.category,
     geography: {
       country: 'India',
       state: 'Delhi NCR',
-      district: inc.ward,
-      subDistrict: inc.ward,
-      wardOrDistrict: inc.ward,
-      locationName: inc.locationName || inc.ward
+      district: effectiveInc.ward,
+      subDistrict: effectiveInc.ward,
+      wardOrDistrict: effectiveInc.ward,
+      locationName: effectiveInc.locationName || effectiveInc.ward
     },
-    priorityScoreVal: inc.priority.overallScore,
-    developmentGap: inc.developmentGap || {
-      overallGapIndex: inc.priority.overallScore,
-      demandGapScore: Math.round(inc.priority.overallScore * 0.3),
-      infrastructureDeficitScore: Math.round(inc.priority.overallScore * 0.25),
-      demographicVulnerabilityScore: Math.round(inc.priority.overallScore * 0.2),
-      investmentDeficitScore: Math.round(inc.priority.overallScore * 0.15),
-      environmentalRiskScore: Math.round(inc.priority.overallScore * 0.1),
+    priorityScoreVal: effectiveInc.priority.overallScore,
+    developmentGap: effectiveInc.developmentGap || {
+      overallGapIndex: effectiveInc.priority.overallScore,
+      demandGapScore: Math.round(effectiveInc.priority.overallScore * 0.3),
+      infrastructureDeficitScore: Math.round(effectiveInc.priority.overallScore * 0.25),
+      demographicVulnerabilityScore: Math.round(effectiveInc.priority.overallScore * 0.2),
+      investmentDeficitScore: Math.round(effectiveInc.priority.overallScore * 0.15),
+      environmentalRiskScore: Math.round(effectiveInc.priority.overallScore * 0.1),
       explanationBullets: ['Elevated demand pressure', 'Infrastructure access gap']
     },
-    demographics: inc.demographics || {
+    demographics: effectiveInc.demographics || {
       population: 148000,
       populationDensity: 12000,
       populationGrowth: 2.1,
@@ -69,9 +189,9 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
       vulnerablePopulation: 35000,
       youthPopulation: 25000,
       elderlyPopulation: 10000,
-      wardName: inc.ward
+      wardName: effectiveInc.ward
     },
-    infrastructure: inc.infrastructure || {
+    infrastructure: effectiveInc.infrastructure || {
       healthcareIndex: 38,
       educationIndex: 42,
       waterIndex: 35,
@@ -81,46 +201,79 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
       digitalConnectivityIndex: 60,
       nearestFacilityDistanceMeters: 28000
     },
-    investment: inc.investment || {
+    investment: effectiveInc.investment || {
       existingInvestment: 200,
       plannedInvestment: 500,
       activeProjects: 2,
       plannedProjects: 1,
       investmentByCategory: {},
       investmentGapLakhs: 300,
-      unaddressedRequestsCount: inc.signalIds?.length || 15
+      unaddressedRequestsCount: effectiveInc.signalIds?.length || 15
     },
-    evidence: inc.evidence || [],
+    evidence: effectiveInc.evidence || [],
     sourceMode: dataMode === 'REAL' ? 'LIVE' : dataMode === 'REPLAY' ? 'REPLAY' : 'SIMULATION'
   });
 
   const engineMode = dataMode === 'REAL' ? 'LIVE' : dataMode === 'REPLAY' ? 'REPLAY' : 'SIMULATION';
 
-  const impact: DevelopmentImpact = calculateDevelopmentImpact({
-    project,
-    hotspot: inc as any,
-    context: (inc as any).context,
-    mode: engineMode
-  });
+  let impact: DevelopmentImpact;
+  try {
+    impact = calculateDevelopmentImpact({
+      project,
+      hotspot: effectiveInc as any,
+      context: (effectiveInc as any).context,
+      mode: engineMode
+    });
+  } catch (err) {
+    return (
+      <div className="card" style={{ padding: '2rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px', textAlign: 'center' }}>
+        <ShieldAlert size={28} color="#ef4444" style={{ margin: '0 auto 0.5rem auto' }} />
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.4rem 0' }}>
+          Impact Model Unavailable for this Intervention
+        </h3>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', maxWidth: '480px', margin: '0 auto 1rem auto' }}>
+          Unable to produce deterministic impact projection due to missing baseline metrics for {effectiveInc.ward}.
+        </p>
+        <button onClick={() => setActiveTab('investment_gaps')} style={{ padding: '0.5rem 1rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>
+          Return to Investment Board
+        </button>
+      </div>
+    );
+  }
 
   const handleSimulatePostSignal = () => {
     addCustomSignal(
-      `[Post-Intervention Verification] Field audit confirms infrastructure upgrade in ${inc.ward}. Demand pressure dropped by ${Math.abs(impact.change.demandPressureReductionPercent)}%.`,
+      `[Post-Intervention Simulation] Modeled signal reduction in ${effectiveInc.ward}. Projected demand pressure change: ${impact.change.demandPressureReductionPercent} pts.`,
       'citizen_app',
-      inc.centroid
+      effectiveInc.centroid
     );
   };
 
-  const projectStatusLabel =
-    project.status === 'approved' || inc.status === 'approved'
-      ? 'APPROVED BY POLICY BOARD'
-      : project.status === 'allocated'
-      ? 'BUDGET ALLOCATED'
-      : 'UNDER POLICY REVIEW';
+  const intervention: InterventionRecord =
+    activeIntervention && activeIntervention.incidentId === effectiveInc.id
+      ? activeIntervention
+      : buildCanonicalInterventionRecord({ incident: effectiveInc, recommendation: project });
 
   return (
     <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }}>
       
+      {/* 6-STEP CLOSED-LOOP LIFECYCLE HEADER & PERSISTENT CONTEXT */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <JudgingJourneyStepper
+          currentStep="MEASURE"
+          compact={false}
+          intervention={{
+            projectTitle: intervention.projectTitle,
+            locationName: `${intervention.locationName} (${intervention.district})`,
+            approvedCapitalLakhs: intervention.approvedCapitalLakhs,
+            priorityScore: intervention.priorityScore,
+            priorityLevel: intervention.priorityLevel,
+            status: intervention.status || 'IMPACT_MEASURED',
+            dataMode: intervention.dataMode || 'SIMULATION'
+          }}
+        />
+      </div>
+
       {/* Header Banner & Data Mode Toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.85rem', background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(37, 99, 235, 0.08) 100%)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
         <div>
@@ -150,9 +303,9 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
                 background: dataMode === 'REAL' ? '#10b981' : 'transparent',
                 color: dataMode === 'REAL' ? '#fff' : 'var(--text-muted)'
               }}
-              title="Real-time measured telemetry from IoT sensors & field verification"
+              title="Live field signal streams & sensor inputs (where active)"
             >
-              🟢 REAL MEASURED
+              🟢 LIVE STREAM
             </button>
             <button
               onClick={() => setDataMode('REPLAY')}
@@ -278,37 +431,39 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
         <div style={{ background: 'var(--bg-canvas)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--cyan-500)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cyan-400)' }}>
-              STAGE 2: RECOMMENDED INTERVENTION
+              STAGE 2: INTERVENTION RECORD
             </span>
-            <span style={{ fontSize: '0.66rem', fontFamily: 'var(--font-mono)', color: 'var(--cyan-400)' }}>CAPITAL PROJECT</span>
+            <span style={{ fontSize: '0.66rem', fontFamily: 'var(--font-mono)', color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+              SIMULATION
+            </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.78rem' }}>
             <div style={{ background: 'var(--bg-surface)', padding: '0.55rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>PROJECT TITLE:</span>
-              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
-                {project.title}
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>INTERVENTION:</span>
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                {intervention.projectTitle}
               </div>
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '0.55rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>RECOMMENDED ACTION / SCOPE:</span>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                {project.recommendedIntervention}
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>LOCATION:</span>
+              <div style={{ fontSize: '0.82rem', color: 'var(--cyan-400)', fontWeight: 700 }}>
+                {intervention.locationName}
               </div>
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '0.55rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>TARGET BENEFICIARIES:</span>
-              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--cyan-400)' }}>
-                35,000 vulnerable group citizens ({impact.baselineMetrics.affectedPopulation.toLocaleString()} total area served)
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>APPROVED CAPITAL:</span>
+              <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#10b981', fontFamily: 'var(--font-mono)' }}>
+                ₹{intervention.approvedCapitalLakhs} Lakhs
               </div>
             </div>
 
             <div style={{ background: 'var(--bg-surface)', padding: '0.55rem', borderRadius: '6px' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>POLICY BOARD STATUS:</span>
-              <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--amber-400)', background: 'rgba(245, 158, 11, 0.15)', padding: '3px 8px', borderRadius: '4px', marginTop: '3px', display: 'inline-block' }}>
-                {projectStatusLabel}
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>STATUS:</span>
+              <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '4px', marginTop: '3px', display: 'inline-block' }}>
+                INTERVENTION RECORDED
               </div>
             </div>
           </div>
@@ -329,7 +484,7 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
             <div style={{ background: 'var(--bg-surface)', padding: '0.55rem', borderRadius: '6px' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', display: 'block' }}>REDUCED DEMAND PRESSURE:</span>
               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399', fontFamily: 'var(--font-mono)' }}>
-                {impact.postInterventionMetrics.demandScore} / 100 ({impact.change.demandPressureReductionPercent}% pts)
+                {impact.postInterventionMetrics.demandScore} / 100 ({impact.change.demandPressureReductionPercent} pts)
               </div>
             </div>
 
@@ -420,6 +575,55 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
         </div>
       </div>
 
+      {/* CIVIC INTELLIGENCE FEEDBACK LOOP (PART 8) */}
+      <div style={{ background: 'var(--bg-canvas)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(139, 92, 246, 0.4)', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 800, color: '#c084fc' }}>
+            <Activity size={16} />
+            <span>Civic Intelligence Feedback Loop — Planning Cycle Closed</span>
+          </div>
+          <span style={{ fontSize: '0.66rem', fontFamily: 'var(--font-mono)', background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+            FEEDBACK EVIDENCE
+          </span>
+        </div>
+
+        <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: '0 0 0.75rem 0', lineHeight: 1.45 }}>
+          The intervention outcome feeds directly back into the civic intelligence knowledge base as prospective planning evidence. The original historical recommendation and baseline metrics remain intact as recorded at decision time—ensuring complete auditability.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', fontSize: '0.78rem' }}>
+          <div style={{ background: 'var(--bg-surface)', padding: '0.75rem', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+              <span style={{ fontWeight: 800, color: '#f87171', fontSize: '0.7rem' }}>PRE-INTERVENTION BASELINE</span>
+              <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>[BASELINE CONTEXT]</span>
+            </div>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.84rem', marginBottom: '0.25rem' }}>
+              High Recurring Demand Pressure
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+              • Demand score: <strong>{impact.baselineMetrics.demandScore} / 100</strong><br />
+              • Infrastructure gap index: <strong>{impact.baselineMetrics.infrastructureIndex} / 100</strong><br />
+              • Status: <em>Active Civic Deficit</em>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--bg-surface)', padding: '0.75rem', borderRadius: '8px', borderLeft: '3px solid #10b981' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+              <span style={{ fontWeight: 800, color: '#34d399', fontSize: '0.7rem' }}>POST-INTERVENTION PROJECTED</span>
+              <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: '#34d399' }}>[PROJECTED DELTA]</span>
+            </div>
+            <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.84rem', marginBottom: '0.25rem' }}>
+              Reduced Demand & Fortified Drainage
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+              • Projected demand score: <strong>{impact.postInterventionMetrics.demandScore} / 100</strong> ({impact.change.demandPressureReductionPercent} pts)<br />
+              • Infrastructure score: <strong>{impact.postInterventionMetrics.infrastructureIndex} / 100</strong> (+{impact.change.infrastructureIndexImprovement} pts)<br />
+              • Status: <em>Mitigated in Forward Planning Cycle</em>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* GEMINI NARRATIVE EVALUATION */}
       <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '0.85rem', borderRadius: '8px', marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', fontWeight: 800, color: '#a5b4fc', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
@@ -443,11 +647,64 @@ export const ResolutionVerificationPanel: React.FC<Props> = ({ incident: propInc
         />
       </div>
 
-      {/* DATA MODE GOVERNANCE & HONESTY NOTICE */}
-      <div style={{ padding: '0.85rem', borderRadius: '8px', background: dataMode === 'REAL' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: `1px solid ${dataMode === 'REAL' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`, display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.76rem', color: dataMode === 'REAL' ? '#a7f3d0' : '#fde68a' }}>
-        <ShieldAlert size={18} color={dataMode === 'REAL' ? '#10b981' : '#fbbf24'} style={{ flexShrink: 0 }} />
+      {/* DIRECTIONAL NEXT ACTIONS (PART 5) */}
+      <div style={{
+        marginTop: '1.25rem',
+        padding: '1rem 1.25rem',
+        background: 'var(--bg-canvas)',
+        borderRadius: '10px',
+        border: '1px solid var(--border-subtle)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
         <div>
-          <strong>DATA MODE GOVERNANCE NOTICE ({dataMode}):</strong> {dataMode === 'REAL' ? 'This view displays live measured sensor telemetry and verified post-intervention field audits.' : `Figures are calculated deterministically by developmentImpactEngine based on ${dataMode.toLowerCase()} baseline models. Projected or simulated outcomes are never represented as measured government outcomes.`}
+          <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+            Decision Loop Completed
+          </div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+            Signals ➔ Intelligence ➔ Investment ➔ Human Approval ➔ Intervention ➔ Projected Impact
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <button
+            onClick={() => setActiveTab('project_priorities')}
+            style={{
+              padding: '0.5rem 0.95rem',
+              borderRadius: '6px',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-medium)',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Review Pipeline
+          </button>
+          <button
+            onClick={() => setActiveTab('investment_gaps')}
+            style={{
+              padding: '0.5rem 1.15rem',
+              borderRadius: '6px',
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              color: '#ffffff',
+              border: 'none',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            <span>Return to Investment Board</span>
+            <ArrowRight size={13} />
+          </button>
         </div>
       </div>
 

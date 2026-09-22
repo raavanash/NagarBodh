@@ -136,7 +136,7 @@ export class SignalNormalizer {
     if (rawChannel.includes('bluesky') || rawChannel.includes('bsky')) channel = 'social_bluesky';
     else if (rawChannel.includes('x') || rawChannel.includes('social')) channel = 'social_x';
     else if (rawChannel.includes('grievance') || rawChannel.includes('portal') || rawChannel.includes('govt')) channel = 'grievance_portal';
-    else if (rawChannel.includes('311') || rawChannel.includes('helpline')) channel = 'helpline_311';
+    else if (rawChannel.includes('112') || rawChannel.includes('311') || rawChannel.includes('helpline')) channel = 'helpline_112';
 
     // Textual Locality & Ward Resolution
     let matchedLocationName = payload.locationName || payload.location;

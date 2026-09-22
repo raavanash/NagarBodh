@@ -1,25 +1,34 @@
 import React, { useState } from 'react';
 import {
   ArrowDown,
+  ArrowRight,
   Building2,
   CheckCircle2,
   Edit3,
   ExternalLink,
   MapPin,
   ShieldAlert,
+  Sparkles,
   XCircle
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
-import { DevelopmentProjectRecommendation } from '../../types/development';
-import { generateDevelopmentProjectRecommendation } from '../../engine/developmentRecommendationEngine';
+import { DevelopmentProjectRecommendation, InterventionRecord } from '../../types/development';
+import { generateDevelopmentProjectRecommendation, buildCanonicalInterventionRecord } from '../../engine/developmentRecommendationEngine';
+import { buildInvestmentExplanationDossier } from '../../engine/developmentGapEngine';
+import { ExplainableInvestmentDossierDrawer } from '../Gaps/ExplainableInvestmentDossierDrawer';
 import { IncidentLifecycleStepper } from './IncidentLifecycleStepper';
 import { ResolutionVerificationPanel } from '../Verification/ResolutionVerificationPanel';
 import { ExpandableEvidenceUI } from '../Evidence/ExpandableEvidenceUI';
-import { PriorityBadge, GeminiExplanationCard, HumanReviewStateBadge } from '../common';
+import { PriorityBadge, GeminiExplanationCard, HumanReviewStateBadge, JudgingJourneyStepper } from '../common';
 
 export const ResponsePlannerView: React.FC = () => {
   const {
     incidents,
+    signals,
+    selectedIncidentId,
+    activeIntervention,
+    approveIntervention,
+    measureInterventionImpact,
     approveDispatch,
     modifyDispatch,
     rejectDispatch,
@@ -28,6 +37,7 @@ export const ResponsePlannerView: React.FC = () => {
   } = useCivic();
 
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [isModifyModalOpen, setIsModifyModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -40,7 +50,12 @@ export const ResponsePlannerView: React.FC = () => {
   const [newActionText, setNewActionText] = useState('');
 
   const activeIncidents = incidents;
-  const currentIncident = activeIncidents.find(i => i.id === selectedPlanId) || activeIncidents[0];
+  const effectiveIncidentId = selectedPlanId || selectedIncidentId;
+  const currentIncident = activeIncidents.find(i => i.id === effectiveIncidentId) || activeIncidents[0];
+
+  const currentDossier = currentIncident
+    ? buildInvestmentExplanationDossier(currentIncident.category, incidents, signals)
+    : null;
 
   // Resolve or generate structured DevelopmentProjectRecommendation for selected item
   const rec: DevelopmentProjectRecommendation | null = currentIncident
@@ -99,6 +114,24 @@ export const ResponsePlannerView: React.FC = () => {
     : null;
 
   const plan = currentIncident?.actionPlan;
+
+  const interventionRecord: InterventionRecord =
+    activeIntervention && activeIntervention.incidentId === currentIncident?.id
+      ? activeIntervention
+      : buildCanonicalInterventionRecord({ incident: currentIncident, recommendation: rec });
+
+  const interventionStatus =
+    activeIntervention && activeIntervention.incidentId === currentIncident?.id
+      ? activeIntervention.status
+      : (currentIncident?.status === 'verified'
+        ? 'IMPACT_MEASURED'
+        : currentIncident?.status === 'resolving' || currentIncident?.status === 'resolved'
+        ? 'INTERVENTION_RECORDED'
+        : currentIncident?.status === 'approved'
+        ? 'APPROVED'
+        : currentIncident?.status === 'dispatch_pending'
+        ? 'UNDER_REVIEW'
+        : 'RECOMMENDED');
 
   // Initialize edit fields when selection changes
   const handleSelectIncident = (incId: string) => {
@@ -196,6 +229,29 @@ export const ResponsePlannerView: React.FC = () => {
         </div>
       </div>
 
+      {/* UNIFIED 6-STAGE LIFECYCLE HEADER & PERSISTENT CONTEXT STRIP */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <JudgingJourneyStepper
+          currentStep={
+            interventionStatus === 'IMPACT_MEASURED'
+              ? 'MEASURE'
+              : interventionStatus === 'APPROVED' || interventionStatus === 'INTERVENTION_RECORDED'
+              ? 'APPROVE'
+              : 'DECIDE'
+          }
+          compact={false}
+          intervention={{
+            projectTitle: interventionRecord.projectTitle,
+            locationName: `${interventionRecord.locationName} (${interventionRecord.district})`,
+            approvedCapitalLakhs: interventionRecord.approvedCapitalLakhs,
+            priorityScore: interventionRecord.priorityScore,
+            priorityLevel: interventionRecord.priorityLevel,
+            status: interventionStatus,
+            dataMode: interventionRecord.dataMode || 'SIMULATION'
+          }}
+        />
+      </div>
+
       {/* Grid Layout: Left Candidate Projects Queue, Right Detailed Recommendation View */}
       <div className="response-planner-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', alignItems: 'start' }}>
         
@@ -270,17 +326,40 @@ export const ResponsePlannerView: React.FC = () => {
                   </h3>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setSelectedIncidentId(currentIncident.id);
-                    setActiveTab('live_map');
-                  }}
-                  className="sim-btn"
-                  style={{ fontSize: '0.75rem' }}
-                >
-                  <span>View Location on Map</span>
-                  <ExternalLink size={13} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setIsDossierOpen(true)}
+                    style={{
+                      background: '#fef3c7',
+                      color: '#92400e',
+                      border: '1px solid #fcd34d',
+                      borderRadius: '6px',
+                      padding: '0.4rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                    title="Why is NagarBodh recommending this intervention for this location?"
+                  >
+                    <Sparkles size={13} color="#b45309" />
+                    <span>Why this recommendation?</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedIncidentId(currentIncident.id);
+                      setActiveTab('live_map');
+                    }}
+                    className="sim-btn"
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    <span>View Location on Map</span>
+                    <ExternalLink size={13} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -579,32 +658,148 @@ export const ResponsePlannerView: React.FC = () => {
                 </div>
               </div>
 
-              {/* 7. HUMAN REVIEW & POLICYMAKER DECISION PANEL */}
-              <div className="card planner-decision-panel" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)' }}>
-                {rec.status === 'approved' || plan?.status === 'approved' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'rgba(16, 185, 129, 0.15)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <CheckCircle2 size={26} color="#34d399" />
+              {/* 7. HUMAN REVIEW & INTERVENTION RECORD PANEL */}
+              {interventionStatus === 'APPROVED' || interventionStatus === 'INTERVENTION_RECORDED' || interventionStatus === 'IMPACT_MEASURED' || rec.status === 'approved' || plan?.status === 'approved' ? (
+                /* PART 5 — INTERVENTION RECORD CARD */
+                <div className="card intervention-record-card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '2px solid #10b981', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.15)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.6rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <CheckCircle2 size={24} color="#10b981" />
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                          PROJECT APPROVED BY POLICYMAKER & STAGED FOR ALLOCATION
+                        <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          INTERVENTION RECORD
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>
-                          Approved By: {rec.approvedBy || plan?.approvedBy || 'State Policymaker / Nodal Officer'}
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          Intervention recorded in simulated operational registry
                         </div>
                       </div>
                     </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ background: '#8b5cf6', color: '#fff', fontSize: '0.68rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                        DATA MODE: SIMULATION
+                      </span>
+                      <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontSize: '0.68rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '4px', border: '1px solid #10b981' }}>
+                        STATUS: INTERVENTION RECORDED
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                      Human Policymaker Review Panel (Every decision is logged in immutable audit trail)
+
+                  {/* Specification Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
+                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>INTERVENTION</div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '3px' }}>
+                        {interventionRecord.projectTitle}
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>LOCATION</div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--cyan-400)', marginTop: '3px' }}>
+                        {interventionRecord.locationName}
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>APPROVED CAPITAL</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981', fontFamily: 'var(--font-mono)', marginTop: '3px' }}>
+                        ₹{interventionRecord.approvedCapitalLakhs} Lakhs
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>LEAD AGENCY & APPROVAL</div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '3px' }}>
+                        {interventionRecord.leadAgency}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Approved by: {interventionRecord.approvedBy || rec.approvedBy || plan?.approvedBy || 'State Infrastructure Review Board'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Direct Action: Measure Impact Connection */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'rgba(16, 185, 129, 0.08)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Intervention state preserved across lifecycle.
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                        Proceed directly to Before vs Intervention vs After Impact Assessment without losing context.
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => measureInterventionImpact(currentIncident.id)}
+                      style={{
+                        padding: '0.75rem 1.4rem',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
+                      }}
+                    >
+                      <span>Measure Impact</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* PART 4 — HUMAN APPROVAL MOMENT */
+                <div className="card planner-decision-panel" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
+                        Human Policymaker Approval Moment
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem', fontSize: '0.68rem', fontFamily: 'var(--font-mono)' }}>
+                        <span style={{ background: '#8b5cf6', color: '#fff', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
+                          MODE: SIMULATION
+                        </span>
+                        <span style={{ background: '#fef3c7', color: '#92400e', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
+                          PROVENANCE: RECOMMENDED
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Problem, Evidence, Recommended Intervention, Capex, Projected Outcome */}
+                    <div style={{ background: 'var(--bg-canvas)', padding: '0.9rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.78rem' }}>
+                      <div>
+                        <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Identified Problem:</strong>
+                        <div style={{ color: 'var(--text-primary)', marginTop: '1px' }}>{rec.problemStatement}</div>
+                      </div>
+                      <div>
+                        <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Recommended Intervention:</strong>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 700, marginTop: '1px' }}>{rec.recommendedIntervention}</div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.5rem', marginTop: '0.2rem' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Estimated Capex:</strong>
+                          <div style={{ color: '#10b981', fontWeight: 800, fontSize: '0.92rem', fontFamily: 'var(--font-mono)' }}>₹{interventionRecord.approvedCapitalLakhs} Lakhs</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Projected Outcome:</strong>
+                          <div style={{ color: '#38bdf8', fontWeight: 700 }}>+29 pts infra • -37 pts demand drop</div>
+                        </div>
+                        <div>
+                          <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Priority Ranking:</strong>
+                          <div style={{ color: '#f59e0b', fontWeight: 800 }}>Score {interventionRecord.priorityScore}/100 ({interventionRecord.priorityLevel})</div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="decision-buttons-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '0.85rem' }}>
-                      {/* [Approve] Button */}
+                      {/* [Approve Intervention] Button */}
                       <button
-                        onClick={() => approveDispatch(currentIncident.id, 'Candidate project approved by policymaker.')}
+                        onClick={() => approveIntervention(currentIncident.id, 'State Infrastructure Review Board', 'Sub-surface Automated Stormwater Pumping Array approved for execution.')}
                         style={{
                           padding: '0.85rem 1.25rem',
                           background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
@@ -622,7 +817,7 @@ export const ResponsePlannerView: React.FC = () => {
                         }}
                       >
                         <CheckCircle2 size={18} />
-                        <span>[APPROVE PROJECT]</span>
+                        <span>Approve Intervention</span>
                       </button>
 
                       {/* [Modify] Button */}
@@ -670,8 +865,8 @@ export const ResponsePlannerView: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* AUDIT TRAIL LOG */}
               {plan?.auditTrail && plan.auditTrail.length > 0 && (
@@ -829,6 +1024,13 @@ export const ResponsePlannerView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Explainable Investment Dossier Drawer */}
+      <ExplainableInvestmentDossierDrawer
+        dossier={currentDossier}
+        isOpen={isDossierOpen}
+        onClose={() => setIsDossierOpen(false)}
+      />
 
     </div>
   );

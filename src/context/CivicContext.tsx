@@ -20,7 +20,8 @@ import { CivicContextDataLayer, civicContextDataLayerInstance } from '../engine/
 import { ExternalDataPointEnvelope, WeatherData } from '../types/contextDataLayer';
 import { calculateResolutionVerification } from '../engine/resolutionVerificationEngine';
 import { createRepositories, type RepositoryRegistry, type RepositoryStatus } from '../repositories';
-
+import { InterventionLifecycleStatus, InterventionRecord } from '../types/development';
+import { buildCanonicalInterventionRecord } from '../engine/developmentRecommendationEngine';
 
 export interface AuditLogEntry {
   id: string;
@@ -130,6 +131,13 @@ interface CivicContextType {
   openApprovalModal: (incidentId?: string) => void;
   closeApprovalModal: () => void;
 
+  // Single Traceable Intervention Lifecycle
+  activeIntervention: InterventionRecord | null;
+  setActiveIntervention: (record: InterventionRecord | null) => void;
+  prioritizeRecommendationInPipeline: (incidentId?: string) => void;
+  approveIntervention: (incidentId: string, approvedBy?: string, notes?: string) => void;
+  measureInterventionImpact: (incidentId?: string) => void;
+
   // Scripted Demo Command Center Orchestration Handlers
   startLiveDemo: () => void;
   pauseDemo: () => void;
@@ -140,6 +148,7 @@ interface CivicContextType {
   simulateFieldArrivalDemo: () => void;
   simulateResolutionDemo: () => void;
   verifyResolutionDemo: () => void;
+  demoResetNotification: string | null;
 
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
@@ -175,6 +184,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Persistent Incident Lifecycle Map (9-State NagarBodh Lifecycle)
   const [lifecycleMap, setLifecycleMap] = useState<Record<string, { status: IncidentStatus; notes?: string; actor?: string; statusHistory: StateTransitionRecord[] }>>({});
 
+  // Single Traceable Intervention Lifecycle State
+  const [activeInterventionState, setActiveInterventionState] = useState<InterventionRecord | null>(null);
+
   // Human Approval Modal state
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
 
@@ -192,7 +204,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Selected incident & active navigation tab
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline'>('development_map');
+  const [activeTab, setActiveTab] = useState<'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline'>('investment_gaps');
 
   // Map Mode & Extended Incident Filters
   const [mapMode, setMapMode] = useState<'civic_signals' | 'ai_priority'>('ai_priority');
@@ -211,6 +223,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectedChannel: 'all',
     selectedCategory: 'all'
   });
+
+  // Demo Reset Notification State
+  const [demoResetNotification, setDemoResetNotification] = useState<string | null>(null);
 
   // Gemini API Key management (Secured server-side; client stays free of secret credentials)
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
@@ -532,6 +547,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSignals([...SIMULATION_STEPS[0].signalsAdded]);
     setActionPlans({});
     setLifecycleMap({});
+    setActiveInterventionState(null);
     setSelectedIncidentId(null);
     prevIncidentsRef.current = [];
     appendAuditLog({
@@ -557,8 +573,33 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const resetDemo = useCallback(() => {
-    resetSimulation();
-  }, [resetSimulation]);
+    setIsPlaying(false);
+    setCurrentStepIndex(0);
+    setSignals([...SIMULATION_STEPS[0].signalsAdded]);
+    setActionPlans({});
+    setLifecycleMap({});
+    setActiveInterventionState(null);
+    setSelectedIncidentId(null);
+    setActiveTab('investment_gaps');
+    setCategoryFilter('all');
+    setSourceFilter('all');
+    setSeverityFilter('all');
+    setWardFilter('all');
+    setSearchQuery('');
+    setMinPriorityFilter(0);
+    prevIncidentsRef.current = [];
+    setDemoResetNotification('Demo reset — canonical baseline restored');
+    setTimeout(() => {
+      setDemoResetNotification(null);
+    }, 3500);
+    appendAuditLog({
+      timeLabel: '08:00 AM',
+      type: 'signal_ingested',
+      title: 'Demo Reset — Canonical Baseline Restored',
+      description: 'Cleared all emergency surges, decision briefs, pipeline approvals, and returned to 08:00 AM canonical baseline.',
+      actor: 'Demo Command Center'
+    });
+  }, [appendAuditLog]);
 
   const fastForwardDemo = useCallback(() => {
     setIsPlaying(false);
@@ -704,7 +745,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setActionPlans(prev => ({ ...prev, [incidentId]: { ...inc.actionPlan!, status: 'approved' } }));
     }
 
-    transitionIncidentState(incidentId, 'approved', 'Municipal Operations Commissioner (Badge #CC-04)', notes);
+    transitionIncidentState(incidentId, 'approved', 'Demo Municipal Approver [SIMULATION]', notes);
   }, [incidents, transitionIncidentState]);
 
   const modifyDispatch = useCallback((incidentId: string, updatedPlanPartial: Partial<DispatchActionPlan>) => {
@@ -823,6 +864,101 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const targetId = selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
     aiVerifyIncident(targetId, 'NagarBodh AI Verification Engine', '8-Step resolution verification audit complete. -87% signal reduction verified.');
   }, [selectedIncidentId, aiVerifyIncident]);
+
+  // --- SINGLE TRACEABLE INTERVENTION LIFECYCLE ---
+  const activeIntervention = useMemo(() => {
+    if (activeInterventionState) return activeInterventionState;
+    if (selectedIncident) {
+      const status: InterventionLifecycleStatus =
+        selectedIncident.status === 'verified'
+          ? 'IMPACT_MEASURED'
+          : selectedIncident.status === 'resolving' || selectedIncident.status === 'resolved'
+          ? 'INTERVENTION_RECORDED'
+          : selectedIncident.status === 'approved'
+          ? 'APPROVED'
+          : selectedIncident.status === 'dispatch_pending'
+          ? 'UNDER_REVIEW'
+          : 'RECOMMENDED';
+      return buildCanonicalInterventionRecord({ incident: selectedIncident, status });
+    }
+    return null;
+  }, [activeInterventionState, selectedIncident]);
+
+  const setActiveIntervention = useCallback((record: InterventionRecord | null) => {
+    setActiveInterventionState(record);
+  }, []);
+
+  const prioritizeRecommendationInPipeline = useCallback((incidentId?: string) => {
+    const targetId = incidentId || selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
+    setSelectedIncidentId(targetId);
+    const targetInc = incidents.find(i => i.id === targetId) || selectedIncident;
+    const record = buildCanonicalInterventionRecord({
+      incident: targetInc,
+      status: 'UNDER_REVIEW'
+    });
+    setActiveInterventionState(record);
+    if (targetInc && (targetInc.status === 'emerging' || targetInc.status === 'triaged')) {
+      transitionIncidentState(targetId, 'dispatch_pending', 'Policy Prioritization Board', 'Prioritized in Capital Investment Pipeline.');
+    }
+    setActiveTab('project_priorities');
+    appendAuditLog({
+      timeLabel: currentStep.simulatedTime,
+      type: 'state_transition',
+      title: `⚡ Prioritized in Pipeline: ${record.projectTitle}`,
+      description: `Recommendation #${record.recommendationId} (${record.categoryLabel} • ₹${record.approvedCapitalLakhs} Lakhs) prioritized for human approval.`,
+      actor: 'Investment Planning Board',
+      incidentId: targetId
+    });
+  }, [incidents, selectedIncident, selectedIncidentId, currentStep.simulatedTime, transitionIncidentState, appendAuditLog]);
+
+  const approveIntervention = useCallback((incidentId: string, approvedBy = 'Demo Municipal Approver [SIMULATION]', notes = 'Capital intervention approved for immediate implementation.') => {
+    const targetInc = incidents.find(i => i.id === incidentId) || selectedIncident;
+    const existing = activeIntervention || buildCanonicalInterventionRecord({ incident: targetInc });
+    const updatedRecord: InterventionRecord = {
+      ...existing,
+      status: 'INTERVENTION_RECORDED',
+      approvedBy,
+      approvedAt: new Date().toISOString(),
+      recordedAt: new Date().toISOString(),
+      provenance: 'SIMULATION'
+    };
+    setActiveInterventionState(updatedRecord);
+    approveDispatch(incidentId, notes);
+    setTimeout(() => {
+      transitionIncidentState(incidentId, 'resolving', approvedBy, `Intervention recorded: ${updatedRecord.projectTitle} [SIMULATION]`);
+    }, 100);
+    appendAuditLog({
+      timeLabel: currentStep.simulatedTime,
+      type: 'dispatch_approved',
+      title: `✅ Intervention Recorded: ${updatedRecord.projectTitle}`,
+      description: `Approved capital of ₹${updatedRecord.approvedCapitalLakhs} Lakhs recorded for ${updatedRecord.locationName}. Data Mode: SIMULATION.`,
+      actor: approvedBy,
+      incidentId
+    });
+  }, [incidents, selectedIncident, activeIntervention, approveDispatch, transitionIncidentState, currentStep.simulatedTime, appendAuditLog]);
+
+  const measureInterventionImpact = useCallback((incidentId?: string) => {
+    const targetId = incidentId || selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
+    setSelectedIncidentId(targetId);
+    const targetInc = incidents.find(i => i.id === targetId) || selectedIncident;
+    const existing = activeIntervention || buildCanonicalInterventionRecord({ incident: targetInc });
+    const updatedRecord: InterventionRecord = {
+      ...existing,
+      status: 'IMPACT_MEASURED'
+    };
+    setActiveInterventionState(updatedRecord);
+    transitionIncidentState(targetId, 'verified', 'NagarBodh Development Impact Engine', `Impact verification completed: -37 pts demand, +29 pts infra [PROJECTED/SIMULATION]`);
+    setActiveTab('impact');
+    appendAuditLog({
+      timeLabel: currentStep.simulatedTime,
+      type: 'field_verification',
+      title: `📊 Impact Measured: ${updatedRecord.projectTitle}`,
+      description: `Linked outcome to intervention: Demand pressure ${updatedRecord.expectedImpact.demandPressureReductionPercent} pts, Infra +${updatedRecord.expectedImpact.infrastructureIndexImprovement} pts.`,
+      actor: 'Development Impact Engine',
+      incidentId: targetId
+    });
+  }, [incidents, selectedIncident, selectedIncidentId, activeIntervention, transitionIncidentState, currentStep.simulatedTime, appendAuditLog]);
+
 
   // Ingestion Service Instance
   const ingestionServiceRef = useRef<SignalIngestionService>(new SignalIngestionService(signals as any));
@@ -1156,6 +1292,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isApprovalModalOpen,
         openApprovalModal,
         closeApprovalModal,
+        activeIntervention,
+        setActiveIntervention,
+        prioritizeRecommendationInPipeline,
+        approveIntervention,
+        measureInterventionImpact,
         startLiveDemo,
         pauseDemo,
         resetDemo,
@@ -1165,6 +1306,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         simulateFieldArrivalDemo,
         simulateResolutionDemo,
         verifyResolutionDemo,
+        demoResetNotification,
         geminiApiKey,
         civicContextDataLayer: civicContextDataLayerInstance,
         setGeminiApiKey: key => {

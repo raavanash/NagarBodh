@@ -24,7 +24,7 @@ export class GovtGrievanceProvider implements SignalProvider {
       {
         id: '311-ticket-901',
         text: 'Drainage overflow and sewer blockage reported near Rohini Sector 8 primary health center.',
-        sourceChannel: 'helpline_311',
+        sourceChannel: 'helpline_112',
         authorHandle: 'Ticket #MCD-155304-8841',
         timestamp: new Date().toISOString(),
         lat: 28.7041,

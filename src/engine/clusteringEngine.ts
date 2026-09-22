@@ -216,7 +216,7 @@ export function clusterSignals(
       social_bluesky: 0,
       social_x: 0,
       grievance_portal: 0,
-      helpline_311: 0
+      helpline_112: 0
     };
     const languageBreakdown: Record<DetectedLanguage, number> = {
       en: 0,

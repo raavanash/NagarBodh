@@ -92,12 +92,12 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
 
         <div className="flex items-center gap-2 mb-1">
           <span className="bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] px-2 py-0.5 rounded-full font-mono font-extrabold uppercase">
-            HOTSPOT DOSSIER
+            CIVIC DEMAND DOSSIER
           </span>
           <span className="text-xs text-[var(--text-muted)] font-semibold">• BRICS Intel</span>
         </div>
         <h3 className="text-base font-extrabold text-[var(--text-primary)] m-0">
-          Hotspot Demand Analysis
+          Demand Hotspot & Capital Deficit Analysis
         </h3>
       </div>
 
@@ -288,11 +288,11 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
           <ExpandableEvidenceUI incident={incident} defaultExpanded={true} title="Key Evidence" />
         </div>
 
-        {/* 7. RECOMMENDED ACTION */}
+        {/* 7. RECOMMENDED INTERVENTION */}
         <div style={{ marginBottom: '1.25rem', padding: '0.85rem', background: 'var(--civic-blue-50)', borderRadius: '8px', border: '1px solid var(--border-medium)' }}>
           <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#2563eb', letterSpacing: '0.04em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Truck size={14} />
-            <span>Recommended Action</span>
+            <span>Recommended Intervention</span>
           </div>
 
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.3rem' }}>
@@ -318,7 +318,7 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem', color: '#047857', fontSize: '0.8rem', fontWeight: 700, padding: '0.6rem', minHeight: '44px', background: '#d1fae5', borderRadius: '6px', border: '1px solid #6ee7b7' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <CheckCircle2 size={16} />
-                <span>Response Approved & Dispatched</span>
+                <span>Intervention Approved & Mobilized</span>
               </div>
               <button
                 onClick={() => setActiveTab('project_priorities')}
@@ -347,7 +347,7 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
                 }}
               >
                 <Send size={14} />
-                <span>APPROVE & DISPATCH</span>
+                <span>APPROVE & MOBILIZE INTERVENTION</span>
               </button>
 
               <button

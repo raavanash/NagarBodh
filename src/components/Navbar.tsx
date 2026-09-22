@@ -45,39 +45,52 @@ export const Navbar: React.FC = () => {
       icon: MapPin,
       badge: criticalCount > 0 ? criticalCount : undefined,
       badgeBg: 'bg-red-500 text-white',
-      title: 'Geospatial Hotspots Map'
+      title: 'Geospatial Hotspots Map',
+      isPrimary: false
     },
     {
       id: 'demand_intelligence',
       label: 'Demand Intelligence',
       icon: ShieldAlert,
-      title: 'Priority & Context Analysis Dossier'
+      title: 'Priority & Context Analysis Dossier',
+      isPrimary: false
     },
     {
       id: 'citizen_signals',
       label: 'Citizen Signals',
       icon: Activity,
-      title: 'Multilingual Citizen Requests'
+      title: 'Multilingual Citizen Requests',
+      isPrimary: false
     },
     {
       id: 'investment_gaps',
-      label: 'Investment Gaps',
+      label: 'Investment Board',
       icon: TrendingUp,
-      title: 'Infrastructure Deficit & Capital Gap Analysis'
+      title: 'Civic Investment Board — Infrastructure Deficit & Capital Gap Analysis',
+      isPrimary: true
     },
     {
       id: 'project_priorities',
-      label: 'Project Priorities',
+      label: 'Investment Pipeline',
       icon: Send,
       badge: pendingDispatchCount > 0 ? pendingDispatchCount : undefined,
       badgeBg: 'bg-amber-400 text-slate-900',
-      title: 'Candidate Development Projects & Governance Pipeline'
+      title: 'Candidate Development Projects & Governance Approval Pipeline',
+      isPrimary: true
     },
     {
       id: 'policy_board',
-      label: 'Policy Board',
+      label: 'Priority Leaderboard',
       icon: Sparkles,
-      title: 'National & State Policymaker Leaderboard Workstation'
+      title: 'National & State Investment Priority Leaderboard',
+      isPrimary: false
+    },
+    {
+      id: 'impact',
+      label: 'Impact Measurement',
+      icon: CheckCircle2,
+      title: 'Post-Intervention Impact Verification & Outcome Accountability',
+      isPrimary: true
     }
   ];
 
@@ -122,13 +135,22 @@ export const Navbar: React.FC = () => {
         <nav className="nav-tabs hidden lg:flex items-center gap-1 bg-blue-950/60 p-1 rounded-lg border border-blue-800/60" aria-label="Command Views">
           {navItems.map(item => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id || (item.id === 'development_map' && activeTab === 'live_map') || (item.id === 'demand_intelligence' && activeTab === 'dossier') || (item.id === 'citizen_signals' && activeTab === 'signals') || (item.id === 'project_priorities' && activeTab === 'dispatch') || (item.id === 'policy_board' && activeTab === 'authority');
+            const isActive = activeTab === item.id
+              || (item.id === 'development_map' && (activeTab === 'live_map'))
+              || (item.id === 'demand_intelligence' && activeTab === 'dossier')
+              || (item.id === 'citizen_signals' && activeTab === 'signals')
+              || (item.id === 'project_priorities' && activeTab === 'dispatch')
+              || (item.id === 'policy_board' && activeTab === 'authority')
+              || (item.id === 'impact' && activeTab === 'timeline');
+            const isPrimary = item.isPrimary;
             return (
               <button
                 key={item.id}
                 className={`nav-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   isActive
-                    ? 'active bg-white text-[#1e3a8a] shadow-sm font-extrabold'
+                    ? 'active bg-white text-[#1e3a8a] shadow-sm font-extrabold ring-2 ring-blue-300'
+                    : isPrimary
+                    ? 'text-amber-200 hover:bg-blue-900/60 hover:text-white border border-amber-400/30 bg-blue-950/40'
                     : 'text-blue-100 hover:bg-blue-900/50 hover:text-white'
                 }`}
                 onClick={() => setActiveTab(item.id as any)}
@@ -136,6 +158,9 @@ export const Navbar: React.FC = () => {
               >
                 <Icon size={14} />
                 <span>{item.label}</span>
+                {isPrimary && !isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Primary Decision Journey" />
+                )}
                 {item.badge !== undefined && (
                   <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${item.badgeBg}`}>
                     {item.badge}

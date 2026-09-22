@@ -54,7 +54,7 @@ const mockIncident: ClusteredIncident = {
       centroidCoordinates: { lat: 28.5825, lng: 77.3175 },
       firstReportedAt: '2026-09-05T08:00:00Z',
       latestReportedAt: '2026-09-05T10:18:00Z',
-      sourceDistribution: { citizen_app: 0, social_x: 1, grievance_portal: 0, helpline_311: 0 }
+      sourceDistribution: { citizen_app: 0, social_x: 1, grievance_portal: 0, helpline_112: 0 }
     },
     calculatedMetrics: {
       signalCount: 31,

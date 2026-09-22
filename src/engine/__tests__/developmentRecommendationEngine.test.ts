@@ -86,7 +86,7 @@ describe('Development Project Recommendation Engine', () => {
     expect(rec.title).toBe('District Healthcare Access Programme');
     expect(rec.category).toBe('HEALTHCARE');
     expect(rec.priorityScore).toBe(84);
-    expect(rec.priorityLevel).toBe('P1_NATIONAL_HIGH_PRIORITY');
+    expect(rec.priorityLevel).toBe('P1_CRITICAL_PRIORITY');
     expect(rec.expectedBeneficiaries).toBe(65000); // 65% of 100,000
     expect(rec.estimatedImpact.beneficiaryCount).toBe(65000);
     expect(rec.estimatedImpact.infrastructureIndexImprovement).toBe(61); // Math.round(72 * 0.85)
@@ -117,7 +117,7 @@ describe('Development Project Recommendation Engine', () => {
 
     expect(rec.title).toBe('District Secondary Education Capacity Programme');
     expect(rec.category).toBe('EDUCATION');
-    expect(rec.priorityLevel).toBe('P2_STATE_PRIORITY');
+    expect(rec.priorityLevel).toBe('P2_ELEVATED_PRIORITY');
     expect(rec.recommendedIntervention).toContain('secondary school');
   });
 
@@ -142,7 +142,7 @@ describe('Development Project Recommendation Engine', () => {
 
     expect(rec.title).toBe('Regional Drinking Water Reliability Programme');
     expect(rec.category).toBe('WATER');
-    expect(rec.priorityLevel).toBe('P1_NATIONAL_HIGH_PRIORITY');
+    expect(rec.priorityLevel).toBe('P1_CRITICAL_PRIORITY');
     expect(rec.recommendedIntervention).toContain('bulk water distribution pipeline');
   });
 });

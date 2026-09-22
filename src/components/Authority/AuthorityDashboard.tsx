@@ -252,7 +252,7 @@ export const AuthorityDashboard: React.FC = () => {
             <AlertTriangle size={22} />
           </div>
           <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-            P1 National High Priority Regions
+            P1 Critical Priority Regions
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-headline font-extrabold text-[var(--text-primary)] font-mono">{p1Count} Regions</span>
@@ -260,7 +260,7 @@ export const AuthorityDashboard: React.FC = () => {
           </div>
           <p className="text-xs text-[var(--text-muted)] mt-2 flex items-center gap-1 font-mono">
             <AlertCircle size={13} className="text-red-500" />
-            &gt;80 Vulnerability Score • Immediate Action Mandate
+            &gt;80 Priority Score • Immediate Action Mandate
           </p>
         </div>
 

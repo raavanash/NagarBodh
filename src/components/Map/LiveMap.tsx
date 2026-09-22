@@ -264,7 +264,7 @@ export const LiveMap: React.FC = () => {
         } else if (sig.channel === 'grievance_portal') {
           channelIcon = '🏛️';
           channelColor = '#a78bfa';
-        } else if (sig.channel === 'helpline_311') {
+        } else if (sig.channel === 'helpline_112') {
           channelIcon = '📞';
           channelColor = '#f59e0b';
         }
@@ -288,7 +288,7 @@ export const LiveMap: React.FC = () => {
           <div style="font-family: var(--font-sans); color: var(--text-primary); max-width: 240px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
               <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: ${channelColor};">
-                ${channelIcon} ${sig.channel === 'helpline_311' ? '155304 / 112 HELPLINE' : sig.channel.replace('_', ' ').toUpperCase()}
+                ${channelIcon} ${sig.channel === 'helpline_112' ? '155304 / 112 HELPLINE' : sig.channel.replace('_', ' ').toUpperCase()}
               </span>
               <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">
                 ${sig.simulatedTimeLabel}

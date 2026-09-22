@@ -264,7 +264,7 @@ export function generateDynamicResponsePlan(incident: ClusteredIncident): Dynami
       }
     );
 
-    escalationCondition = 'If incident severity increases or public safety threat expands, escalate to Zonal Municipal Commissioner Desk.';
+    escalationCondition = 'If incident severity increases or public safety threat expands, escalate to Zonal Operations Control Desk [SIMULATION].';
     citizenAdvisoryText = `CIVIC NOTICE (${targetLocation}): Reported ${incident.category.replace('_', ' ')} incident is under active municipal inspection. Response crew en route.`;
     targetChannels = ['Citizen App Push Advisory'];
   }

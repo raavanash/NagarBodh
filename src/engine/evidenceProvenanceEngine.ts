@@ -25,7 +25,7 @@ export function generateIncidentEvidenceChain(
         ? 'X/public signal'
         : primarySignal.channel === 'citizen_app'
         ? 'Citizen app direct'
-        : primarySignal.channel === 'helpline_311'
+        : primarySignal.channel === 'helpline_112'
         ? '155304 / 112 helpline call'
         : 'Grievance portal';
 

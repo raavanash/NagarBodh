@@ -32,7 +32,7 @@ export const ResolutionTimeline: React.FC = () => {
     <div className="timeline-view-container bg-[var(--bg-canvas)] min-h-screen text-[var(--text-primary)] p-4 md:p-6 overflow-y-auto font-body flex flex-col gap-6">
       
       {/* 1. Development Impact Measurement Dashboard (Stitch Screen 04 Split) */}
-      <ResolutionVerificationPanel incident={selectedIncident || incidents[0]} />
+      <ResolutionVerificationPanel />
 
       {/* 2. Auditable Impact Audit Trail Stream */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-5 shadow-xs">

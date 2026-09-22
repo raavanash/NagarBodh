@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateDevelopmentGap } from '../developmentGapEngine';
+import { calculateDevelopmentGap, deriveInvestmentBoardMetrics } from '../developmentGapEngine';
 import { calculateDeterministicDevelopmentPriority } from '../developmentPriorityEngine';
 import { generateProjectRecommendation } from '../projectRecommendationEngine';
 import { DemographicContext, InfrastructureContext, InvestmentContext } from '../../types/development';
@@ -112,5 +112,38 @@ describe('Development Intelligence Foundation Engines', () => {
     expect(project.status).toBe('pending_policy_review');
     expect(project.recommendedActions?.length).toBeGreaterThan(0);
     expect(project.expectedBeneficiaries).toBeGreaterThan(0);
+  });
+
+  it('deriveInvestmentBoardMetrics derives 4 core sectors dynamically from incident state', () => {
+    // 1. Initial / empty state
+    const initial = deriveInvestmentBoardMetrics([]);
+    expect(initial.sectorMetrics).toHaveLength(4);
+    expect(initial.gapRows).toHaveLength(4);
+
+    const waterInitial = initial.sectorMetrics.find(s => s.category === 'WATER')!;
+    expect(waterInitial.demandScore).toBeGreaterThan(0);
+    expect(waterInitial.gapLakhs).toBe(350);
+
+    // 2. Active incident state with surging demand
+    const mockWaterIncident: any = {
+      id: 'inc-surge-water',
+      title: 'Sector 15 Flash Flood Emergency',
+      category: 'waterlogging',
+      ward: 'Ward 15 — Sector 15',
+      signalIds: Array.from({ length: 25 }, (_, i) => `sig-${i}`),
+      velocityPerHour: 8.5,
+      velocitySurgePercent: 280,
+      priority: { overallScore: 94 }
+    };
+
+    const dynamicBoard = deriveInvestmentBoardMetrics([mockWaterIncident]);
+    const waterDynamic = dynamicBoard.sectorMetrics.find(s => s.category === 'WATER')!;
+    const waterRow = dynamicBoard.gapRows.find(r => r.category === 'WATER')!;
+
+    // Demand score and status react to surging request velocity
+    expect(waterDynamic.demandScore).toBeGreaterThanOrEqual(waterInitial.demandScore);
+    expect(waterDynamic.status).toBe('CRITICAL DEFICIT');
+    expect(waterRow.incidentId).toBe('inc-surge-water');
+    expect(waterRow.aiExplanation).toContain('25 signals');
   });
 });

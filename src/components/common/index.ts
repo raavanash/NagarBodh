@@ -8,3 +8,4 @@ export * from './HumanReviewStateBadge';
 export * from './LoadingState';
 export * from './EmptyState';
 export * from './ErrorState';
+export * from './JudgingJourneyStepper';

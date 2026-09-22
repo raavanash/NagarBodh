@@ -51,7 +51,7 @@ export function calculateDevelopmentImpact(input: CalculateImpactInput): Develop
   }
 
   if (hotspot) {
-    baselineDemand = Math.round(hotspot.demandScore || hotspot.priorityScore.demandScore || baselineDemand);
+    baselineDemand = Math.round(hotspot.demandScore || hotspot.priorityScore?.demandScore || hotspot.priority?.overallScore || baselineDemand);
     affectedPop = hotspot.affectedPopulation || affectedPop;
   }
 
@@ -114,7 +114,7 @@ export function calculateDevelopmentImpact(input: CalculateImpactInput): Develop
     },
     {
       classification: 'CALCULATED',
-      snippet: `Measured Impact: Infrastructure +${infrastructureIndexImprovement}, Travel Distance ${averageTravelDistanceReductionPercent}%, Demand Pressure ${demandPressureReductionPercent}%.`,
+      snippet: `Measured Impact: Infrastructure +${infrastructureIndexImprovement}, Travel Distance ${averageTravelDistanceReductionPercent}%, Demand Pressure ${demandPressureReductionPercent} pts.`,
       source: 'Deterministic Impact Engine',
       confidence: 0.96
     }

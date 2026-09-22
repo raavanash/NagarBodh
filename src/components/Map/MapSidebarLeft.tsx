@@ -64,7 +64,7 @@ export const MapSidebarLeft: React.FC = () => {
     { id: 'social_bluesky', label: 'Social (Bluesky Live)' },
     { id: 'social_x', label: 'Social (X / Twitter - Optional)' },
     { id: 'grievance_portal', label: 'Grievance Portal' },
-    { id: 'helpline_311', label: '155304 / 112 Civic Helpline' }
+    { id: 'helpline_112', label: '155304 / 112 Civic Helpline' }
   ];
 
   const severities = [
@@ -162,7 +162,7 @@ export const MapSidebarLeft: React.FC = () => {
               type="text"
               className="input-control"
               style={{ paddingLeft: '1.8rem', fontSize: '0.75rem', height: '31px' }}
-              placeholder="Search incident, location..."
+              placeholder="Search hotspot, location..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />

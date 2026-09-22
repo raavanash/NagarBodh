@@ -149,7 +149,9 @@ export interface DemographicContext {
   wardName?: string;
   populationDensityPerSqKm?: number;
   totalPopulationEstimate?: number;
+  populationImpactIndex?: number; // 0 - 100
   vulnerableGroupRatio?: number; // 0.0 - 1.0 (children, elderly, low income)
+  vulnerabilityIndex?: number; // 0 - 100 (composite socio-economic and hazard exposure index)
   primaryLivelihoodZone?: string;
   literacyPercent?: number;
 }
@@ -179,6 +181,7 @@ export interface InvestmentContext {
   approvedBudgetLakhs?: number;
   allocatedFundingLakhs?: number;
   investmentGapLakhs?: number;
+  investmentGapIndex?: number; // 0 - 100
   historicalProjectsCompleted?: number;
   unaddressedRequestsCount?: number;
 }
@@ -258,7 +261,7 @@ export interface DevelopmentProjectRecommendation {
   problemStatement: string;
   recommendedIntervention: string;
   priorityScore: number;
-  priorityLevel?: 'P1_NATIONAL_HIGH_PRIORITY' | 'P2_STATE_PRIORITY' | 'P3_STANDARD_DEVELOPMENT';
+  priorityLevel?: 'P1_CRITICAL_PRIORITY' | 'P2_ELEVATED_PRIORITY' | 'P3_STANDARD_DEVELOPMENT' | 'P1_NATIONAL_HIGH_PRIORITY' | 'P2_STATE_PRIORITY';
   expectedBeneficiaries: number;
   estimatedImpact: {
     infrastructureIndexImprovement?: number;
@@ -374,10 +377,14 @@ export interface DevelopmentImpact {
   baselineMetrics: DevelopmentImpactMetrics;
   postInterventionMetrics: DevelopmentImpactMetrics;
   change: {
-    infrastructureIndexImprovement: number; // e.g. +29
-    averageTravelDistanceReductionPercent: number; // e.g. -50%
-    demandPressureReductionPercent: number; // e.g. -37%
-    serviceAccessImprovement: number; // e.g. +30
+    infrastructureIndexImprovement: number; // e.g. +29 (pts)
+    infrastructureIndexChangePoints?: number; // e.g. +29 (pts)
+    averageTravelDistanceReductionPercent: number; // e.g. -40 (%)
+    travelDistanceReductionPercent?: number; // e.g. -40 (%)
+    demandPressureReductionPercent: number; // e.g. -37 (pts)
+    demandPressureChangePoints?: number; // e.g. -37 (pts)
+    serviceAccessImprovement: number; // e.g. +30 (pts)
+    serviceAccessChangePoints?: number; // e.g. +30 (pts)
   };
   impactScore: number; // 0 - 100
   measurementDate: string;
@@ -388,4 +395,162 @@ export interface DevelopmentImpact {
 }
 
 export type DevelopmentHotspot = DevelopmentDemandHotspot;
+
+export type ProvenanceType =
+  | 'OBSERVED'
+  | 'CALCULATED'
+  | 'BASELINE CONTEXT'
+  | 'INFERRED'
+  | 'RECOMMENDED'
+  | 'PROJECTED'
+  | 'SIMULATION';
+
+export interface ProblemSignalDossier {
+  requestCount: number;
+  signalChannels: string[];
+  velocityPerHour: number;
+  surgeMultiplier: number;
+  locationName: string;
+  ward: string;
+  representativeSignals: Array<{
+    id: string;
+    rawText: string;
+    channel: string;
+    timestamp: string;
+    authorHandle?: string;
+    detectedLanguage?: string;
+  }>;
+  provenance: 'OBSERVED';
+}
+
+export interface InfrastructureContextDossier {
+  infrastructureIndex: number;
+  infrastructureDeficitScore: number;
+  nearestFacilityName: string;
+  nearestFacilityDistanceMeters: number;
+  capacityUtilizationPercent: number;
+  criticalAssetsNearby: string[];
+  provenance: 'BASELINE CONTEXT';
+}
+
+export interface AffectedPopulationDossier {
+  totalEstimate: number;
+  vulnerableEstimate: number;
+  vulnerabilityRatio: number;
+  vulnerabilityScore?: number; // 0 - 100 composite vulnerability index
+  primaryLivelihoodZone: string;
+  sourceContext: string;
+  provenance: 'BASELINE CONTEXT';
+}
+
+export interface PriorityCalculationFactorDossier {
+  factor: string;
+  score: number;
+  weightPercent: number;
+  contribution: number;
+  evidence: string;
+  source: string;
+  provenance: 'CALCULATED';
+}
+
+export interface PriorityCalculationDossier {
+  overallScore: number;
+  priorityLevel: 'P1' | 'P2' | 'P3';
+  formulaExplanation: string;
+  factors: PriorityCalculationFactorDossier[];
+  provenance: 'CALCULATED';
+}
+
+export interface CapitalRequirementDossier {
+  recommendedProjectTitle: string;
+  estimatedCostLakhs: number;
+  interventionCategory: string;
+  recommendedIntervention: string;
+  primaryDepartment: string;
+  supportingDepartments: string[];
+  implementationConsiderations: string[];
+  provenance: 'RECOMMENDED';
+}
+
+export interface ProjectedOutcomeDossier {
+  impactScore: number;
+  infrastructureIndexGain: number;
+  travelDistanceReductionPercent: number;
+  demandPressureDrop: number;
+  serviceAccessGain: number;
+  scenarioMode: 'SIMULATION' | 'PROJECTED';
+  provenance: 'PROJECTED';
+}
+
+export interface TraceableEvidenceStep {
+  id: string;
+  stepNumber: number;
+  stepName: 'Citizen Signals' | 'Demand Hotspot' | 'Infrastructure Deficit' | 'Priority Score' | 'Recommended Intervention' | 'Projected Impact';
+  title: string;
+  detail: string;
+  sourceId: string;
+  classification: ProvenanceType;
+}
+
+export interface InvestmentExplanationDossier {
+  gapId: string;
+  category: string;
+  categoryLabel: string;
+  district: string;
+  ward: string;
+  incidentId?: string;
+  plainLanguageWhy: string;
+  problemSignal: ProblemSignalDossier;
+  infrastructureContext: InfrastructureContextDossier;
+  affectedPopulation: AffectedPopulationDossier;
+  priorityCalculation: PriorityCalculationDossier;
+  capitalRequirement: CapitalRequirementDossier;
+  projectedOutcome: ProjectedOutcomeDossier;
+  evidenceChain: TraceableEvidenceStep[];
+}
+
+export type InterventionLifecycleStatus =
+  | 'RECOMMENDED'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'INTERVENTION_RECORDED'
+  | 'IMPACT_MEASURED';
+
+export interface InterventionRecord {
+  id: string;
+  recommendationId: string;
+  incidentId: string;
+  gapId: string;
+  category: string;
+  categoryLabel: string;
+  projectTitle: string;
+  locationName: string;
+  ward: string;
+  district: string;
+  priorityScore: number;
+  priorityLevel: 'P1' | 'P2' | 'P3';
+  affectedPopulation: number;
+  vulnerablePopulation: number;
+  approvedCapitalLakhs: number;
+  recommendationRationale: string;
+  recommendedIntervention: string;
+  leadAgency: string;
+  status: InterventionLifecycleStatus;
+  approvedBy?: string;
+  approvedAt?: string;
+  recordedAt?: string;
+  dataMode: 'SIMULATION' | 'PROJECTED' | 'LIVE' | 'REPLAY';
+  provenance: 'RECOMMENDED' | 'APPROVED' | 'SIMULATION' | 'CALCULATED';
+  expectedImpact: {
+    demandPressureChangePoints: number; // e.g. -37 (Index points)
+    infrastructureIndexChangePoints: number; // e.g. +29 (Index points)
+    travelDistanceReductionPercent: number; // e.g. -40 (%)
+    serviceAccessChangePoints: number; // e.g. +30 (Index points)
+    impactScore: number; // e.g. 84 (Composite Score)
+    demandPressureReductionPercent?: number; // legacy alias
+    infrastructureIndexImprovement?: number; // legacy alias
+    serviceAccessImprovement?: number; // legacy alias
+  };
+  sourceEvidenceSnippets: string[];
+}
 

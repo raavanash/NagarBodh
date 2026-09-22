@@ -165,7 +165,7 @@ export const SECTOR_15_SIMULATION_SIGNALS: CivicSignal[] = [
     id: 'sig-s15-06',
     timestamp: '2026-09-02T10:02:00Z',
     simulatedTimeLabel: '10:02 AM',
-    channel: 'helpline_311',
+    channel: 'helpline_112',
     rawText: 'Ambulance trying to reach Sanjivani Hospital stuck at Sector 15 chowk. Water level 2.5 feet.',
     detectedLanguage: 'en',
     englishTranslation: 'Ambulance trying to reach Sanjivani Hospital stuck at Sector 15 chowk. Water level 2.5 feet.',
@@ -260,7 +260,7 @@ export const SECTOR_15_SIMULATION_SIGNALS: CivicSignal[] = [
     id: 'sig-s15-11',
     timestamp: '2026-09-02T10:22:00Z',
     simulatedTimeLabel: '10:22 AM',
-    channel: 'helpline_311',
+    channel: 'helpline_112',
     rawText: 'Caller reports storm drain pumping station #4 is not operating. Generator fuel or electrical trip suspected.',
     detectedLanguage: 'en',
     englishTranslation: 'Caller reports storm drain pumping station #4 is not operating. Generator fuel or electrical trip suspected.',
@@ -430,7 +430,7 @@ export const SECTOR_15_SIMULATION_SIGNALS: CivicSignal[] = [
     id: 'sig-s15-20',
     timestamp: '2026-09-02T10:52:00Z',
     simulatedTimeLabel: '10:52 AM',
-    channel: 'helpline_311',
+    channel: 'helpline_112',
     rawText: 'Multiple residents reporting foul sewage smell backflowing through road gullies near market.',
     detectedLanguage: 'en',
     englishTranslation: 'Multiple residents reporting foul sewage smell backflowing through road gullies near market.',
@@ -552,7 +552,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'yellow',
       description: 'Moderate morning drizzle, cloudy skies'
     },
-    description: '08:00 — City baseline operational telemetry across Karol Bagh, Connaught Place, and Rohini.'
+    description: '08:00 — City baseline operational telemetry across Karol Bagh, Connaught Place, and Rohini.',
+    investmentNarrative: 'BASELINE READINESS — Continuous multi-source telemetry active across 3 sub-cities. 14 baseline signals monitored for emerging infrastructure demand.'
   },
   {
     stepIndex: 1,
@@ -563,7 +564,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'yellow',
       description: 'Rain intensity increasing in Eastern Sub-city'
     },
-    description: '08:15 — First waterlogging signal pooling near Sector 15 metro pillar 42.'
+    description: '08:15 — First subtle signal detected: partial storm drain clog near metro pillar 42.',
+    investmentNarrative: 'SIGNAL 1 OF 31 — Weak drainage signal detected. Citizen demand pressure begins accumulating. Gap Index: building.'
   },
   {
     stepIndex: 2,
@@ -574,7 +576,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'yellow',
       description: 'Sustained rain over Ward 15'
     },
-    description: '08:30 — Social X signal in Hinglish: two-wheeler skidding in underpass incline.'
+    description: '08:30 — Social X signal in Hinglish: two-wheeler skidding in underpass incline.',
+    investmentNarrative: 'MULTI-CHANNEL CLUSTERING — Hindi + English signals spatio-temporally clustered into 1 hotspot. Infrastructure Deficit: Drainage Capacity Gap, Ward 15.'
   },
   {
     stepIndex: 3,
@@ -585,7 +588,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'orange',
       description: 'IMD Orange Alert issued'
     },
-    description: '08:45 — Multilingual complaint: Devanagari Hindi grievance reporting trunk drain overflow.'
+    description: '08:45 — Multilingual complaint: Devanagari Hindi grievance reporting trunk drain overflow.',
+    investmentNarrative: 'DEMAND GAP RISING — Velocity: 4.2 req/hr. Affected population estimate: 14,820. Investment gap flag: Drainage Capital Deficit ₹350L.'
   },
   {
     stepIndex: 4,
@@ -596,7 +600,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'orange',
       description: 'Rainfall increases (35 mm/hr)'
     },
-    description: '09:00 — Heavy rainfall surge over Ward 15 low-lying subway basin.'
+    description: '09:00 — Heavy rainfall surge over Ward 15 low-lying subway basin.',
+    investmentNarrative: 'CONTEXT ENRICHMENT — Weather telemetry integrated. IMD Orange Alert. Environmental risk score elevated. Gap Index now 71/100.'
   },
   {
     stepIndex: 5,
@@ -607,7 +612,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'orange',
       description: 'Torrential rain active'
     },
-    description: '09:15 — Signal velocity rises: knee-deep water on subway approach road.'
+    description: '09:15 — Signal velocity rises: knee-deep water on subway approach road.',
+    investmentNarrative: 'VELOCITY SURGE — 280% acceleration in signal rate. Unaddressed infrastructure gap confirmed. Priority Score: escalating to P2.'
   },
   {
     stepIndex: 6,
@@ -618,7 +624,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'orange',
       description: 'Peak downpour'
     },
-    description: '09:30 — Critical asset exposure detected: St. Jude Primary School van trapped in underpass dip!'
+    description: '09:30 — Critical asset exposure detected: St. Jude Primary School van trapped in underpass dip!',
+    investmentNarrative: 'CRITICAL ASSET EXPOSED — School van + Sanjivani Hospital corridor threatened. Demographic vulnerability activated: children + healthcare access at risk.'
   },
   {
     stepIndex: 7,
@@ -629,7 +636,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'red',
       description: 'IMD Red Alert'
     },
-    description: '09:45 — AI creates emerging incident: Severe Waterlogging & Submerged Subway — Sector 15.'
+    description: '09:45 — AI creates emerging incident: Severe Waterlogging & Submerged Subway — Sector 15.',
+    investmentNarrative: 'INVESTMENT GAP CONFIRMED — Gap Index: 87/100. Drainage Capital Deficit: ₹350L unfunded. Recommended intervention: Automated Stormwater Pumping Array.'
   },
   {
     stepIndex: 8,
@@ -640,7 +648,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'red',
       description: 'Monsoon flash flood emergency'
     },
-    description: '10:00 — Priority reaches critical (94/100 P1 Red Alert) (+280% velocity surge).'
+    description: '10:00 — Priority reaches critical (94/100 P1 Red Alert) (+280% velocity surge).',
+    investmentNarrative: 'P1 INVESTMENT PRIORITY — Score: 94/100. 31 signals. 14,820 affected citizens. ₹350L gap. Budget decision required NOW.'
   },
   {
     stepIndex: 9,
@@ -651,7 +660,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'red',
       description: 'Emergency response active'
     },
-    description: '10:05 — Response plan generated (SOP Dewatering & Traffic Diversion staged).'
+    description: '10:05 — Response plan generated (SOP Dewatering & Traffic Diversion staged).',
+    investmentNarrative: 'PROJECT SCOPED — SOP-WL-04: Mobile Dewatering Unit. Estimated cost: ₹42L. Beneficiaries: 14,820. Awaiting human approval.'
   },
   {
     stepIndex: 10,
@@ -662,7 +672,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'orange',
       description: 'Rain intensity easing'
     },
-    description: '10:10 — Officer approves response plan (Municipal Commander authorization logged).'
+    description: '10:10 — Officer approves response plan (Municipal Commander authorization logged).',
+    investmentNarrative: 'HUMAN DECISION — Municipal Commander reviews evidence. APPROVED. ₹42L intervention authorized. Accountability log created.'
   },
   {
     stepIndex: 11,
@@ -673,7 +684,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'orange',
       description: 'Crews en route'
     },
-    description: '10:20 — Dispatch executed: Mobile dewatering pumps & emergency units en route.'
+    description: '10:20 — Dispatch executed: Mobile dewatering pumps & emergency units en route.',
+    investmentNarrative: 'INTERVENTION BEGINS — ₹42L mobilized. Pumps dispatched. Impact clock starts.'
   },
   {
     stepIndex: 12,
@@ -684,7 +696,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'yellow',
       description: 'Light rain'
     },
-    description: '11:00 — Field team on site: Heavy pumps operational, clearing choked drain inlets.'
+    description: '11:00 — Field team on site: Heavy pumps operational, clearing choked drain inlets.',
+    investmentNarrative: 'ON SITE — Infrastructure intervention active. Signal volume decreasing. Demand pressure dropping from 94 → 28.'
   },
   {
     stepIndex: 13,
@@ -695,7 +708,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'none',
       description: 'Rain cleared, skies opening'
     },
-    description: '12:00 — Issue resolved: Water receded, subway reopened, traffic & hospital corridor clear.'
+    description: '12:00 — Issue resolved: Water receded, subway reopened, traffic & hospital corridor clear.',
+    investmentNarrative: 'OUTCOME EMERGING — Signal volume: 31 → 4 (87% drop). Sanjivani Hospital corridor clear. Ambulance access restored.'
   },
   {
     stepIndex: 14,
@@ -706,7 +720,8 @@ export const SIMULATION_STEPS: SimulationStep[] = [
       alertLevel: 'none',
       description: 'Normal clear weather'
     },
-    description: '12:15 — AI verification: 8-Step resolution protocol passed (91% confidence, VERIFIED).'
+    description: '12:15 — AI verification: 8-Step resolution protocol passed (91% confidence, VERIFIED).',
+    investmentNarrative: 'IMPACT VERIFIED — ₹42L → 87% signal reduction, Infra +29pts, Travel -50%, Confidence: 91% VERIFIED. Investment delivered measurable civic outcome.'
   }
 ];
 

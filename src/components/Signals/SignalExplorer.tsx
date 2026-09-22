@@ -373,7 +373,7 @@ export const SignalExplorer: React.FC = () => {
             <option value="social_bluesky">LIVE • Bluesky Public Social</option>
             <option value="social_x">Social Media (X / Twitter - Optional)</option>
             <option value="grievance_portal">Civic Grievance Portal</option>
-            <option value="helpline_311">155304 / 112 Unified Civic Helpline</option>
+            <option value="helpline_112">155304 / 112 Unified Civic Helpline</option>
           </select>
         </div>
 
@@ -715,7 +715,7 @@ export const SignalExplorer: React.FC = () => {
                 >
                   <option value="citizen_app">Citizen App (Geotagged Mobile)</option>
                   <option value="social_x">Social Media / X (@CitizenReporter)</option>
-                  <option value="helpline_311">155304 / 112 Phone Helpline Transcript</option>
+                  <option value="helpline_112">155304 / 112 Phone Helpline Transcript</option>
                   <option value="grievance_portal">Govt Grievance Portal</option>
                 </select>
               </div>
