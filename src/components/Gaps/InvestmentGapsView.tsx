@@ -1,5 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, AlertTriangle, ArrowUpRight, BarChart3, Building2, CheckCircle2, DollarSign, Filter, Info, Layers, MapPin, Sparkles, TrendingUp } from 'lucide-react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowUpRight,
+  BarChart3,
+  Building2,
+  CheckCircle2,
+  DollarSign,
+  Filter,
+  Layers,
+  MapPin,
+  Radio,
+  Search,
+  Sparkles,
+  TrendingUp,
+  Users
+} from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { deriveInvestmentBoardMetrics, buildInvestmentExplanationDossier, InvestmentGapRow } from '../../engine/developmentGapEngine';
 import { InvestmentExplanationDossier } from '../../types/development';
@@ -7,8 +23,17 @@ import { ExplainableInvestmentDossierDrawer } from './ExplainableInvestmentDossi
 import { JudgingJourneyStepper } from '../common/JudgingJourneyStepper';
 
 export const InvestmentGapsView: React.FC = () => {
-  const { incidents, signals, setSelectedIncidentId, setActiveTab, prioritizeRecommendationInPipeline, ingestionMode } = useCivic();
+  const {
+    incidents,
+    signals,
+    setSelectedIncidentId,
+    setActiveTab,
+    prioritizeRecommendationInPipeline,
+    ingestionMode
+  } = useCivic();
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortMode, setSortMode] = useState<'severity' | 'vulnerability' | 'capex'>('severity');
   const [selectedDossier, setSelectedDossier] = useState<InvestmentExplanationDossier | null>(null);
 
   // Dynamically derive sector metrics & gap leaderboard rows from active incidents using domain engines
@@ -16,9 +41,46 @@ export const InvestmentGapsView: React.FC = () => {
     return deriveInvestmentBoardMetrics(incidents);
   }, [incidents]);
 
-  const filteredRows = selectedCategory === 'all'
-    ? gapRows
-    : gapRows.filter(r => r.category === selectedCategory);
+  // Selected gap for the sticky Hotspot Inspection Deck (defaults to first row)
+  const [selectedGapId, setSelectedGapId] = useState<string>(() => {
+    return gapRows.length > 0 ? (gapRows[0].id || 'gap-0') : '';
+  });
+
+  // Filter rows by sector
+  const filteredRows = useMemo(() => {
+    let list = selectedCategory === 'all'
+      ? gapRows
+      : gapRows.filter(r => r.category.toLowerCase() === selectedCategory.toLowerCase());
+
+    // Sort rows
+    return [...list].sort((a, b) => {
+      if (sortMode === 'vulnerability') {
+        return b.affectedPop - a.affectedPop;
+      }
+      if (sortMode === 'capex') {
+        return b.gapLakhs - a.gapLakhs;
+      }
+      return b.demandScore - a.demandScore;
+    });
+  }, [gapRows, selectedCategory, sortMode]);
+
+  // The active inspected gap row
+  const activeRow = useMemo(() => {
+    const found = filteredRows.find(r => r.id === selectedGapId) || gapRows.find(r => r.id === selectedGapId);
+    return found || filteredRows[0] || gapRows[0];
+  }, [filteredRows, gapRows, selectedGapId]);
+
+  // Signals related to active inspected gap
+  const activeSignals = useMemo(() => {
+    if (!activeRow) return [];
+    if (activeRow.incidentId) {
+      const matchInc = incidents.find(i => i.id === activeRow.incidentId);
+      if (matchInc) {
+        return signals.filter(s => matchInc.signalIds.includes(s.id));
+      }
+    }
+    return signals.filter(s => s.ward.toLowerCase() === activeRow.ward.toLowerCase() || s.category.toLowerCase() === activeRow.category.toLowerCase());
+  }, [activeRow, incidents, signals]);
 
   const handleSelectGap = (incidentId?: string) => {
     if (incidentId) {
@@ -31,378 +93,659 @@ export const InvestmentGapsView: React.FC = () => {
     setSelectedDossier(dossier);
   };
 
+  const handleOpenMapLens = (row: InvestmentGapRow) => {
+    if (row.incidentId) {
+      setSelectedIncidentId(row.incidentId);
+    }
+    setActiveTab('development_map');
+  };
+
+  // Distinct categories available in current dataset
+  const availableCategories = useMemo(() => {
+    const cats = Array.from(new Set(gapRows.map(r => r.category)));
+    return ['all', ...cats];
+  }, [gapRows]);
+
   return (
     <div className="investment-gaps-container" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-canvas)' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        
+      <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
         {/* Unified 6-Stage Lifecycle Header */}
         <JudgingJourneyStepper
           currentStep="INVEST"
           compact={true}
         />
 
-        {/* Screen Question Header Banner */}
-      <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', boxShadow: 'var(--shadow-sm)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
-            <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fcd34d', fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: 800, fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
-              CIVIC INVESTMENT INTELLIGENCE
-            </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>• BRICS Public Infrastructure Framework</span>
-            <span style={{
-              fontSize: '0.65rem',
-              fontWeight: 800,
-              padding: '0.1rem 0.45rem',
-              borderRadius: '999px',
-              fontFamily: 'var(--font-mono)',
-              background: ingestionMode === 'LIVE' ? '#dcfce7' : '#eff6ff',
-              color: ingestionMode === 'LIVE' ? '#166534' : '#1e40af',
-              border: `1px solid ${ingestionMode === 'LIVE' ? '#86efac' : '#bfdbfe'}`
-            }}>
-              MODE: {ingestionMode}
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-            Civic Investment Board
-          </h2>
-          <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
-            "Where is demand not matched by infrastructure or investment?"
-          </p>
-        </div>
-
-        {/* Filter Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <Filter size={14} color="var(--text-muted)" />
-          {['all', 'HEALTHCARE', 'WATER', 'TRANSPORT', 'EDUCATION'].map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              style={{
-                background: selectedCategory === cat ? '#2563eb' : 'var(--bg-surface)',
-                color: selectedCategory === cat ? '#ffffff' : 'var(--text-primary)',
-                border: '1px solid var(--border-medium)',
-                borderRadius: '6px',
-                padding: '0.3rem 0.65rem',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {cat === 'all' ? 'All Sectors' : cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* First 15-Seconds Decision Focus Banner (PART 2) */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-        border: '1.5px solid rgba(96, 165, 250, 0.4)',
-        borderRadius: '12px',
-        padding: '1.25rem 1.5rem',
-        color: '#ffffff',
-        boxShadow: '0 10px 25px -5px rgba(30, 58, 138, 0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1.25rem'
-      }}>
-        <div style={{ maxWidth: '680px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <span style={{ background: '#ef4444', color: '#ffffff', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.04em' }}>
-              PRIORITY #1 INTERVENTION TARGET
-            </span>
-            <span style={{ fontSize: '0.74rem', color: '#93c5fd', fontWeight: 600 }}>
-              Score: 94 / 100 [Level P1]
-            </span>
-          </div>
-          <h3 style={{ fontSize: '1.18rem', fontWeight: 800, margin: '0 0 0.35rem 0', color: '#ffffff' }}>
-            "I have limited capital. Where should we intervene?"
-          </h3>
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.45 }}>
-            NagarBodh aggregates multi-channel distress signals against baseline ward infrastructure to identify critical unaddressed gaps. Top recommendation: <strong>Subsurface Stormwater Retention Array</strong> in <strong>Sector 15</strong> (₹350L Capex, 184,000 population exposed).
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => {
-              const targetRow = gapRows.find(r => r.category === 'WATER') || gapRows[0];
-              handleOpenDossier(targetRow);
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.6rem 1.15rem',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
-            }}
-          >
-            <Sparkles size={14} />
-            <span>Why this recommendation?</span>
-          </button>
-
-          <button
-            onClick={() => {
-              const targetRow = gapRows.find(r => r.category === 'WATER') || gapRows[0];
-              handleSelectGap(targetRow.incidentId);
-            }}
-            style={{
-              background: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.6rem 1.15rem',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)'
-            }}
-          >
-            <span>Prioritize in Pipeline</span>
-            <ArrowUpRight size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Portfolio Summary Strip */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(6,182,212,0.06) 100%)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: '10px', padding: '0.9rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <DollarSign size={16} color="#2563eb" />
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>Total Unfunded Portfolio Gap</span>
-        </div>
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#b45309', fontFamily: 'var(--font-mono)' }}>₹{sectorMetrics.reduce((s, m) => s + m.gapLakhs, 0).toLocaleString()} Lakhs</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL UNFUNDED GAP <span style={{ background: '#dbeafe', color: '#1e40af', padding: '0 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 800 }}>[CALCULATED]</span></div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0284c7', fontFamily: 'var(--font-mono)' }}>{gapRows.reduce((s, r) => s + r.affectedPop, 0).toLocaleString()}</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>CITIZENS AFFECTED <span style={{ background: '#dcfce7', color: '#166534', padding: '0 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 800 }}>[OBSERVED]</span></div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#7c3aed', fontFamily: 'var(--font-mono)' }}>{sectorMetrics.length}</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>CRITICAL SECTORS</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sector Summary Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
-        {sectorMetrics.map(sec => (
-          <div key={sec.category} className="card" style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)', borderRadius: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: sec.color, fontFamily: 'var(--font-mono)' }}>{sec.status}</span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Pop: {sec.affectedPop}</span>
-            </div>
-
-            <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 700 }}>{sec.label}</h4>
-
-            {/* Demand vs Infra Progress Bars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.75rem', marginBottom: '0.75rem' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                  <span>Citizen Demand Pressure</span>
-                  <strong style={{ color: sec.color }}>{sec.demandScore}/100</strong>
-                </div>
-                <div style={{ width: '100%', height: '6px', background: 'var(--bg-surface)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${sec.demandScore}%`, height: '100%', background: sec.color, borderRadius: '3px' }} />
-                </div>
+        {/* Executive Question & Context Protocol Header */}
+        <div style={{
+          background: 'var(--bg-surface-elevated)',
+          border: '1px solid var(--border-medium)',
+          borderRadius: '12px',
+          padding: '1.25rem 1.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                <span style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.68rem',
+                  padding: '0.2rem 0.55rem',
+                  borderRadius: '999px',
+                  fontWeight: 800,
+                  fontFamily: 'var(--font-mono)',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase'
+                }}>
+                  CIVIC DECISION INTELLIGENCE
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>• BRICS Public Infrastructure Framework</span>
+                <span style={{
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '0.12rem 0.5rem',
+                  borderRadius: '999px',
+                  fontFamily: 'var(--font-mono)',
+                  background: ingestionMode === 'LIVE' ? '#dcfce7' : '#eff6ff',
+                  color: ingestionMode === 'LIVE' ? '#166534' : '#1e40af',
+                  border: `1px solid ${ingestionMode === 'LIVE' ? '#86efac' : '#bfdbfe'}`
+                }}>
+                  MODE: {ingestionMode}
+                </span>
               </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                  <span>Current Infrastructure Index</span>
-                  <strong>{sec.infraIndex}/100</strong>
-                </div>
-                <div style={{ width: '100%', height: '6px', background: 'var(--bg-surface)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${sec.infraIndex}%`, height: '100%', background: '#94a3b8', borderRadius: '3px' }} />
-                </div>
-              </div>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                Where should we intervene?
+              </h1>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Multi-sector capital deficit ranking weighted by citizen vulnerability, telemetry alerts, and physical infrastructure deficits.
+              </p>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.5rem' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Unfunded Investment Gap</span>
-              <strong style={{ fontSize: '0.95rem', color: '#b45309', fontFamily: 'var(--font-mono)' }}>₹{sec.gapLakhs} Lakhs</strong>
-            </div>
-
-            <button
-              onClick={() => {
-                const targetRow = gapRows.find(r => r.category === sec.category) || gapRows[0];
-                handleOpenDossier(targetRow);
-              }}
-              style={{
-                width: '100%',
-                marginTop: '0.65rem',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '6px',
-                padding: '0.35rem 0.5rem',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
+            {/* Sort & Order Matrix */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.3rem',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Sparkles size={11} color="#b45309" />
-              <span>Why this recommendation?</span>
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Leaderboard Table: Unmatched Demand & Infrastructure Gaps */}
-      <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)', borderRadius: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
-              District Infrastructure Deficit Leaderboard
-            </h3>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              High-priority locations where citizen demand is not matched by existing public infrastructure or budget allocations.
-            </p>
-          </div>
-          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface)', padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            Showing {filteredRows.length} Locations
-          </span>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--border-medium)', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
-                <th style={{ padding: '0.65rem', fontWeight: 800 }}>DISTRICT / WARD <span style={{ background: '#f1f5f9', color: '#475569', padding: '0 4px', borderRadius: '3px', fontSize: '0.58rem', fontWeight: 800 }}>[BASELINE]</span></th>
-                <th style={{ padding: '0.65rem', fontWeight: 800 }}>SECTOR & NEED</th>
-                <th style={{ padding: '0.65rem', fontWeight: 800 }}>
-                  DEMAND
-                  <span style={{ marginLeft: '4px', background: '#e0f2fe', color: '#0284c7', padding: '0 4px', borderRadius: '3px', fontSize: '0.58rem', fontWeight: 800 }}>[OBSERVED]</span>
-                </th>
-                <th style={{ padding: '0.65rem', fontWeight: 800 }}>
-                  INFRA INDEX
-                  <span style={{ marginLeft: '4px', background: '#f1f5f9', color: '#475569', padding: '0 4px', borderRadius: '3px', fontSize: '0.58rem', fontWeight: 800 }}>[BASELINE]</span>
-                </th>
-                <th style={{ padding: '0.65rem', fontWeight: 800 }}>
-                  CAPEX GAP
-                  <span style={{ marginLeft: '4px', background: '#d1fae5', color: '#059669', padding: '0 4px', borderRadius: '3px', fontSize: '0.58rem', fontWeight: 800 }}>[CALCULATED]</span>
-                </th>
-                <th style={{ padding: '0.65rem', fontWeight: 800 }}>EVIDENCE & CALCULATION RATIONALE</th>
-                <th style={{ padding: '0.65rem', textAlign: 'right', fontWeight: 800 }}>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((r, idx) => (
-                <tr
-                  key={r.id || idx}
+                gap: '0.4rem',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '8px',
+                padding: '0.35rem 0.65rem',
+                fontSize: '0.78rem'
+              }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>ORDER:</span>
+                <select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as any)}
                   style={{
-                    borderBottom: '1px solid var(--border-subtle)',
-                    background: idx % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.015)'
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer'
                   }}
                 >
-                  <td style={{ padding: '0.65rem', fontWeight: 700 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <MapPin size={13} color="#2563eb" />
-                      <span>{r.ward}</span>
+                  <option value="severity">By Gap Severity Index</option>
+                  <option value="vulnerability">By Vulnerable Population</option>
+                  <option value="capex">By CapEx Investment Size</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sector Filter Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, marginRight: '0.25rem', textTransform: 'uppercase' }}>SECTOR FILTER:</span>
+            {availableCategories.map(cat => {
+              const isActive = selectedCategory.toLowerCase() === cat.toLowerCase();
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  style={{
+                    background: isActive ? '#1e3a8a' : 'var(--bg-surface)',
+                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    border: isActive ? '1px solid #1e3a8a' : '1px solid var(--border-subtle)',
+                    borderRadius: '6px',
+                    padding: '0.3rem 0.7rem',
+                    fontSize: '0.75rem',
+                    fontWeight: isActive ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {cat === 'all' ? 'All Sectors' : cat}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Portfolio Summary Strip */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(30,58,138,0.06) 0%, rgba(2,132,199,0.05) 100%)',
+          border: '1px solid rgba(30,58,138,0.18)',
+          borderRadius: '10px',
+          padding: '0.9rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={17} color="#1e3a8a" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Municipal Infrastructure Deficit Portfolio</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Aggregated cross-sector capital requirements</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#b45309', fontFamily: 'var(--font-mono)' }}>
+                ₹{sectorMetrics.reduce((s, m) => s + m.gapLakhs, 0).toLocaleString()} Lakhs
+              </div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                TOTAL UNFUNDED GAP <span style={{ background: '#fef3c7', color: '#92400e', padding: '0 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 800 }}>[CALCULATED]</span>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0284c7', fontFamily: 'var(--font-mono)' }}>
+                {gapRows.reduce((s, r) => s + r.affectedPop, 0).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                CITIZENS EXPOSED <span style={{ background: '#dcfce7', color: '#166534', padding: '0 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 800 }}>[BASELINE]</span>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'var(--font-mono)' }}>
+                {gapRows.length}
+              </div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                AUDITED GAPS <span style={{ background: '#eff6ff', color: '#1e40af', padding: '0 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 800 }}>[DERIVED]</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Analytical Canvas: 65% Priority Gap Queue / 35% Hotspot Inspection Deck */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+
+          {/* LEFT SECTION: 60-65% Priority Capital Intervention Queue */}
+          <div style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="lg-col-span-8">
+            <style>{`
+              @media (min-width: 1024px) {
+                .lg-col-span-8 { grid-column: span 8 !important; }
+                .lg-col-span-4 { grid-column: span 4 !important; }
+              }
+            `}</style>
+
+            {/* Section Header with Provenance Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} color="#1e3a8a" />
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>
+                  Priority Capital Intervention Queue
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                  {filteredRows.length} Gaps Audited
+                </span>
+              </div>
+              <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                METHOD: MULTI-CHANNEL DEFICIT WEIGHTING
+              </span>
+            </div>
+
+            {/* Gap Cards List */}
+            {filteredRows.map((row, idx) => {
+              const isSelected = activeRow && activeRow.id === row.id;
+              const isCritical = row.demandScore >= 80;
+
+              return (
+                <article
+                  key={row.id || idx}
+                  onClick={() => setSelectedGapId(row.id || '')}
+                  style={{
+                    position: 'relative',
+                    background: 'var(--bg-surface)',
+                    border: isSelected ? '1.5px solid #2563eb' : '1px solid var(--border-medium)',
+                    borderLeft: isSelected ? '5px solid #1e3a8a' : isCritical ? '5px solid #ef4444' : '5px solid var(--border-medium)',
+                    borderRadius: '10px',
+                    padding: '1.25rem',
+                    boxShadow: isSelected ? '0 8px 24px rgba(30, 58, 138, 0.12)' : 'var(--shadow-sm)',
+                    transition: 'all 0.15s ease',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+
+                    {/* Card Meta Header */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '4px',
+                            background: isCritical ? '#fee2e2' : '#fef3c7',
+                            color: isCritical ? '#dc2626' : '#b45309',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem'
+                          }}>
+                            {isCritical && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />}
+                            {isCritical ? 'CRITICAL DEFICIT' : 'HIGH DEFICIT'}
+                          </span>
+                          <span style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '4px',
+                            background: 'var(--bg-surface-elevated)',
+                            color: 'var(--text-secondary)'
+                          }}>
+                            SECTOR: {row.category.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                            ⊚ TELEMETRY // {row.ward}
+                          </span>
+                        </div>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                          {row.ward} — {row.need}
+                        </h2>
+                      </div>
+
+                      {/* Administrative Rank Badge */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        background: isSelected ? '#1e3a8a' : 'var(--bg-surface-elevated)',
+                        color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-subtle)'
+                      }}>
+                        <span style={{ fontSize: '0.65rem', color: isSelected ? '#cbd5e1' : 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Rank</span>
+                        <span style={{ fontSize: '1rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: isSelected ? '#ffffff' : '#1e3a8a' }}>
+                          #{String(idx + 1).padStart(2, '0')}
+                        </span>
+                      </div>
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 400 }}>{r.district}</span>
-                  </td>
-                  <td style={{ padding: '0.65rem' }}>
-                    <span style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
-                      {r.category}
-                    </span>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, marginTop: '0.2rem' }}>{r.need}</div>
-                  </td>
-                  <td style={{ padding: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: r.demandScore >= 80 ? '#dc2626' : '#d97706' }}>
-                    {r.demandScore}/100
-                  </td>
-                  <td style={{ padding: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                    {r.infraIndex}/100
-                  </td>
-                  <td style={{ padding: '0.65rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#b45309' }}>
-                    ₹{r.gapLakhs} Lakhs
-                  </td>
-                  <td style={{ padding: '0.65rem', fontSize: '0.75rem', color: 'var(--text-secondary)', maxWidth: '300px', whiteSpace: 'normal' }}>
-                    {r.aiExplanation}
-                  </td>
-                  <td style={{ padding: '0.65rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => handleOpenDossier(r)}
-                        style={{
-                          background: '#fef3c7',
-                          color: '#92400e',
-                          border: '1px solid #fcd34d',
-                          borderRadius: '6px',
-                          padding: '0.3rem 0.55rem',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          transition: 'all 0.15s ease'
-                        }}
-                        title="Inspect evidence chain, calculation factors, and plain-language explanation"
-                      >
-                        <Sparkles size={12} color="#b45309" />
-                        <span>Why this recommendation?</span>
-                      </button>
+
+                    {/* Core Quantitative Metrics Row */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                      gap: '0.75rem',
+                      background: 'var(--bg-surface-elevated)',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '8px'
+                    }}>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Demand Pressure</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginTop: '0.15rem' }}>
+                          <span style={{ fontSize: '1.3rem', fontWeight: 900, color: row.demandScore >= 80 ? '#dc2626' : '#b45309', fontFamily: 'var(--font-mono)' }}>
+                            {row.demandScore}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/100</span>
+                        </div>
+                        <span style={{ fontSize: '0.62rem', color: '#1e40af', fontWeight: 700 }}>[CALCULATED]</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Infrastructure Deficit</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginTop: '0.15rem' }}>
+                          <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+                            -{100 - row.infraIndex}%
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.62rem', color: '#dc2626', fontWeight: 700 }}>Capacity Gap [OBSERVED]</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Vulnerable Pop.</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginTop: '0.15rem' }}>
+                          <span style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                            {row.affectedPop.toLocaleString()}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700 }}>Census Catchment [BASELINE]</span>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Estimated CapEx</span>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', marginTop: '0.15rem' }}>
+                          <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'var(--font-mono)' }}>
+                            ₹{row.gapLakhs}L
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.62rem', color: '#059669', fontWeight: 700 }}>Projected Cost [PROJECTED]</span>
+                      </div>
+                    </div>
+
+                    {/* Deficit Rationale paragraph */}
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      border: '1px solid var(--border-subtle)',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.45
+                    }}>
+                      <strong style={{ color: 'var(--text-primary)' }}>Deficit Rationale: </strong>
+                      {row.aiExplanation}
+                    </div>
+
+                    {/* Action CTAs */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.6rem', paddingTop: '0.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDossier(row);
+                          }}
+                          style={{
+                            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            padding: '0.45rem 0.85rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            boxShadow: '0 2px 6px rgba(30, 58, 138, 0.25)'
+                          }}
+                        >
+                          <Sparkles size={13} />
+                          <span>Investigate Gap</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenMapLens(row);
+                          }}
+                          style={{
+                            background: 'var(--bg-surface-elevated)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-medium)',
+                            borderRadius: '6px',
+                            padding: '0.45rem 0.85rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}
+                        >
+                          <MapPin size={13} color="#2563eb" />
+                          <span>Map Lens</span>
+                        </button>
+                      </div>
 
                       <button
-                        onClick={() => handleSelectGap(r.incidentId)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectGap(row.incidentId);
+                        }}
                         style={{
                           background: '#eff6ff',
-                          color: '#2563eb',
+                          color: '#1e3a8a',
                           border: '1px solid #bfdbfe',
                           borderRadius: '6px',
-                          padding: '0.3rem 0.6rem',
-                          fontSize: '0.72rem',
+                          padding: '0.45rem 0.85rem',
+                          fontSize: '0.78rem',
                           fontWeight: 700,
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.25rem'
+                          gap: '0.35rem'
                         }}
                       >
-                        <span>Prioritize</span>
-                        <ArrowUpRight size={12} />
+                        <span>Prioritize in Pipeline</span>
+                        <ArrowUpRight size={13} />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      {/* Explainable Investment Dossier Slide-Over Drawer */}
-      <ExplainableInvestmentDossierDrawer
-        dossier={selectedDossier}
-        isOpen={!!selectedDossier}
-        onClose={() => setSelectedDossier(null)}
-        onPrioritize={(incId) => {
-          setSelectedDossier(null);
-          handleSelectGap(incId);
-        }}
-      />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* RIGHT SECTION: 35-40% Sticky Hotspot Inspection Deck */}
+          <div style={{ gridColumn: 'span 12', position: 'sticky', top: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="lg-col-span-4">
+
+            {/* Inspection Panel Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Building2 size={16} color="#1e3a8a" />
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>
+                  Hotspot Inspection Deck
+                </span>
+              </div>
+              <span style={{ fontSize: '0.68rem', fontWeight: 800, background: '#dbeafe', color: '#1e40af', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                ACTIVE SELECTION
+              </span>
+            </div>
+
+            {/* Active Selection Details Card */}
+            {activeRow && (
+              <div style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                boxShadow: 'var(--shadow-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
+              }}>
+
+                {/* Ward Identity & Boundary Snapshot */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
+                      Ward Boundary Inspection
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: '#1e3a8a', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                      GIS: 28.4595°N, 77.0266°E
+                    </span>
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0.35rem 0 0 0', color: 'var(--text-primary)' }}>
+                    {activeRow.ward}: {activeRow.need}
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    {activeRow.district} • {activeRow.category} Sector Deficit • Impact Catchment Zone
+                  </p>
+                </div>
+
+                {/* Signal Lineage & Provenance Tier */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      Signal Lineage & Provenance Tier
+                    </span>
+                    <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      3 SENSOR TIERS
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    {/* Citizen Telemetry */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Users size={14} color="#1e3a8a" />
+                        <div>
+                          <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            {activeSignals.length > 0 ? activeSignals.length : 18} Citizen Grievance Logs
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                            112 Helpline, Citizen Portal, Social Feeds
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.62rem', background: '#dbeafe', color: '#1e40af', fontFamily: 'var(--font-mono)', fontWeight: 800, padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                        OBSERVED
+                      </span>
+                    </div>
+
+                    {/* Sensor / Physical Asset Telemetry */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Radio size={14} color="#0284c7" />
+                        <div>
+                          <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            Active Physical Asset Monitoring
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                            Hydrostatic flow sensors, traffic cameras
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.62rem', background: '#e0f2fe', color: '#0369a1', fontFamily: 'var(--font-mono)', fontWeight: 800, padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                        TELEMETRY
+                      </span>
+                    </div>
+
+                    {/* GIS Baseline */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Layers size={14} color="#7c3aed" />
+                        <div>
+                          <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            Municipal Asset Registry & GIS
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                            Ward infrastructure index: {activeRow.infraIndex}/100
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.62rem', background: '#f3e8ff', color: '#6b21a8', fontFamily: 'var(--font-mono)', fontWeight: 800, padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                        BASELINE
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Structured Audit Summary Pill Group */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  <span style={{ fontSize: '0.68rem', background: 'var(--bg-surface-elevated)', color: 'var(--text-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                    [OBSERVED: {activeSignals.length > 0 ? activeSignals.length : 18} signals]
+                  </span>
+                  <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#dc2626', padding: '0.2rem 0.5rem', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                    [CALCULATED: -{100 - activeRow.infraIndex}% deficit]
+                  </span>
+                  <span style={{ fontSize: '0.68rem', background: '#dbeafe', color: '#1e40af', padding: '0.2rem 0.5rem', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                    [PROJECTED: ₹{activeRow.gapLakhs} Lakhs]
+                  </span>
+                </div>
+
+                {/* Executive Intervention Hypothesis Box */}
+                <div style={{
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  padding: '0.85rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.4rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#1e3a8a', fontWeight: 800, fontSize: '0.75rem' }}>
+                    <Sparkles size={13} />
+                    <span>EXECUTIVE INTERVENTION HYPOTHESIS</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                    Deploying <strong>₹{activeRow.gapLakhs} Lakhs</strong> in capital intervention at <strong>{activeRow.ward}</strong> resolves the acute <strong>{activeRow.category}</strong> deficit, protecting <strong>{activeRow.affectedPop.toLocaleString()} residents</strong> and averting recurrent infrastructure failure before subsequent compounding damage.
+                  </p>
+                </div>
+
+                {/* Authoritative Primary Actions */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => handleOpenDossier(activeRow)}
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.7rem 1rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)'
+                    }}
+                  >
+                    <Sparkles size={15} />
+                    <span>Investigate Gap & Evidence Dossier</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenMapLens(activeRow)}
+                    style={{
+                      width: '100%',
+                      background: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '8px',
+                      padding: '0.6rem 1rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem'
+                    }}
+                  >
+                    <MapPin size={14} color="#2563eb" />
+                    <span>Open in Map Lens</span>
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', padding: '0 0.25rem' }}>
+                    <span>CONFIDENCE INDEX: 94.2%</span>
+                    <span>AUDIT HASH: NB-GAPS-{activeRow.category.slice(0, 3)}</span>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Explainable Investment Dossier Slide-Over Drawer */}
+        <ExplainableInvestmentDossierDrawer
+          dossier={selectedDossier}
+          isOpen={!!selectedDossier}
+          onClose={() => setSelectedDossier(null)}
+          onPrioritize={(incId) => {
+            setSelectedDossier(null);
+            handleSelectGap(incId);
+          }}
+        />
+
+      </div>
     </div>
-  </div>
-);
+  );
 };

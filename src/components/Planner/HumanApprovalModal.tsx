@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useCivic } from '../../context/CivicContext';
 import { ActionItemRecommendation, ClusteredIncident, DispatchActionPlan, OperationalResourceItem } from '../../types/civic';
+import { CheckCircle2, Shield, X, FileText, AlertTriangle, Building2, MapPin } from 'lucide-react';
+import { buildCanonicalInterventionRecord } from '../../engine/developmentRecommendationEngine';
 
 interface HumanApprovalModalContentProps {
   incident: ClusteredIncident;
@@ -9,6 +11,7 @@ interface HumanApprovalModalContentProps {
   rejectDispatch: (incidentId: string, reason: string) => void;
   dispatchUnits: (incidentId: string, actor?: string, notes?: string) => void;
   modifyDispatch: (incidentId: string, updates: Partial<DispatchActionPlan>) => void;
+  approveIntervention: (incidentId: string, approvedBy?: string, notes?: string) => void;
 }
 
 const HumanApprovalModalContent: React.FC<HumanApprovalModalContentProps> = ({
@@ -17,490 +20,310 @@ const HumanApprovalModalContent: React.FC<HumanApprovalModalContentProps> = ({
   approveDispatch,
   rejectDispatch,
   dispatchUnits,
-  modifyDispatch
+  modifyDispatch,
+  approveIntervention
 }) => {
   const plan = inc.actionPlan;
   const insight = inc.auditableInsight;
 
-  // Editable local state for plan modification before approval
-  const [primaryDept, setPrimaryDept] = useState(plan?.primaryDepartment || insight?.recommendation?.primaryDepartment || 'MCD Dewatering Wing');
-  const [actions, setActions] = useState<ActionItemRecommendation[]>(
-    plan?.recommendedActions || [
-      {
-        id: 'act-1',
-        actionText: 'Deploy 2 high-capacity mobile dewatering pumps to Sector 15 underpass.',
-        department: 'MCD Dewatering Wing',
-        rationale: 'Mitigate 45cm inundation at critical transit junction',
-        isSopRule: true,
-        isAiRecommendation: false
-      },
-      {
-        id: 'act-2',
-        actionText: 'Set up traffic diversions at NH-48 feeder junction.',
-        department: 'Traffic Police',
-        rationale: 'Prevent vehicle submergence & severe congestion',
-        isSopRule: true,
-        isAiRecommendation: false
-      },
-      {
-        id: 'act-3',
-        actionText: 'Issue localized citizen flash alert via 155304 Civic app and SMS.',
-        department: 'Public Information Cell',
-        rationale: 'Warn commuters approaching Sector 15 underpass',
-        isSopRule: false,
-        isAiRecommendation: true
-      }
-    ]
+  const rec = inc.projectRecommendation;
+  const interventionRecord = buildCanonicalInterventionRecord({ incident: inc, recommendation: rec });
+
+  // Officer notes field
+  const [officerNotes, setOfficerNotes] = useState<string>(
+    'Reviewed empirical citizen distress signals, hydraulic deficit metrics, and demographic vulnerability. Capital intervention authorized for operational execution.'
   );
 
-  const [resources, setResources] = useState<OperationalResourceItem[]>(
-    plan?.requiredResources || [
-      { item: 'High-Capacity Dewatering Pump (500 HP)', quantity: '2 Units', assignedUnit: 'Unit-D4', status: 'ready', isSopResource: true, isAiRecommendation: false },
-      { item: 'Emergency Traffic Control Barrier', quantity: '6 Sets', assignedUnit: 'Traffic Division North', status: 'ready', isSopResource: true, isAiRecommendation: false },
-      { item: 'Civil Defence Rescue Team', quantity: '1 Squad (8 personnel)', assignedUnit: 'Squad Alpha', status: 'ready', isSopResource: false, isAiRecommendation: true }
-    ]
-  );
-
-  const [slaHours, setSlaHours] = useState<number>(plan?.slaHours || 1.5);
-  const [etaMinutes, setEtaMinutes] = useState<number>(plan?.etaMinutes || 25);
-  const [officerNotes, setOfficerNotes] = useState<string>('Reviewed emergency signals, weather telemetry, and critical asset proximity. Plan authorized for immediate mobilization.');
-  const [rejectionReason, setRejectionReason] = useState<string>('');
-  const [isRejecting, setIsRejecting] = useState<boolean>(false);
-  const [autoDispatch, setAutoDispatch] = useState<boolean>(true);
-
-  const confidencePercent = Math.round((insight?.modelInference?.confidenceScore || 0.92) * 100);
-
-  const handleActionChange = (id: string, text: string) => {
-    setActions(prev => prev.map(a => (a.id === id ? { ...a, actionText: text } : a)));
-  };
-
-  const handleAddAction = () => {
-    const newId = `act-custom-${Date.now()}`;
-    setActions(prev => [
-      ...prev,
-      {
-        id: newId,
-        actionText: 'Additional custom response action mandated by Duty Officer.',
-        department: primaryDept,
-        rationale: 'Officer custom instruction',
-        isSopRule: false,
-        isAiRecommendation: false
-      }
-    ]);
-  };
-
-  const handleRemoveAction = (id: string) => {
-    setActions(prev => prev.filter(a => a.id !== id));
-  };
-
-  const handleResourceQuantityChange = (index: number, qty: string) => {
-    setResources(prev => prev.map((r, i) => (i === index ? { ...r, quantity: qty } : r)));
-  };
-
-  const handleSaveModifications = () => {
-    modifyDispatch(inc.id, {
-      primaryDepartment: primaryDept,
-      recommendedActions: actions,
-      requiredResources: resources,
-      slaHours,
-      etaMinutes,
-      notes: officerNotes
-    });
-    alert('Response Plan modifications saved to incident file.');
-  };
+  const confidencePercent = Math.round((insight?.modelInference?.confidenceScore || 0.94) * 100);
 
   const handleApprove = () => {
-    // 1. Approve state transition DISPATCH_PENDING -> APPROVED
+    // 1. Approve intervention in canonical intervention lifecycle
+    approveIntervention(inc.id, 'Municipal Governance Authority', officerNotes);
+
+    // 2. Approve operational dispatch plan
     approveDispatch(inc.id, officerNotes, {
-      primaryDepartment: primaryDept,
-      recommendedActions: actions,
-      requiredResources: resources,
-      slaHours,
-      etaMinutes
+      primaryDepartment: plan?.primaryDepartment || rec?.primaryDepartment || 'Municipal Engineering & Drainage Wing',
+      notes: officerNotes
     });
 
-    // 2. If autoDispatch checked, trigger immediate transition APPROVED -> DISPATCHED
-    if (autoDispatch) {
-      setTimeout(() => {
-        dispatchUnits(inc.id, 'Duty Operations Commander', `Auto-mobilization triggered following officer approval. Units en route to ${inc.ward}.`);
-      }, 300);
-    }
-
-    closeApprovalModal();
-  };
-
-  const handleReject = () => {
-    if (!rejectionReason.trim()) {
-      alert('Please provide a rejection reason for audit records.');
-      return;
-    }
-    rejectDispatch(inc.id, rejectionReason);
     closeApprovalModal();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col overflow-hidden text-slate-100 animate-in fade-in zoom-in duration-200">
-        
-        {/* Header */}
-        <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-800 bg-slate-950/80 flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 tracking-wide uppercase">
-                Human-in-the-Loop Authorization Required
-              </span>
-              <span className="px-2 py-0.5 rounded text-xs font-mono bg-blue-900/40 text-blue-300 border border-blue-700/40">
-                Status: {inc.status.toUpperCase()}
-              </span>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2500,
+        background: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        animation: 'fadeIn 0.15s ease-out'
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeApprovalModal();
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-medium)',
+          borderRadius: '12px',
+          boxShadow: 'var(--shadow-lg)',
+          width: '100%',
+          maxWidth: '580px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          animation: 'zoomIn 0.2s ease-out'
+        }}
+      >
+        {/* Modal Header */}
+        <div
+          style={{
+            padding: '1.25rem 1.5rem',
+            background: 'var(--bg-surface-elevated)',
+            borderBottom: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '1rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '8px',
+                background: '#dbeafe',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Shield size={22} color="#1e3a8a" />
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <span>{inc.title}</span>
-            </h2>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">
-              {inc.ward} • Centroid Coordinates: [{inc.centroid.lat.toFixed(4)}, {inc.centroid.lng.toFixed(4)}]
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    color: '#1e40af',
+                    background: '#eff6ff',
+                    padding: '0.1rem 0.4rem',
+                    borderRadius: '4px',
+                    fontFamily: 'var(--font-mono)'
+                  }}
+                >
+                  Statutory Authorization Order
+                </span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                  • #{interventionRecord.recommendationId || 'NB-GOV-2025'}
+                </span>
+              </div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                Human Governance Sanction
+              </h2>
+            </div>
           </div>
 
           <button
             onClick={closeApprovalModal}
-            className="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition min-w-[36px] min-h-[36px] flex items-center justify-center"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              borderRadius: '4px'
+            }}
+            title="Cancel & Close"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-
-          {/* AI Confidence & Governance Notice */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 font-bold text-lg font-mono">
-                {confidencePercent}%
-              </div>
-              <div>
-                <div className="text-xs text-indigo-300 uppercase font-semibold">AI Confidence Score</div>
-                <div className="text-sm text-slate-200 font-medium">Multi-Source Corroborated</div>
-                <div className="text-[11px] text-slate-400">High spatial & temporal density</div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/30 flex items-center gap-3">
-              <div className="text-2xl">⚖️</div>
-              <div>
-                <div className="text-xs text-amber-300 uppercase font-semibold">Governance Requirement</div>
-                <div className="text-sm text-slate-200 font-medium font-mono">Explicit Approval Required</div>
-                <div className="text-[11px] text-slate-400">AI cannot auto-dispatch or auto-resolve</div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center gap-3">
-              <div className="text-2xl">⏱️</div>
-              <div>
-                <div className="text-xs text-emerald-300 uppercase font-semibold">Target SLA Benchmark</div>
-                <div className="text-sm text-emerald-200 font-bold font-mono">{slaHours} Hours SLA Target</div>
-                <div className="text-[11px] text-slate-400">Est. Response ETA: {etaMinutes} Mins</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Priority Score Breakdown */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                <span>Priority Evaluation:</span>
-                <span className="text-red-400 font-mono font-bold text-base">{inc.priority.overallScore}/100</span>
-                <span className="text-xs text-red-300 bg-red-950/60 border border-red-500/30 px-2 py-0.5 rounded">P1 CRITICAL</span>
-              </h3>
-              <span className="text-xs text-slate-400 font-mono">Deterministic Formula Engine</span>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs font-mono">
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <div className="text-slate-400">Severity</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{inc.priority.factors.severityScore}/25</div>
-              </div>
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <div className="text-slate-400">Signal Velocity</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{inc.priority.factors.velocityScore}/25</div>
-              </div>
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <div className="text-slate-400">Population Impact</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{inc.priority.factors.populationImpactScore}/20</div>
-              </div>
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <div className="text-slate-400">Critical Asset Exp.</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{inc.priority.factors.criticalAssetExposureScore}/15</div>
-              </div>
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <div className="text-slate-400">Environmental Risk</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{inc.priority.factors.environmentalRiskScore}/10</div>
-              </div>
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <div className="text-slate-400">SLA & Recurrence</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{inc.priority.factors.slaRecurrenceScore}/10</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Evidence Corroboration */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span>Underlying Evidence Signals ({inc.signalIds.length} Signals)</span>
-              <span className="text-xs text-blue-400 font-mono">Cross-Channel Corroborated</span>
-            </h3>
-
-            {insight?.explanation?.explanationBullets && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                {insight.explanation.explanationBullets.map((b, idx) => (
-                  <div key={idx} className="text-xs text-slate-300 bg-slate-900/70 p-2 rounded border border-slate-800/80 flex items-start gap-2">
-                    <span className="text-blue-400">✓</span>
-                    <span>{b}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {insight?.observedData?.rawExcerpts && (
-              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                {insight.observedData.rawExcerpts.map((ex, i) => (
-                  <div key={i} className="text-xs bg-slate-900 p-2 rounded border border-slate-850 flex items-center justify-between gap-3">
-                    <span className="text-slate-300 italic">"{ex.original}"</span>
-                    <div className="flex items-center gap-1.5 font-mono text-[10px] shrink-0">
-                      <span className="px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded uppercase">{ex.channel}</span>
-                      <span className="text-slate-400">{ex.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Intervention & Investment Context */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-blue-500/40 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-wide">
-                Intervention Recommendation & Human Approval Summary
+        {/* Modal Body */}
+        <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          
+          {/* Affirmation of Public Need & Intervention Card */}
+          <div
+            style={{
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              padding: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.65rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#1e3a8a' }}>
+                Intervention Specification
               </span>
-              <div className="flex items-center gap-2 text-[11px] font-mono">
-                <span className="bg-purple-900/60 text-purple-300 border border-purple-600/40 px-2 py-0.5 rounded font-bold">
-                  DATA MODE: SIMULATION
-                </span>
-                <span className="bg-amber-900/60 text-amber-300 border border-amber-600/40 px-2 py-0.5 rounded font-bold">
-                  PROVENANCE: RECOMMENDED
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="bg-slate-900 p-2.5 rounded border border-slate-800">
-                <div className="text-slate-400 text-[11px] uppercase font-bold">Recommended Intervention</div>
-                <div className="text-white font-bold text-sm mt-0.5">
-                  {inc.category === 'waterlogging' || inc.category === 'drainage' || inc.ward.includes('15')
-                    ? 'Sub-surface Automated Stormwater Pumping Array'
-                    : inc.projectRecommendation?.title || inc.title}
-                </div>
-              </div>
-
-              <div className="bg-slate-900 p-2.5 rounded border border-slate-800">
-                <div className="text-slate-400 text-[11px] uppercase font-bold">Estimated Capex</div>
-                <div className="text-emerald-400 font-bold text-sm mt-0.5 font-mono">
-                  ₹{inc.projectRecommendation?.estimatedCostLakhs || 350} Lakhs
-                </div>
-              </div>
-
-              <div className="bg-slate-900 p-2.5 rounded border border-slate-800">
-                <div className="text-slate-400 text-[11px] uppercase font-bold">Projected Outcome</div>
-                <div className="text-cyan-300 font-bold text-xs mt-0.5">
-                  +29 pts infra gain • -37 pts demand drop [PROJECTED]
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Response Plan Modification Controls */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
-                  Operational Response Plan & Resources
-                </h3>
-                <p className="text-xs text-slate-400">The officer may modify actions, departments, resources, or SLA targets prior to approval.</p>
-              </div>
-              <button
-                onClick={handleSaveModifications}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition"
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  fontFamily: 'var(--font-mono)',
+                  color: inc.priority.overallScore >= 80 ? '#dc2626' : '#b45309',
+                  background: inc.priority.overallScore >= 80 ? '#fee2e2' : '#fef3c7',
+                  padding: '0.15rem 0.45rem',
+                  borderRadius: '4px'
+                }}
               >
-                Save Modifications
-              </button>
+                PRIORITY SCORE: {inc.priority.overallScore}/100
+              </span>
             </div>
 
-            {/* Department & SLA Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Primary Responsible Dept</label>
-                <input
-                  type="text"
-                  value={primaryDept}
-                  onChange={e => setPrimaryDept(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Target SLA (Hours)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={slaHours}
-                  onChange={e => setSlaHours(parseFloat(e.target.value) || 1.5)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Response ETA (Minutes)</label>
-                <input
-                  type="number"
-                  value={etaMinutes}
-                  onChange={e => setEtaMinutes(parseInt(e.target.value) || 25)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Actions List */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-slate-300 uppercase">Recommended Actions</label>
-                <button
-                  onClick={handleAddAction}
-                  className="text-xs text-blue-400 hover:text-blue-300 font-semibold"
-                >
-                  + Add Action Item
-                </button>
-              </div>
-              <div className="space-y-2">
-                {actions.map((act) => (
-                  <div key={act.id} className="flex items-center gap-2 bg-slate-900 p-2 rounded-lg border border-slate-800">
-                    <span className="text-xs px-2 py-0.5 rounded font-mono font-bold bg-slate-800 text-slate-300 shrink-0">
-                      {act.isSopRule ? 'SOP RULE' : act.isAiRecommendation ? 'AI RECOMMENDATION' : 'OFFICER ADDED'}
-                    </span>
-                    <input
-                      type="text"
-                      value={act.actionText}
-                      onChange={e => handleActionChange(act.id, e.target.value)}
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                    />
-                    <button
-                      onClick={() => handleRemoveAction(act.id)}
-                      className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded bg-red-950/40 border border-red-900/50"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Resources List */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">Required Equipment & Field Resources</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {resources.map((res, idx) => (
-                  <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between text-xs font-mono">
-                    <div>
-                      <div className="text-slate-200 font-bold">{res.item}</div>
-                      <div className="text-slate-400 text-[11px]">{res.assignedUnit} • Status: {res.status}</div>
-                    </div>
-                    <input
-                      type="text"
-                      value={res.quantity}
-                      onChange={e => handleResourceQuantityChange(idx, e.target.value)}
-                      className="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-emerald-400 font-bold text-center"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Officer Authorization Notes */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-            <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
-              Officer Audit Trail & Rationale Entry
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+              {interventionRecord.projectTitle}
             </h3>
 
-            {!isRejecting ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              <MapPin size={13} color="#2563eb" />
+              <span>{inc.ward}</span>
+              <span style={{ color: 'var(--text-muted)' }}>•</span>
+              <Building2 size={13} color="#2563eb" />
+              <span>{rec?.primaryDepartment || 'Municipal Engineering & Drainage Wing'}</span>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Mandatory Officer Approval Notes</label>
-                <textarea
-                  rows={2}
-                  value={officerNotes}
-                  onChange={e => setOfficerNotes(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 font-sans focus:outline-none focus:border-emerald-500"
-                  placeholder="Enter officer notes or authorization justification..."
-                />
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="checkbox"
-                    id="autoDispatchCheck"
-                    checked={autoDispatch}
-                    onChange={e => setAutoDispatch(e.target.checked)}
-                    className="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0"
-                  />
-                  <label htmlFor="autoDispatchCheck" className="text-xs text-slate-300 font-medium">
-                    Trigger immediate field crew dispatch (APPROVED → DISPATCHED) upon authorization
-                  </label>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Committed Capital
+                </span>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'var(--font-mono)' }}>
+                  ₹{interventionRecord.approvedCapitalLakhs} Lakhs
                 </div>
+                <span style={{ fontSize: '0.62rem', color: '#059669', fontWeight: 700 }}>
+                  [PROJECTED ALLOCATION]
+                </span>
               </div>
-            ) : (
+
               <div>
-                <label className="block text-xs font-medium text-red-400 mb-1">Rejection Rationale (Required for Audit Log)</label>
-                <textarea
-                  rows={2}
-                  value={rejectionReason}
-                  onChange={e => setRejectionReason(e.target.value)}
-                  className="w-full bg-slate-900 border border-red-800 rounded-lg p-2.5 text-xs text-slate-100 font-sans focus:outline-none focus:border-red-500"
-                  placeholder="Provide explicit reason for rejecting this response plan..."
-                />
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Target Beneficiaries
+                </span>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                  {(rec?.expectedBeneficiaries || 42300).toLocaleString()}
+                </div>
+                <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                  Citizens Exposed [BASELINE]
+                </span>
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Explicit Human-in-the-Loop Governance Mandate Notice */}
+          <div
+            style={{
+              background: '#eff6ff',
+              borderLeft: '4px solid #1e3a8a',
+              borderRadius: '0 8px 8px 0',
+              padding: '0.75rem 1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.3rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#1e3a8a', fontWeight: 800, fontSize: '0.74rem', textTransform: 'uppercase' }}>
+              <Shield size={13} />
+              <span>Human Authorization Mandate</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.76rem', color: '#1e40af', lineHeight: 1.4 }}>
+              In accordance with NagarBodh Human-in-the-Loop governance principles, automated models calculate deficit rankings and propose evidence dossiers, but <strong>only an authorized human official can commit public funds and sanction operational intervention</strong>.
+            </p>
+          </div>
+
+          {/* Officer Review Notes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <label style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Duty Officer Review & Sanction Notes:
+            </label>
+            <textarea
+              value={officerNotes}
+              onChange={(e) => setOfficerNotes(e.target.value)}
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.6rem 0.75rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-medium)',
+                background: 'var(--bg-canvas)',
+                color: 'var(--text-primary)',
+                fontSize: '0.78rem',
+                fontFamily: 'var(--font-sans)',
+                lineHeight: 1.4,
+                resize: 'none'
+              }}
+            />
+          </div>
+
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', display: 'flex', justifyContent: 'space-between' }}>
+            <span>AUTHORIZATION TIER: EXECUTIVE GOVERNANCE</span>
+            <span>AUDIT INTEGRITY: SHA-256 SEALED</span>
           </div>
 
         </div>
 
-        {/* Footer Action Buttons */}
-        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-800 bg-slate-950 flex flex-wrap items-center justify-between gap-3">
+        {/* Modal Footer Actions */}
+        <div
+          style={{
+            padding: '1rem 1.5rem',
+            background: 'var(--bg-surface-elevated)',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '0.75rem'
+          }}
+        >
           <button
-            onClick={() => setIsRejecting(!isRejecting)}
-            className="text-xs text-slate-400 hover:text-slate-200 underline font-mono py-2"
+            onClick={closeApprovalModal}
+            style={{
+              padding: '0.6rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border-medium)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-secondary)',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
           >
-            {isRejecting ? '← Back to Approval View' : 'Switch to Reject Mode'}
+            Cancel & Re-inspect
           </button>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <button
-              onClick={closeApprovalModal}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition min-h-[44px]"
-            >
-              Cancel
-            </button>
-
-            {isRejecting ? (
-              <button
-                onClick={handleReject}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-950/50 transition min-h-[44px]"
-              >
-                Reject Response Plan
-              </button>
-            ) : (
-              <button
-                onClick={handleApprove}
-                className="px-5 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition min-h-[44px]"
-              >
-                <span>✅ Approve Intervention</span>
-              </button>
-            )}
-          </div>
+          <button
+            onClick={handleApprove}
+            style={{
+              padding: '0.6rem 1.35rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+              color: '#ffffff',
+              fontSize: '0.84rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+            }}
+          >
+            <CheckCircle2 size={16} />
+            <span>Confirm & Approve</span>
+          </button>
         </div>
 
       </div>
@@ -513,22 +336,28 @@ export const HumanApprovalModal: React.FC = () => {
     isApprovalModalOpen,
     closeApprovalModal,
     selectedIncident,
+    selectedIncidentId,
+    incidents,
     approveDispatch,
     rejectDispatch,
     dispatchUnits,
-    modifyDispatch
+    modifyDispatch,
+    approveIntervention
   } = useCivic();
 
-  if (!isApprovalModalOpen || !selectedIncident) return null;
+  const effectiveIncident = selectedIncident || incidents.find(i => i.id === selectedIncidentId) || incidents[0];
+
+  if (!isApprovalModalOpen || !effectiveIncident) return null;
 
   return (
     <HumanApprovalModalContent
-      incident={selectedIncident}
+      incident={effectiveIncident}
       closeApprovalModal={closeApprovalModal}
       approveDispatch={approveDispatch}
       rejectDispatch={rejectDispatch}
       dispatchUnits={dispatchUnits}
       modifyDispatch={modifyDispatch}
+      approveIntervention={approveIntervention}
     />
   );
 };

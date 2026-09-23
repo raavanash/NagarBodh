@@ -34,12 +34,9 @@ const AppContent: React.FC = () => {
       {/* Main View Area */}
       <main className="main-content">
         {(activeTab === 'development_map' || activeTab === 'live_map') && (
-          <div className="map-view-container">
-            {/* Left Sidebar: Concise Development Demand List */}
-            <MapSidebarLeft />
-
+          <div className="map-view-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
             {/* Hero Center Map Canvas */}
-            <div className="map-canvas-column" style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="map-canvas-column" style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
               <div style={{ flex: 1, position: 'relative' }}>
                 <LiveMap />
               </div>
@@ -64,11 +61,6 @@ const AppContent: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Right Panel: Demand Intelligence Dossier */}
-            <aside className="map-dossier-right">
-              <IncidentDossier />
-            </aside>
           </div>
         )}
 

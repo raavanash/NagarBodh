@@ -4,6 +4,7 @@ import {
   Activity,
   AlertCircle,
   AlertTriangle,
+  ArrowUpRight,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -11,8 +12,10 @@ import {
   Eye,
   Filter,
   Flame,
+  FolderOpen,
   GripHorizontal,
   Layers,
+  List,
   MapPin,
   Maximize2,
   Minus,
@@ -22,12 +25,17 @@ import {
   Shield,
   SkipForward,
   Sparkles,
+  X,
   Zap
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { CRITICAL_ASSETS } from '../../data/criticalAssets';
 import { SIMULATION_STEPS } from '../../data/initialData';
 import { CivicSignal, ClusteredIncident } from '../../types/civic';
+import { MapSidebarLeft } from './MapSidebarLeft';
+import { ExplainableInvestmentDossierDrawer } from '../Gaps/ExplainableInvestmentDossierDrawer';
+import { buildInvestmentExplanationDossier } from '../../engine/developmentGapEngine';
+import { InvestmentExplanationDossier } from '../../types/development';
 
 export const LiveMap: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -87,9 +95,11 @@ export const LiveMap: React.FC = () => {
   const {
     signals,
     incidents,
+    selectedIncident,
     selectedIncidentId,
     setSelectedIncidentId,
     setActiveTab,
+    prioritizeRecommendationInPipeline,
     mapMode,
     setMapMode,
     categoryFilter,
@@ -111,6 +121,14 @@ export const LiveMap: React.FC = () => {
     setPlaybackSpeed,
     ingestionMode
   } = useCivic();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedDossier, setSelectedDossier] = useState<InvestmentExplanationDossier | null>(null);
+
+  const handleOpenDossierFromMap = (incident: ClusteredIncident) => {
+    const dossier = buildInvestmentExplanationDossier(incident.category, incidents, signals);
+    setSelectedDossier(dossier);
+  };
 
   // Initialize Leaflet Map with OpenFreeMap vector layer
   useEffect(() => {
@@ -562,6 +580,65 @@ export const LiveMap: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Right Side: Map Controls & Hotspot Queue Drawer Trigger */}
+        <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              background: isSidebarOpen ? '#1e3a8a' : 'var(--bg-surface)',
+              color: isSidebarOpen ? '#ffffff' : 'var(--text-primary)',
+              border: '1px solid var(--border-medium)',
+              padding: '0.4rem 0.75rem',
+              borderRadius: '8px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              boxShadow: 'var(--shadow-md)',
+              cursor: 'pointer',
+              backdropFilter: 'blur(12px)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <List size={14} color={isSidebarOpen ? '#ffffff' : '#1e3a8a'} />
+            <span>Hotspots Queue</span>
+            <span style={{
+              background: isSidebarOpen ? 'rgba(255,255,255,0.2)' : 'var(--bg-surface-elevated)',
+              padding: '0.1rem 0.4rem',
+              borderRadius: '999px',
+              fontSize: '0.68rem',
+              fontFamily: 'var(--font-mono)'
+            }}>
+              {filteredIncidents.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setMapMode(mapMode === 'ai_priority' ? 'civic_signals' : 'ai_priority')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-medium)',
+              padding: '0.4rem 0.75rem',
+              borderRadius: '8px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              boxShadow: 'var(--shadow-md)',
+              cursor: 'pointer',
+              backdropFilter: 'blur(12px)',
+              transition: 'all 0.15s ease'
+            }}
+            title="Toggle between AI Clustered Demand Hotspots and Raw Civic Signals"
+          >
+            <Zap size={14} color="#0284c7" />
+            <span>{mapMode === 'ai_priority' ? 'AI Hotspots' : 'Raw Signals'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Floating Replay & Time Slider Control Bar (Visible only in SIMULATION mode) */}
@@ -794,6 +871,296 @@ export const LiveMap: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* FLOATING CONTEXT CARD (Docked Bottom-Left on Marker Selection) */}
+      {selectedIncident && (
+        <div
+          className="map-floating-context-card"
+          style={{
+            position: 'absolute',
+            bottom: '1.25rem',
+            left: '1.25rem',
+            zIndex: 1080,
+            width: '100%',
+            maxWidth: '430px',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          {/* Card Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, background: 'var(--bg-surface-elevated)', color: 'var(--text-secondary)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                  {selectedIncident.ward.toUpperCase()}
+                </span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  {selectedIncident.category.toUpperCase()}
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                {selectedIncident.title}
+              </h3>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                background: selectedIncident.priority.overallScore >= 80 ? '#fee2e2' : '#fef3c7',
+                color: selectedIncident.priority.overallScore >= 80 ? '#dc2626' : '#b45309',
+                border: `1px solid ${selectedIncident.priority.overallScore >= 80 ? '#fca5a5' : '#fcd34d'}`,
+                padding: '0.2rem 0.5rem',
+                borderRadius: '6px',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)'
+              }}>
+                {selectedIncident.priority.overallScore >= 80 && (
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#dc2626' }} />
+                )}
+                <span>{selectedIncident.priority.overallScore}/100</span>
+              </div>
+              <button
+                onClick={() => setSelectedIncidentId(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '4px'
+                }}
+                title="Dismiss Card"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Quantitative Metrics Row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: '0.5rem',
+            background: 'var(--bg-surface-elevated)',
+            padding: '0.65rem 0.85rem',
+            borderRadius: '8px'
+          }}>
+            <div>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Citizen Signals</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.1rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                  {selectedIncident.signalIds.length}
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>reports</span>
+              </div>
+              <span style={{ fontSize: '0.62rem', color: '#1e40af', fontWeight: 700 }}>[OBSERVED]</span>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Signal Velocity</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.1rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+                  +{selectedIncident.velocitySurgePercent}%
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>/hr</span>
+              </div>
+              <span style={{ fontSize: '0.62rem', color: '#dc2626', fontWeight: 700 }}>[TELEMETRY]</span>
+            </div>
+          </div>
+
+          {/* Impacted Infrastructure */}
+          {selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolName && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.5rem 0.75rem',
+              background: 'rgba(124, 58, 237, 0.08)',
+              border: '1px solid rgba(124, 58, 237, 0.2)',
+              borderRadius: '6px',
+              fontSize: '0.74rem',
+              color: '#6d28d9',
+              fontWeight: 600
+            }}>
+              <span>🏫</span>
+              <span>
+                {selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolName} ({selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolDistanceMeters}m away)
+              </span>
+            </div>
+          )}
+
+          {/* AI Synthesis Summary */}
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+            {selectedIncident.auditableInsight.modelInference.summary}
+          </div>
+
+          {/* Action CTAs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.2rem' }}>
+            <button
+              onClick={() => handleOpenDossierFromMap(selectedIncident)}
+              style={{
+                flex: 1,
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 2px 6px rgba(30, 58, 138, 0.25)'
+              }}
+            >
+              <Sparkles size={13} />
+              <span>Open Evidence Dossier</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('investment_gaps')}
+              style={{
+                background: 'var(--bg-surface-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '6px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              <span>Invest Board</span>
+            </button>
+
+            <button
+              onClick={() => prioritizeRecommendationInPipeline(selectedIncident.id)}
+              style={{
+                background: '#eff6ff',
+                color: '#1e3a8a',
+                border: '1px solid #bfdbfe',
+                borderRadius: '6px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+              title="Prioritize this recommendation in the Capital Pipeline"
+            >
+              <span>Prioritize</span>
+              <ArrowUpRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* On-demand Hotspot Queue & Spatial Filters Slide-out Drawer */}
+      {isSidebarOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            zIndex: 1200,
+            display: 'flex',
+            animation: 'fadeIn 0.15s ease-out'
+          }}
+        >
+          {/* Drawer Canvas */}
+          <div
+            style={{
+              width: '380px',
+              maxWidth: '90vw',
+              height: '100%',
+              background: 'var(--bg-surface)',
+              borderRight: '1px solid var(--border-medium)',
+              boxShadow: 'var(--shadow-lg)',
+              display: 'flex',
+              flexDirection: 'column',
+              zIndex: 1210
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1rem',
+              borderBottom: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface-elevated)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <List size={15} color="#1e3a8a" />
+                <span style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Hotspot Queue & Filters
+                </span>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '4px'
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <MapSidebarLeft />
+            </div>
+          </div>
+
+          {/* Backdrop Click to close */}
+          <div
+            onClick={() => setIsSidebarOpen(false)}
+            style={{
+              flex: 1,
+              height: '100%',
+              background: 'rgba(15, 23, 42, 0.35)',
+              backdropFilter: 'blur(2px)',
+              cursor: 'pointer'
+            }}
+          />
+        </div>
+      )}
+
+      {/* Canonical Explainable Investment Dossier Slide-Over Drawer */}
+      <ExplainableInvestmentDossierDrawer
+        dossier={selectedDossier}
+        isOpen={!!selectedDossier}
+        onClose={() => setSelectedDossier(null)}
+        onPrioritize={(incId) => {
+          setSelectedDossier(null);
+          prioritizeRecommendationInPipeline(incId || selectedIncident?.id);
+        }}
+      />
     </div>
   );
 };

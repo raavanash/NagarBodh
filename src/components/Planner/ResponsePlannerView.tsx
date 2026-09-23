@@ -1,25 +1,34 @@
 import React, { useState } from 'react';
 import {
-  ArrowDown,
+  AlertCircle,
+  AlertTriangle,
   ArrowRight,
+  ArrowUpRight,
   Building2,
+  Calendar,
   CheckCircle2,
-  Edit3,
+  Clock,
+  DollarSign,
   ExternalLink,
+  Eye,
+  FileText,
+  Layers,
   MapPin,
+  Maximize2,
+  Shield,
   ShieldAlert,
   Sparkles,
-  XCircle
+  Users,
+  Wrench
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { DevelopmentProjectRecommendation, InterventionRecord } from '../../types/development';
 import { generateDevelopmentProjectRecommendation, buildCanonicalInterventionRecord } from '../../engine/developmentRecommendationEngine';
 import { buildInvestmentExplanationDossier } from '../../engine/developmentGapEngine';
 import { ExplainableInvestmentDossierDrawer } from '../Gaps/ExplainableInvestmentDossierDrawer';
-import { IncidentLifecycleStepper } from './IncidentLifecycleStepper';
 import { ResolutionVerificationPanel } from '../Verification/ResolutionVerificationPanel';
 import { ExpandableEvidenceUI } from '../Evidence/ExpandableEvidenceUI';
-import { PriorityBadge, GeminiExplanationCard, HumanReviewStateBadge, JudgingJourneyStepper } from '../common';
+import { JudgingJourneyStepper } from '../common/JudgingJourneyStepper';
 
 export const ResponsePlannerView: React.FC = () => {
   const {
@@ -27,1011 +36,700 @@ export const ResponsePlannerView: React.FC = () => {
     signals,
     selectedIncidentId,
     activeIntervention,
-    approveIntervention,
-    measureInterventionImpact,
-    approveDispatch,
-    modifyDispatch,
-    rejectDispatch,
+    openApprovalModal,
     setSelectedIncidentId,
-    setActiveTab
+    setActiveTab,
+    ingestionMode
   } = useCivic();
 
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [isDossierOpen, setIsDossierOpen] = useState(false);
-  const [isModifyModalOpen, setIsModifyModalOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
 
-  // Editable Recommendation Form State (for [Modify])
-  const [editTitle, setEditTitle] = useState('');
-  const [editDept, setEditDept] = useState('');
-  const [editCost, setEditCost] = useState<number>(350);
-  const [_editIntervention, setEditIntervention] = useState('');
-  const [newActionText, setNewActionText] = useState('');
+  // Guarantee Sector 15 / active incident continuity
+  const effectiveIncidentId =
+    selectedPlanId ||
+    selectedIncidentId ||
+    incidents.find(i => i.id.includes('sector-15') || i.id.includes('ward-15') || i.category === 'waterlogging')?.id ||
+    incidents[0]?.id;
 
-  const activeIncidents = incidents;
-  const effectiveIncidentId = selectedPlanId || selectedIncidentId;
-  const currentIncident = activeIncidents.find(i => i.id === effectiveIncidentId) || activeIncidents[0];
+  const currentIncident = incidents.find(i => i.id === effectiveIncidentId) || incidents[0];
 
   const currentDossier = currentIncident
     ? buildInvestmentExplanationDossier(currentIncident.category, incidents, signals)
     : null;
 
   // Resolve or generate structured DevelopmentProjectRecommendation for selected item
-  const rec: DevelopmentProjectRecommendation | null = currentIncident
-    ? (currentIncident.projectRecommendation || generateDevelopmentProjectRecommendation({
-        hotspotId: currentIncident.id,
-        category: currentIncident.category,
-        geography: {
-          country: 'India',
-          state: 'Delhi NCR',
-          district: currentIncident.ward,
-          subDistrict: currentIncident.ward,
-          wardOrDistrict: currentIncident.ward,
-          locationName: currentIncident.locationName || currentIncident.ward
-        },
-        priorityScoreVal: currentIncident.priority.overallScore,
-        developmentGap: currentIncident.developmentGap || {
-          overallGapIndex: currentIncident.priority.overallScore,
-          demandGapScore: Math.round(currentIncident.priority.overallScore * 0.3),
-          infrastructureDeficitScore: Math.round(currentIncident.priority.overallScore * 0.25),
-          demographicVulnerabilityScore: Math.round(currentIncident.priority.overallScore * 0.2),
-          investmentDeficitScore: Math.round(currentIncident.priority.overallScore * 0.15),
-          environmentalRiskScore: Math.round(currentIncident.priority.overallScore * 0.1),
-          explanationBullets: ['Elevated citizen demand intensity', 'Infrastructure capacity deficit']
-        },
-        demographics: currentIncident.demographics || {
-          population: 85000,
-          populationDensity: 12000,
-          populationGrowth: 2.1,
-          urbanizationRate: 92,
-          vulnerablePopulation: 35000,
-          youthPopulation: 25000,
-          elderlyPopulation: 10000,
-          wardName: currentIncident.ward
-        },
-        infrastructure: currentIncident.infrastructure || {
-          healthcareIndex: 40,
-          educationIndex: 45,
-          waterIndex: 35,
-          sanitationIndex: 38,
-          transportIndex: 42,
-          electricityIndex: 50,
-          digitalConnectivityIndex: 60
-        },
-        investment: currentIncident.investment || {
-          existingInvestment: 200,
-          plannedInvestment: 500,
-          activeProjects: 2,
-          plannedProjects: 1,
-          investmentByCategory: {},
-          investmentGapLakhs: 300,
-          unaddressedRequestsCount: currentIncident.signalIds?.length || 15
-        },
-        evidence: currentIncident.evidence || [],
-        sourceMode: 'SIMULATION'
-      }))
-    : null;
-
-  const plan = currentIncident?.actionPlan;
+  const rec: DevelopmentProjectRecommendation = currentIncident?.projectRecommendation || generateDevelopmentProjectRecommendation({
+    hotspotId: currentIncident.id,
+    category: currentIncident.category,
+    geography: {
+      country: 'India',
+      state: 'Delhi NCR',
+      district: currentIncident.ward,
+      subDistrict: currentIncident.ward,
+      wardOrDistrict: currentIncident.ward,
+      locationName: currentIncident.locationName || currentIncident.ward
+    },
+    priorityScoreVal: currentIncident.priority.overallScore,
+    developmentGap: currentIncident.developmentGap || {
+      overallGapIndex: currentIncident.priority.overallScore,
+      demandGapScore: Math.round(currentIncident.priority.overallScore * 0.3),
+      infrastructureDeficitScore: Math.round(currentIncident.priority.overallScore * 0.25),
+      demographicVulnerabilityScore: Math.round(currentIncident.priority.overallScore * 0.2),
+      investmentDeficitScore: Math.round(currentIncident.priority.overallScore * 0.15),
+      environmentalRiskScore: Math.round(currentIncident.priority.overallScore * 0.1),
+      explanationBullets: ['Elevated citizen demand intensity', 'Infrastructure capacity deficit']
+    },
+    demographics: currentIncident.demographics || {
+      population: 184000,
+      populationDensity: 18400,
+      populationGrowth: 1.6,
+      urbanizationRate: 98,
+      vulnerablePopulation: 45000,
+      youthPopulation: 64000,
+      elderlyPopulation: 22000,
+      wardName: currentIncident.ward
+    },
+    infrastructure: currentIncident.infrastructure || {
+      healthcareIndex: 70,
+      educationIndex: 80,
+      waterIndex: 35,
+      sanitationIndex: 45,
+      transportIndex: 75,
+      electricityIndex: 80,
+      digitalConnectivityIndex: 90
+    },
+    investment: currentIncident.investment || {
+      existingInvestment: 200,
+      plannedInvestment: 550,
+      activeProjects: 1,
+      plannedProjects: 1,
+      investmentByCategory: {},
+      investmentGapLakhs: 350,
+      unaddressedRequestsCount: currentIncident.signalIds?.length || 18
+    },
+    evidence: currentIncident.evidence || [],
+    sourceMode: 'SIMULATION'
+  });
 
   const interventionRecord: InterventionRecord =
     activeIntervention && activeIntervention.incidentId === currentIncident?.id
       ? activeIntervention
       : buildCanonicalInterventionRecord({ incident: currentIncident, recommendation: rec });
 
-  const interventionStatus =
-    activeIntervention && activeIntervention.incidentId === currentIncident?.id
-      ? activeIntervention.status
-      : (currentIncident?.status === 'verified'
-        ? 'IMPACT_MEASURED'
-        : currentIncident?.status === 'resolving' || currentIncident?.status === 'resolved'
-        ? 'INTERVENTION_RECORDED'
-        : currentIncident?.status === 'approved'
-        ? 'APPROVED'
-        : currentIncident?.status === 'dispatch_pending'
-        ? 'UNDER_REVIEW'
-        : 'RECOMMENDED');
-
-  // Initialize edit fields when selection changes
-  const handleSelectIncident = (incId: string) => {
-    setSelectedPlanId(incId);
-    const inc = incidents.find(i => i.id === incId);
-    if (inc) {
-      const itemRec = inc.projectRecommendation || rec;
-      setEditTitle(itemRec?.title || inc.title);
-      setEditDept(itemRec?.primaryDepartment || inc.actionPlan?.primaryDepartment || '');
-      setEditCost(itemRec?.estimatedCostLakhs || 350);
-      setEditIntervention(itemRec?.recommendedIntervention || '');
-    }
-  };
-
-  const handleOpenModifyModal = () => {
-    if (!rec) return;
-    setEditTitle(rec.title);
-    setEditDept(rec.primaryDepartment || '');
-    setEditCost(rec.estimatedCostLakhs || 350);
-    setEditIntervention(rec.recommendedIntervention);
-    setIsModifyModalOpen(true);
-  };
-
-  const handleSaveModification = () => {
-    if (!currentIncident || !rec) return;
-
-    const updatedActions = [...(rec.recommendedActions || [])];
-    if (newActionText.trim()) {
-      updatedActions.push({
-        id: `act-custom-${Date.now()}`,
-        actionText: newActionText.trim(),
-        department: editDept,
-        rationale: 'Policymaker manual override action addition.',
-        isSopRule: false,
-        isAiRecommendation: false
-      });
-    }
-
-    modifyDispatch(currentIncident.id, {
-      responsibleDepartment: editDept,
-      primaryDepartment: editDept,
-      recommendedActions: updatedActions,
-      actions: updatedActions.map(a => a.actionText)
-    });
-
-    setNewActionText('');
-    setIsModifyModalOpen(false);
-  };
-
-  const handleConfirmReject = () => {
-    if (!currentIncident) return;
-    rejectDispatch(currentIncident.id, rejectReason || 'Policymaker requested manual project reassessment.');
-    setRejectReason('');
-    setIsRejectModalOpen(false);
-  };
+  const isApproved =
+    interventionRecord.status === 'APPROVED' ||
+    interventionRecord.status === 'INTERVENTION_RECORDED' ||
+    interventionRecord.status === 'IMPACT_MEASURED' ||
+    currentIncident?.status === 'approved' ||
+    currentIncident?.status === 'dispatched' ||
+    currentIncident?.status === 'on_site' ||
+    currentIncident?.status === 'resolving' ||
+    currentIncident?.status === 'resolved' ||
+    currentIncident?.status === 'verified';
 
   return (
-    <div className="planner-view-container" style={{ padding: '1.5rem', height: '100%', overflowY: 'auto', background: 'var(--bg-canvas)' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ padding: '0.5rem', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid var(--border-accent)' }}>
-              <Building2 size={22} color="var(--cyan-400)" />
-            </div>
-            <div>
-              <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                Project Priorities
-              </h2>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.88rem', color: '#0284c7', fontWeight: 600 }}>
-                "What should policymakers consider?"
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="planner-container" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-canvas)' }}>
+      <div style={{ maxWidth: '1380px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-        {/* Policymaker Human Review Disclaimer Notice */}
-        <div style={{
-          marginTop: '0.85rem',
-          padding: '0.65rem 0.95rem',
-          borderRadius: '8px',
-          background: 'rgba(59, 130, 246, 0.1)',
-          border: '1px solid rgba(59, 130, 246, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.6rem',
-          fontSize: '0.78rem',
-          color: '#93c5fd'
-        }}>
-          <ShieldAlert size={16} color="#60a5fa" style={{ flexShrink: 0 }} />
-          <div>
-            <strong>Policymaker Governance Disclaimer:</strong> AI synthesizes evidence-backed candidate projects based on structured data. Final public investment approval and budget allocation remain exclusively under human policymaker authority.
-          </div>
-        </div>
-      </div>
-
-      {/* UNIFIED 6-STAGE LIFECYCLE HEADER & PERSISTENT CONTEXT STRIP */}
-      <div style={{ marginBottom: '1.25rem' }}>
+        {/* 1. Unified 6-Stage Journey Stepper */}
         <JudgingJourneyStepper
-          currentStep={
-            interventionStatus === 'IMPACT_MEASURED'
-              ? 'MEASURE'
-              : interventionStatus === 'APPROVED' || interventionStatus === 'INTERVENTION_RECORDED'
-              ? 'APPROVE'
-              : 'DECIDE'
-          }
-          compact={false}
+          currentStep={isApproved ? 'APPROVE' : 'DECIDE'}
+          compact={true}
           intervention={{
             projectTitle: interventionRecord.projectTitle,
-            locationName: `${interventionRecord.locationName} (${interventionRecord.district})`,
-            approvedCapitalLakhs: interventionRecord.approvedCapitalLakhs,
-            priorityScore: interventionRecord.priorityScore,
-            priorityLevel: interventionRecord.priorityLevel,
-            status: interventionStatus,
-            dataMode: interventionRecord.dataMode || 'SIMULATION'
+            locationName: interventionRecord.locationName,
+            approvedCapitalLakhs: interventionRecord.approvedCapitalLakhs
           }}
         />
-      </div>
 
-      {/* Grid Layout: Left Candidate Projects Queue, Right Detailed Recommendation View */}
-      <div className="response-planner-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', alignItems: 'start' }}>
-        
-        {/* Left Column: Candidate Projects Queue */}
-        <div className="planner-queue-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-            <span>Candidate Projects ({activeIncidents.length})</span>
-            <span style={{ color: 'var(--cyan-400)' }}>Policy Review</span>
+        {/* 2. Top Governance Authority Ribbon */}
+        <div
+          style={{
+            background: isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+            border: isApproved ? '1px solid #10b981' : '1px solid #fcd34d',
+            borderRadius: '10px',
+            padding: '0.65rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <span
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                padding: '0.2rem 0.55rem',
+                borderRadius: '4px',
+                fontFamily: 'var(--font-mono)',
+                textTransform: 'uppercase',
+                background: isApproved ? '#dcfce7' : '#fee2e2',
+                color: isApproved ? '#166534' : '#dc2626',
+                border: `1px solid ${isApproved ? '#86efac' : '#fca5a5'}`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isApproved ? '#166534' : '#dc2626' }} />
+              {isApproved
+                ? 'STATUS: AUTHORIZED & RECORDED IN OPERATIONAL REGISTRY'
+                : 'STATUS: PENDING HUMAN GOVERNANCE AUTHORIZATION'}
+            </span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>•</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              EARMARKED CAPITAL POOL // SECTOR: {currentIncident.category.toUpperCase()} (₹{interventionRecord.approvedCapitalLakhs}L)
+            </span>
           </div>
 
-          {activeIncidents.map(inc => {
-            const isSelected = inc.id === (currentIncident?.id || activeIncidents[0]?.id);
-            const itemRecTitle = inc.projectRecommendation?.title || inc.title;
-
-            return (
-              <div
-                key={inc.id}
-                onClick={() => handleSelectIncident(inc.id)}
-                style={{
-                  background: isSelected ? 'var(--civic-blue-50)' : 'var(--bg-surface)',
-                  border: isSelected ? '1.5px solid var(--civic-blue-600)' : '1px solid var(--border-subtle)',
-                  borderRadius: '10px',
-                  padding: '0.9rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                  boxShadow: isSelected ? 'var(--shadow-md)' : 'none'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.2rem' }}>
-                  <HumanReviewStateBadge
-                    state={inc.actionPlan?.status || inc.projectRecommendation?.status || 'human_review_required'}
-                    approvedBy={inc.actionPlan?.approvedBy || inc.projectRecommendation?.approvedBy}
-                    compact={true}
-                  />
-                  <PriorityBadge score={inc.priority.overallScore} compact={true} />
-                </div>
-
-                <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.3rem', lineHeight: 1.3 }}>
-                  {itemRecTitle}
-                </div>
-
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <MapPin size={12} color="var(--cyan-400)" />
-                  {inc.ward} ({inc.category})
-                </div>
-              </div>
-            );
-          })}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <span>MODE: {ingestionMode}</span>
+            <span>•</span>
+            <span>DUAL-CUSTODY AUDIT: LEVEL-1</span>
+          </div>
         </div>
 
-        {/* Right Column: Project Recommendation Detailed 7-Section Card */}
-        {currentIncident && rec ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* 3. Title & Strategic Question Banner */}
+        <div
+          style={{
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '12px',
+            padding: '1.25rem 1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            boxShadow: 'var(--shadow-sm)'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 800, background: 'var(--bg-surface)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)', padding: '0.15rem 0.5rem', borderRadius: '4px', textTransform: 'uppercase' }}>
+                CENTRAL GOVERNANCE WORKSPACE
+              </span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                REF: #{interventionRecord.recommendationId || 'NB-DEC-2025'}
+              </span>
+            </div>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              What intervention are we authorizing?
+            </h1>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Review the proposed civic intervention and empirical evidence before committing public capital.
+            </p>
+          </div>
 
-            {/* Top Action Header Bar */}
-            <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cyan-400)', letterSpacing: '0.05em' }}>
-                      CANDIDATE DEVELOPMENT PROJECT #{rec.id}
-                    </span>
-                    <HumanReviewStateBadge
-                      state={rec.status || plan?.status || 'human_review_required'}
-                      approvedBy={rec.approvedBy || plan?.approvedBy}
-                      compact={true}
-                    />
-                    <PriorityBadge score={rec.priorityScore} level={rec.priorityLevel} compact={true} />
-                  </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                    {rec.title}
-                  </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <button
+              onClick={() => setIsDossierOpen(true)}
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '8px',
+                padding: '0.55rem 0.95rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <FileText size={14} color="#1e3a8a" />
+              <span>Evidence Dossier</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setSelectedIncidentId(currentIncident.id);
+                setActiveTab('development_map');
+              }}
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '8px',
+                padding: '0.55rem 0.95rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <MapPin size={14} color="#0284c7" />
+              <span>View Map Lens</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 4. Master 60/40 Split Workbench Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+
+          {/* LEFT COLUMN (60% equivalent: 7 cols) */}
+          <div style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="lg-decide-left">
+            <style>{`
+              @media (min-width: 1024px) {
+                .lg-decide-left { grid-column: span 7 !important; }
+                .lg-decide-right { grid-column: span 5 !important; }
+              }
+            `}</style>
+
+            {/* Selected Intervention Specification Card */}
+            <article
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e3a8a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Municipal Capital Intervention Specification
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      fontFamily: 'var(--font-mono)',
+                      background: currentIncident.priority.overallScore >= 80 ? '#fee2e2' : '#fef3c7',
+                      color: currentIncident.priority.overallScore >= 80 ? '#dc2626' : '#b45309',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    SYSTEM PRIORITY RANK: #01 (SEVERITY {currentIncident.priority.overallScore}/100)
+                  </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => setIsDossierOpen(true)}
-                    style={{
-                      background: '#fef3c7',
-                      color: '#92400e',
-                      border: '1px solid #fcd34d',
-                      borderRadius: '6px',
-                      padding: '0.4rem 0.75rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem'
-                    }}
-                    title="Why is NagarBodh recommending this intervention for this location?"
-                  >
-                    <Sparkles size={13} color="#b45309" />
-                    <span>Why this recommendation?</span>
-                  </button>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0', color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                  {rec.title}
+                </h2>
 
-                  <button
-                    onClick={() => {
-                      setSelectedIncidentId(currentIncident.id);
-                      setActiveTab('live_map');
-                    }}
-                    className="sim-btn"
-                    style={{ fontSize: '0.75rem' }}
-                  >
-                    <span>View Location on Map</span>
-                    <ExternalLink size={13} />
-                  </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <MapPin size={14} color="#2563eb" />
+                    <strong>{currentIncident.ward}</strong> ({currentIncident.locationName || 'Critical Corridor'})
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Building2 size={14} color="#2563eb" />
+                    <span>{rec.primaryDepartment || 'Municipal Engineering & Drainage Wing'}</span>
+                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* Lifecycle Stepper */}
-            <IncidentLifecycleStepper incidentId={currentIncident.id} />
+              {/* Financial Allocation Matrix */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '0.85rem',
+                  background: 'var(--bg-surface-elevated)',
+                  padding: '1rem',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-subtle)'
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Authorized CapEx
+                  </span>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'var(--font-mono)', marginTop: '0.15rem' }}>
+                    ₹{interventionRecord.approvedCapitalLakhs} Lakhs
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: '#059669', fontWeight: 700 }}>
+                    100% Encumbered [PROJECTED]
+                  </span>
+                </div>
 
-            {/* Resolution Verification Panel (if in verifying state) */}
-            {['resolving', 'resolved', 'verified'].includes(currentIncident.status) && (
+                <div>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Funding Scheme
+                  </span>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.35rem' }}>
+                    Urban Flood CapEx
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    Infrastructure Pool [BASELINE]
+                  </span>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Delivery Horizon
+                  </span>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.35rem' }}>
+                    120 Days
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: '#dc2626', fontWeight: 700 }}>
+                    Monsoon Preparedness SLA
+                  </span>
+                </div>
+              </div>
+
+              {/* Implementation Scope & Key Authorised Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ fontSize: '0.92rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>
+                    Implementation Scope & Key Authorised Actions
+                  </h3>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                    3 PHASED DELIVERABLES
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {/* Action 1 */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: '#1e3a8a', color: '#fff', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      01
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                          Sub-surface Pre-Cast Box Drain Alignment
+                        </strong>
+                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                          Days 1–45 • ₹210L
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        Excavation and installation of twin reinforced concrete box culverts parallel to arterial feeder to relieve hydraulic choking.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action 2 */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: '#1e3a8a', color: '#fff', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      02
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                          Automated Dewatering Pumping Substation
+                        </strong>
+                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                          Days 45–90 • ₹95L
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        Dual 500 HP automated stormwater pumping array with dual-grid backup power to drain low-lying roadway depression.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action 3 */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: '#1e3a8a', color: '#fff', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      03
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                          Hydrostatic Telemetry & Outfall Gate Automation
+                        </strong>
+                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                          Days 90–120 • ₹45L
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        Continuous ultrasonic water level sensors integrated with supervisory control systems to regulate discharge rate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Supporting Evidence Lineage */}
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                  Underlying Corroborating Evidence
+                </span>
+                <ExpandableEvidenceUI incident={currentIncident} />
+              </div>
+            </article>
+
+            {/* Resolution Verification Panel (Available after approval & resolution) */}
+            {isApproved && (
               <ResolutionVerificationPanel incident={currentIncident} />
             )}
 
-            {/* 7 STRUCTURED SECTIONS */}
-            <div className="planner-pipeline-container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          </div>
 
-              {/* 1. PROBLEM STATEMENT */}
-              <div className="card planner-stage-problem" style={{ padding: '1.25rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>1</span>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f87171' }}>
-                    PROBLEM STATEMENT & DEMAND CONTEXT
-                  </h4>
-                </div>
+          {/* RIGHT COLUMN (40% equivalent: 5 cols) */}
+          <div style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="lg-decide-right">
 
-                <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.45, background: 'var(--bg-surface-elevated)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginBottom: '0.75rem' }}>
-                  {rec.problemStatement}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', fontSize: '0.78rem', marginBottom: '0.75rem' }}>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.65rem', borderRadius: '6px' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>SECTOR CATEGORY:</span>
-                    <div style={{ fontWeight: 700, color: 'var(--cyan-400)' }}>{(rec.category || 'OTHER').toString().toUpperCase()}</div>
+            {/* Grounded Gemini Civic Intelligence Brief */}
+            <article
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#1e3a8a', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                    <Sparkles size={13} />
+                    <span>Grounded Civic Intelligence Brief</span>
                   </div>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.65rem', borderRadius: '6px' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>TARGET GEOGRAPHY:</span>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{(rec.geography as any)?.district || (rec.geography as any)?.wardOrDistrict || currentIncident.ward}</div>
-                  </div>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.65rem', borderRadius: '6px' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>LEAD AGENCY:</span>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{rec.primaryDepartment || 'Ministry / State PWD'}</div>
-                  </div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>
+                    Algorithmic Rationale & Proof
+                  </h3>
                 </div>
-
-                {/* Gemini Explainable AI Rationale */}
-                <GeminiExplanationCard
-                  explanation={rec.rationale || "AI-assisted synthesis recommends SOP intervention based on structured demand and infrastructure deficit metrics."}
-                  confidence={0.967}
-                  sourcesCount={currentIncident.signalIds?.length || 12}
-                  modelName="Google Gemini 1.5 Pro (Public Sector Fine-tuned)"
-                  auditBlock={`0x${rec.id.slice(0, 8)}...`}
-                />
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, background: '#dbeafe', color: '#1e40af', padding: '0.15rem 0.5rem', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                  AI EXPLAINS • HUMAN DECIDES
+                </span>
               </div>
 
-              {/* PIPELINE DOWN ARROW */}
-              <div className="pipeline-arrow" style={{ display: 'flex', justifyContent: 'center', margin: '-0.3rem 0' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowDown size={14} />
-                </div>
-              </div>
-
-              {/* 2. SUPPORTING EVIDENCE */}
-              <div className="card planner-stage-evidence" style={{ padding: '1.25rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>2</span>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#38bdf8' }}>
-                    SUPPORTING EVIDENCE & PROVENANCE
-                  </h4>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', fontSize: '0.78rem', marginBottom: '1rem' }}>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>Citizen Demand Volume</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
-                      {currentIncident.signalIds.length} Corroborating Signals
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--cyan-400)', marginTop: '2px' }}>
-                      +{currentIncident.velocitySurgePercent}% Demand Velocity
-                    </div>
+              {/* Synthetic Metrics */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '0.75rem',
+                  background: 'var(--bg-surface-elevated)',
+                  padding: '0.85rem',
+                  borderRadius: '8px'
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Protected Residents
+                  </span>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.1rem' }}>
+                    {(rec.expectedBeneficiaries || 42300).toLocaleString()}
                   </div>
-
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>Data Provenance</div>
-                    <div style={{ color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
-                      Mode: <span style={{ color: 'var(--cyan-400)' }}>{rec.sourceMode || 'SIMULATION'}</span>
-                    </div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', marginTop: '2px' }}>
-                      Deterministic Baseline Verification
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase' }}>Observed Citizen Excerpt</div>
-                    <div style={{ fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: '0.72rem', marginTop: '2px', lineHeight: 1.3 }}>
-                      "{currentIncident.auditableInsight.observedData.rawExcerpts[0]?.original || 'Citizen requests urgent infrastructure intervention.'}"
-                    </div>
-                  </div>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                    Catchment Flood Basin [BASELINE]
+                  </span>
                 </div>
 
-                <ExpandableEvidenceUI incident={currentIncident} />
-              </div>
-
-              {/* PIPELINE DOWN ARROW */}
-              <div className="pipeline-arrow" style={{ display: 'flex', justifyContent: 'center', margin: '-0.3rem 0' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', border: '1px solid #c084fc', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowDown size={14} />
+                <div>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                    Deficit Reduction
+                  </span>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#059669', fontFamily: 'var(--font-mono)', marginTop: '0.1rem' }}>
+                    {rec.estimatedImpact.deficitReductionPercent || 65}%
+                  </div>
+                  <span style={{ fontSize: '0.62rem', color: '#059669', fontWeight: 700 }}>
+                    Projected Hydraulic Gain
+                  </span>
                 </div>
               </div>
 
-              {/* 3. PRIORITY & DEVELOPMENT GAP */}
-              <div className="card planner-stage-gap" style={{ padding: '1.25rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>3</span>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#c084fc' }}>
-                    DEVELOPMENT GAP INDEX & PRIORITY SCORE
-                  </h4>
+              {/* Rationale Narrative */}
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                <p style={{ margin: '0 0 0.5rem 0' }}>
+                  This intervention addresses <strong>{currentIncident.signalIds.length} corroborating citizen grievance logs</strong> intersecting high-density municipal corridors.
+                </p>
+                <p style={{ margin: 0 }}>
+                  {rec.rationale}
+                </p>
+              </div>
+
+              {/* Stat Trace */}
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                <span>MODEL: GEMINI PUBLIC SECTOR GROUNDED</span>
+                <span>AUDIT: 0x9f4a...174</span>
+              </div>
+            </article>
+
+            {/* Governance & Statutory Compliance Box */}
+            <article
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Shield size={15} color="#1e3a8a" />
+                  <span>Governance & Compliance Clearance</span>
+                </h4>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#166534', background: '#dcfce7', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                  3 of 3 VERIFIED
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.78rem' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
+                  <CheckCircle2 size={15} color="#059669" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <strong style={{ color: 'var(--text-primary)' }}>Budgetary Allocation Confirmed</strong>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Earmarked under Urban Infrastructure Capital Pool FY25.</div>
+                  </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.85rem' }}>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Priority Level</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: rec.priorityScore >= 80 ? '#f87171' : '#fbbf24', marginTop: '2px' }}>
-                      {rec.priorityScore}/100 — {rec.priorityLevel || 'P1 HIGH PRIORITY'}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                      {rec.rationale}
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
+                  <CheckCircle2 size={15} color="#059669" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <strong style={{ color: 'var(--text-primary)' }}>Topographical & Drainage Deficit Audited</strong>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Low-elevation catchment with 82% feeder obstruction verified.</div>
                   </div>
+                </div>
 
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Development Gap Breakdown</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '4px' }}>
-                      <div>Overall Gap Index: <strong>{currentIncident.developmentGap?.overallGapIndex || rec.priorityScore}/100</strong></div>
-                      <div>Demand Gap Score: <strong>{currentIncident.developmentGap?.demandGapScore || Math.round(rec.priorityScore * 0.3)}/30</strong></div>
-                      <div>Infrastructure Deficit: <strong>{currentIncident.developmentGap?.infrastructureDeficitScore || Math.round(rec.priorityScore * 0.25)}/25</strong></div>
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
+                  <CheckCircle2 size={15} color="#059669" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <strong style={{ color: 'var(--text-primary)' }}>Demographic Equity & Vulnerability Weighted</strong>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>45,000 vulnerable residents in adjacent low-lying settlement protected.</div>
                   </div>
                 </div>
               </div>
+            </article>
 
-              {/* PIPELINE DOWN ARROW */}
-              <div className="pipeline-arrow" style={{ display: 'flex', justifyContent: 'center', margin: '-0.3rem 0' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(6, 182, 212, 0.2)', border: '1px solid var(--cyan-400)', color: 'var(--cyan-400)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowDown size={14} />
+            {/* Single Primary Authoritative CTA Authorization Console */}
+            <article
+              style={{
+                background: isApproved ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(5,150,105,0.06) 100%)' : 'var(--bg-surface)',
+                border: isApproved ? '1.5px solid #10b981' : '1.5px solid #1e3a8a',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: isApproved ? '#059669' : '#1e3a8a', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                  <Shield size={14} />
+                  <span>{isApproved ? 'Constitutional Authority Sealed' : 'Constitutional Authority Sign-Off'}</span>
                 </div>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0.2rem 0 0.25rem 0', color: 'var(--text-primary)' }}>
+                  {isApproved ? 'Intervention Formally Authorized' : 'Authorize Capital Intervention'}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  {isApproved
+                    ? `Capital allocation of ₹${interventionRecord.approvedCapitalLakhs} Lakhs formally sanctioned. Record is committed to the public civic audit ledger.`
+                    : 'By triggering authorization, you commit municipal funds and issue formal operational sanction under Human-in-the-Loop governance.'}
+                </p>
               </div>
 
-              {/* 4. RECOMMENDED INTERVENTION */}
-              <div className="card planner-stage-recommendation" style={{ padding: '1.25rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--cyan-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>4</span>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cyan-400)' }}>
-                      RECOMMENDED INTERVENTION & ACTION ROSTER
-                    </h4>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', background: 'var(--bg-surface-elevated)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
-                  💡 {rec.recommendedIntervention}
-                </div>
-
-                {/* Responsible & Supporting Departments */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.85rem', marginBottom: '1rem' }}>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Primary Nodal Agency</div>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-                      {rec.primaryDepartment || 'State PWD / Municipal Authority'}
-                    </div>
+              {/* Primary Action Button */}
+              {isApproved ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  <div
+                    style={{
+                      padding: '0.75rem',
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid #10b981',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      color: '#065f46',
+                      fontSize: '0.82rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    <CheckCircle2 size={18} color="#059669" />
+                    <span>Approved by: {interventionRecord.approvedBy || 'Municipal Governance Authority'}</span>
                   </div>
 
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Estimated Outlay</div>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#34d399', marginTop: '0.2rem' }}>
-                      ₹{rec.estimatedCostLakhs || 350} Lakhs
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Estimated Completion</div>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#38bdf8', marginTop: '0.2rem' }}>
-                      {rec.estimatedCompletionMonths || 12} Months
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Items Checklist */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.76rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--cyan-400)', marginBottom: '0.6rem' }}>
-                    Action Items Checklist (SOP vs AI Synthesis)
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    {(rec.recommendedActions || []).map((act, i) => (
-                      <div
-                        key={act.id || i}
-                        style={{
-                          padding: '0.75rem 0.9rem',
-                          background: act.isAiRecommendation ? 'rgba(139, 92, 246, 0.12)' : 'var(--bg-surface-elevated)',
-                          borderRadius: '8px',
-                          border: act.isAiRecommendation ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid var(--border-subtle)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.3rem'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: act.isAiRecommendation ? 'rgba(139, 92, 246, 0.3)' : 'rgba(6, 182, 212, 0.3)', color: act.isAiRecommendation ? '#c084fc' : 'var(--cyan-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800 }}>
-                              {i + 1}
-                            </span>
-                            <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {act.actionText}
-                            </span>
-                          </div>
-
-                          <span style={{
-                            fontSize: '0.64rem',
-                            fontWeight: 800,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background: act.isAiRecommendation ? 'rgba(139, 92, 246, 0.25)' : 'rgba(6, 182, 212, 0.25)',
-                            color: act.isAiRecommendation ? '#c084fc' : 'var(--cyan-400)',
-                            flexShrink: 0
-                          }}>
-                            {act.isAiRecommendation ? '⚡ AI RECOMMENDATION' : '📜 OFFICIAL SOP RULE'}
-                          </span>
-                        </div>
-
-                        <div style={{ fontSize: '0.73rem', color: '#94a3b8', paddingLeft: '1.6rem', fontFamily: 'var(--font-mono)' }}>
-                          Rationale: {act.rationale}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* PIPELINE DOWN ARROW */}
-              <div className="pipeline-arrow" style={{ display: 'flex', justifyContent: 'center', margin: '-0.3rem 0' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowDown size={14} />
-                </div>
-              </div>
-
-              {/* 5. EXPECTED IMPACT */}
-              <div className="card planner-stage-impact" style={{ padding: '1.25rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>5</span>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#34d399' }}>
-                    EXPECTED IMPACT & AUDITABLE OUTCOMES
-                  </h4>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', fontSize: '0.78rem', marginBottom: '0.85rem' }}>
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700 }}>Expected Beneficiaries</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#34d399', marginTop: '2px' }}>
-                      {rec.expectedBeneficiaries.toLocaleString()} Citizens
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700 }}>Infrastructure Deficit Reduction</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>
-                      {rec.estimatedImpact.infrastructureIndexImprovement || rec.estimatedImpact.deficitReductionPercent || 65}%
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'var(--bg-surface-elevated)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 700 }}>Protected Critical Assets</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', marginTop: '2px', lineHeight: 1.3 }}>
-                      {rec.estimatedImpact.protectedAssets ? rec.estimatedImpact.protectedAssets.join(' • ') : 'Local Infrastructure'}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-secondary)', background: 'var(--bg-surface-elevated)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
-                  "{rec.estimatedImpact.narrative}"
-                </div>
-              </div>
-
-              {/* 6. IMPLEMENTATION CONSIDERATIONS */}
-              <div className="card planner-stage-considerations" style={{ padding: '1.25rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: 'var(--amber-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800 }}>6</span>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--amber-400)' }}>
-                    KEY IMPLEMENTATION CONSIDERATIONS
-                  </h4>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem' }}>
-                  {(rec.implementationConsiderations || []).map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', color: 'var(--text-primary)' }}>
-                      <span style={{ color: 'var(--amber-400)', fontWeight: 800 }}>•</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 7. HUMAN REVIEW & INTERVENTION RECORD PANEL */}
-              {interventionStatus === 'APPROVED' || interventionStatus === 'INTERVENTION_RECORDED' || interventionStatus === 'IMPACT_MEASURED' || rec.status === 'approved' || plan?.status === 'approved' ? (
-                /* PART 5 — INTERVENTION RECORD CARD */
-                <div className="card intervention-record-card" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '2px solid #10b981', borderRadius: '12px', boxShadow: '0 4px 20px rgba(16, 185, 129, 0.15)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.6rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <CheckCircle2 size={24} color="#10b981" />
-                      <div>
-                        <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          INTERVENTION RECORD
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                          Intervention recorded in simulated operational registry
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ background: '#8b5cf6', color: '#fff', fontSize: '0.68rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
-                        DATA MODE: SIMULATION
-                      </span>
-                      <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontSize: '0.68rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '4px', border: '1px solid #10b981' }}>
-                        STATUS: INTERVENTION RECORDED
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Specification Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem' }}>
-                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>INTERVENTION</div>
-                      <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '3px' }}>
-                        {interventionRecord.projectTitle}
-                      </div>
-                    </div>
-
-                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>LOCATION</div>
-                      <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--cyan-400)', marginTop: '3px' }}>
-                        {interventionRecord.locationName}
-                      </div>
-                    </div>
-
-                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>APPROVED CAPITAL</div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981', fontFamily: 'var(--font-mono)', marginTop: '3px' }}>
-                        ₹{interventionRecord.approvedCapitalLakhs} Lakhs
-                      </div>
-                    </div>
-
-                    <div style={{ background: 'var(--bg-canvas)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>LEAD AGENCY & APPROVAL</div>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '3px' }}>
-                        {interventionRecord.leadAgency}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        Approved by: {interventionRecord.approvedBy || rec.approvedBy || plan?.approvedBy || 'State Infrastructure Review Board'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Direct Action: Measure Impact Connection */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'rgba(16, 185, 129, 0.08)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                    <div>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        Intervention state preserved across lifecycle.
-                      </div>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                        Proceed directly to Before vs Intervention vs After Impact Assessment without losing context.
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => measureInterventionImpact(currentIncident.id)}
-                      style={{
-                        padding: '0.75rem 1.4rem',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
-                      }}
-                    >
-                      <span>Measure Impact</span>
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setActiveTab('impact')}
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 1.25rem',
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 4px 14px rgba(30, 58, 138, 0.3)'
+                    }}
+                  >
+                    <span>Proceed to Impact Verification</span>
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
               ) : (
-                /* PART 4 — HUMAN APPROVAL MOMENT */
-                <div className="card planner-decision-panel" style={{ padding: '1.25rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-accent)', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
-                        Human Policymaker Approval Moment
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.4rem', fontSize: '0.68rem', fontFamily: 'var(--font-mono)' }}>
-                        <span style={{ background: '#8b5cf6', color: '#fff', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
-                          MODE: SIMULATION
-                        </span>
-                        <span style={{ background: '#fef3c7', color: '#92400e', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
-                          PROVENANCE: RECOMMENDED
-                        </span>
-                      </div>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => openApprovalModal(currentIncident.id)}
+                    style={{
+                      width: '100%',
+                      padding: '0.9rem 1.25rem',
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 4px 14px rgba(30, 58, 138, 0.35)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Shield size={17} />
+                    <span>Review & Approve Intervention</span>
+                  </button>
 
-                    {/* Problem, Evidence, Recommended Intervention, Capex, Projected Outcome */}
-                    <div style={{ background: 'var(--bg-canvas)', padding: '0.9rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.78rem' }}>
-                      <div>
-                        <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Identified Problem:</strong>
-                        <div style={{ color: 'var(--text-primary)', marginTop: '1px' }}>{rec.problemStatement}</div>
-                      </div>
-                      <div>
-                        <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Recommended Intervention:</strong>
-                        <div style={{ color: 'var(--text-primary)', fontWeight: 700, marginTop: '1px' }}>{rec.recommendedIntervention}</div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.5rem', marginTop: '0.2rem' }}>
-                        <div>
-                          <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Estimated Capex:</strong>
-                          <div style={{ color: '#10b981', fontWeight: 800, fontSize: '0.92rem', fontFamily: 'var(--font-mono)' }}>₹{interventionRecord.approvedCapitalLakhs} Lakhs</div>
-                        </div>
-                        <div>
-                          <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Projected Outcome:</strong>
-                          <div style={{ color: '#38bdf8', fontWeight: 700 }}>+29 pts infra • -37 pts demand drop</div>
-                        </div>
-                        <div>
-                          <strong style={{ color: 'var(--text-muted)', fontSize: '0.68rem', textTransform: 'uppercase' }}>Priority Ranking:</strong>
-                          <div style={{ color: '#f59e0b', fontWeight: 800 }}>Score {interventionRecord.priorityScore}/100 ({interventionRecord.priorityLevel})</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="decision-buttons-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '0.85rem' }}>
-                      {/* [Approve Intervention] Button */}
-                      <button
-                        onClick={() => approveIntervention(currentIncident.id, 'State Infrastructure Review Board', 'Sub-surface Automated Stormwater Pumping Array approved for execution.')}
-                        style={{
-                          padding: '0.85rem 1.25rem',
-                          background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                          border: 'none',
-                          borderRadius: '8px',
-                          color: '#fff',
-                          fontWeight: 800,
-                          fontSize: '0.88rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
-                        }}
-                      >
-                        <CheckCircle2 size={18} />
-                        <span>Approve Intervention</span>
-                      </button>
-
-                      {/* [Modify] Button */}
-                      <button
-                        onClick={handleOpenModifyModal}
-                        style={{
-                          padding: '0.85rem 1.25rem',
-                          background: 'rgba(6, 182, 212, 0.15)',
-                          border: '1.5px solid var(--cyan-400)',
-                          borderRadius: '8px',
-                          color: 'var(--cyan-400)',
-                          fontWeight: 800,
-                          fontSize: '0.84rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem'
-                        }}
-                      >
-                        <Edit3 size={16} />
-                        <span>[MODIFY PROJECT]</span>
-                      </button>
-
-                      {/* [Reject] Button */}
-                      <button
-                        onClick={() => setIsRejectModalOpen(true)}
-                        style={{
-                          padding: '0.85rem 1.25rem',
-                          background: 'rgba(239, 68, 68, 0.15)',
-                          border: '1.5px solid #ef4444',
-                          borderRadius: '8px',
-                          color: '#f87171',
-                          fontWeight: 800,
-                          fontSize: '0.84rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem'
-                        }}
-                      >
-                        <XCircle size={16} />
-                        <span>[REJECT PROJECT]</span>
-                      </button>
-                    </div>
-                  </div>
+                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.35 }}>
+                    Requires formal human officer review. No autonomous execution. Action is permanently recorded to the public ledger.
+                  </p>
                 </div>
               )}
 
-              {/* AUDIT TRAIL LOG */}
-              {plan?.auditTrail && plan.auditTrail.length > 0 && (
-                <div className="card" style={{ padding: '1rem', background: 'rgba(7, 10, 19, 0.5)', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    Recommendation Audit Log Trail ({plan.auditTrail.length} Events Logged)
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.74rem', fontFamily: 'var(--font-mono)' }}>
-                    {plan.auditTrail.map((ev, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '0.6rem', color: '#cbd5e1' }}>
-                        <span style={{ color: 'var(--cyan-400)' }}>[{new Date(ev.timestamp).toLocaleTimeString()}]</span>
-                        <span style={{ fontWeight: 700, color: '#fff' }}>{ev.actor}:</span>
-                        <span>{ev.details}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                <span>LEDGER INTEGRITY: SHA-256</span>
+                <span>STATUS: {isApproved ? 'COMMITTED' : 'PENDING'}</span>
+              </div>
+            </article>
 
-            </div>
           </div>
-        ) : (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            Select a candidate project from the queue to review recommendation details.
-          </div>
-        )}
+
+        </div>
+
+        {/* Explainable Investment Dossier Slide-Over Drawer */}
+        <ExplainableInvestmentDossierDrawer
+          dossier={currentDossier}
+          isOpen={isDossierOpen}
+          onClose={() => setIsDossierOpen(false)}
+        />
+
       </div>
-
-      {/* MODAL: [MODIFY PROJECT] INTERACTIVE EDITOR */}
-      {isModifyModalOpen && currentIncident && rec && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1.5rem'
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '650px', padding: '1.5rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--cyan-400)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Edit3 size={18} color="var(--cyan-400)" />
-                Modify Development Project Recommendation #{rec.id}
-              </h3>
-              <button onClick={() => setIsModifyModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.8rem' }}>
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.3rem', fontWeight: 600 }}>Project Title:</label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
-                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.3rem', fontWeight: 600 }}>Primary Responding Department:</label>
-                <input
-                  type="text"
-                  value={editDept}
-                  onChange={e => setEditDept(e.target.value)}
-                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.3rem', fontWeight: 600 }}>Estimated Cost Outlay (₹ Lakhs):</label>
-                <input
-                  type="number"
-                  value={editCost}
-                  onChange={e => setEditCost(Number(e.target.value))}
-                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.3rem', fontWeight: 600 }}>Add Custom Policymaker Action:</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Include additional mobile health van unit..."
-                  value={newActionText}
-                  onChange={e => setNewActionText(e.target.value)}
-                  style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  onClick={() => setIsModifyModalOpen(false)}
-                  style={{ padding: '0.6rem 1rem', borderRadius: '6px', background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveModification}
-                  style={{ padding: '0.6rem 1.25rem', borderRadius: '6px', background: 'var(--cyan-500)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Save Modifications
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: [REJECT PROJECT] */}
-      {isRejectModalOpen && currentIncident && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1.5rem'
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '1.5rem', background: 'var(--bg-surface-elevated)', border: '1px solid #ef4444' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f87171', marginBottom: '0.75rem' }}>
-              Reject Candidate Development Project
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              Please state the policymaker rationale for rejecting this candidate recommendation:
-            </p>
-
-            <textarea
-              rows={3}
-              placeholder="e.g. Project overlapping with existing Smart City Masterplan phase 2..."
-              value={rejectReason}
-              onChange={e => setRejectReason(e.target.value)}
-              style={{ width: '100%', padding: '0.69rem', borderRadius: '6px', background: 'var(--bg-canvas)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: '0.82rem', marginBottom: '1rem' }}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                onClick={() => setIsRejectModalOpen(false)}
-                style={{ padding: '0.6rem 1rem', borderRadius: '6px', background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmReject}
-                style={{ padding: '0.6rem 1.25rem', borderRadius: '6px', background: '#ef4444', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
-              >
-                Confirm Rejection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Explainable Investment Dossier Drawer */}
-      <ExplainableInvestmentDossierDrawer
-        dossier={currentDossier}
-        isOpen={isDossierOpen}
-        onClose={() => setIsDossierOpen(false)}
-      />
-
     </div>
   );
 };
