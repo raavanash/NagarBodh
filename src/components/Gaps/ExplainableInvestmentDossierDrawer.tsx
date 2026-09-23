@@ -872,7 +872,7 @@ export const ExplainableInvestmentDossierDrawer: React.FC<Props> = ({
                   boxShadow: 'var(--shadow-sm)'
                 }}
               >
-                <span>Prioritize in Pipeline</span>
+                <span>Continue to Decision</span>
                 <ArrowRight size={13} />
               </button>
             )}

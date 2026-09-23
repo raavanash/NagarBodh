@@ -4,6 +4,8 @@ import {
   AlertOctagon,
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Filter,
   Flame,
@@ -28,150 +30,180 @@ export const ResolutionTimeline: React.FC = () => {
     return false;
   });
 
+  const [isAuditTrailOpen, setIsAuditTrailOpen] = useState(false);
+
   return (
     <div className="timeline-view-container bg-[var(--bg-canvas)] min-h-screen text-[var(--text-primary)] p-4 md:p-6 overflow-y-auto font-body flex flex-col gap-6">
       
       {/* 1. Development Impact Measurement Dashboard (Stitch Screen 04 Split) */}
       <ResolutionVerificationPanel />
 
-      {/* 2. Auditable Impact Audit Trail Stream */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-5 shadow-xs">
-        <div className="mb-5 flex items-center justify-between flex-wrap gap-4 border-b border-[var(--border-subtle)] pb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="text-primary" size={20} />
-              <h2 className="text-lg font-headline font-extrabold text-[var(--text-primary)]">
-                Auditable Impact & Resolution Audit Trail
-              </h2>
+      {/* 2. Collapsible Immutable Governance Audit Trail Section */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden shadow-xs">
+        {/* Accordion Toggle Header */}
+        <button
+          onClick={() => setIsAuditTrailOpen(prev => !prev)}
+          className="w-full p-5 flex items-center justify-between flex-wrap gap-4 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer text-left border-none"
+          aria-expanded={isAuditTrailOpen}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[var(--civic-blue-50)] flex items-center justify-center text-[var(--stitch-primary)] shrink-0">
+              <Clock size={20} />
             </div>
-            <p className="text-xs text-[var(--text-muted)] font-medium">Immutable verification log tracking demand lifecycle and satellite evidence</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base md:text-lg font-headline font-extrabold text-[var(--text-primary)] m-0">
+                  Immutable Governance Audit Trail
+                </h2>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[var(--civic-blue-100)] text-[var(--stitch-primary)]">
+                  LIFECYCLE LOG
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)] font-medium m-0 mt-0.5">
+                Internal NagarBodh lifecycle event log tracking signal ingestion, clustering, prioritization, and human governance approval
+              </p>
+            </div>
           </div>
 
-          {/* Filter Pills */}
-          <div className="timeline-filter-pills flex gap-1.5 bg-[var(--bg-surface-elevated)] p-1 rounded-lg border border-[var(--border-subtle)] flex-wrap text-xs">
-            <button
-              onClick={() => setFilterType('all')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'all' ? 'bg-primary text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              All Events ({auditLogs.length})
-            </button>
-            <button
-              onClick={() => setFilterType('priority_spike')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'priority_spike' ? 'bg-red-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Priority & Triaged
-            </button>
-            <button
-              onClick={() => setFilterType('clustering')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'clustering' ? 'bg-purple-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Clustering & SOPs
-            </button>
-            <button
-              onClick={() => setFilterType('dispatch')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'dispatch' ? 'bg-emerald-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Dispatches Executed
-            </button>
-            <button
-              onClick={() => setFilterType('resolution')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
-                filterType === 'resolution' ? 'bg-cyan-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Resolutions & Verifications
-            </button>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+              {auditLogs.length} AUDIT ENTRIES RECORDED
+            </span>
+            <div className="text-[var(--text-muted)]">
+              {isAuditTrailOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </div>
           </div>
-        </div>
+        </button>
 
-        {/* Timeline Stream */}
-        <div className="timeline-stream-container relative pl-8 md:pl-10">
-          {/* Continuous vertical line */}
-          <div
-            className="timeline-vertical-line absolute left-4 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-600 via-purple-500 to-emerald-500 opacity-30"
-          />
+        {/* Collapsible Content Drawer */}
+        {isAuditTrailOpen && (
+          <div className="p-5 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] animate-fadeIn">
+            {/* Filter Pills */}
+            <div className="timeline-filter-pills flex gap-1.5 bg-[var(--bg-surface-elevated)] p-1 rounded-lg border border-[var(--border-subtle)] flex-wrap text-xs mb-5">
+              <button
+                onClick={() => setFilterType('all')}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer border-none ${
+                  filterType === 'all' ? 'bg-primary text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'
+                }`}
+              >
+                All Events ({auditLogs.length})
+              </button>
+              <button
+                onClick={() => setFilterType('priority_spike')}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer border-none ${
+                  filterType === 'priority_spike' ? 'bg-red-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'
+                }`}
+              >
+                Priority & Triaged
+              </button>
+              <button
+                onClick={() => setFilterType('clustering')}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer border-none ${
+                  filterType === 'clustering' ? 'bg-purple-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'
+                }`}
+              >
+                Clustering & SOPs
+              </button>
+              <button
+                onClick={() => setFilterType('dispatch')}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer border-none ${
+                  filterType === 'dispatch' ? 'bg-emerald-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'
+                }`}
+              >
+                Dispatches Executed
+              </button>
+              <button
+                onClick={() => setFilterType('resolution')}
+                className={`px-3 py-1.5 rounded-md font-semibold transition-colors cursor-pointer border-none ${
+                  filterType === 'resolution' ? 'bg-cyan-600 text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-transparent'
+                }`}
+              >
+                Resolutions & Verifications
+              </button>
+            </div>
 
-          <div className="flex flex-col gap-4">
-            {filteredLogs.map(log => {
-              const isSpike = log.type === 'priority_spike' || log.type === 'incident_triaged';
-              const isDispatch = log.type === 'dispatch_approved' || log.type === 'crew_dispatched';
-              const isResolution = log.type === 'resolution_confirmed' || log.type === 'field_verification' || log.type === 'resolution_begun';
-              const isCluster = log.type === 'cluster_formed' || log.type === 'cluster_updated' || log.type === 'response_plan_generated';
+            {/* Timeline Stream */}
+            <div className="timeline-stream-container relative pl-8 md:pl-10">
+              {/* Continuous vertical line */}
+              <div
+                className="timeline-vertical-line absolute left-4 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-600 via-purple-500 to-emerald-500 opacity-30"
+              />
 
-              let nodeBg = 'bg-slate-800';
-              let nodeBorder = 'border-[var(--border-medium)]';
-              let icon = <Activity size={16} />;
-              let badgeStyle = 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] border-[var(--border-subtle)]';
+              <div className="flex flex-col gap-4">
+                {filteredLogs.map(log => {
+                  const isSpike = log.type === 'priority_spike' || log.type === 'incident_triaged';
+                  const isDispatch = log.type === 'dispatch_approved' || log.type === 'crew_dispatched';
+                  const isResolution = log.type === 'resolution_confirmed' || log.type === 'field_verification' || log.type === 'resolution_begun';
+                  const isCluster = log.type === 'cluster_formed' || log.type === 'cluster_updated' || log.type === 'response_plan_generated';
 
-              if (isSpike) {
-                nodeBg = 'bg-red-600';
-                nodeBorder = 'border-red-400/50';
-                icon = <Flame size={18} />;
-                badgeStyle = 'bg-red-500/15 text-red-400 border-red-500/30';
-              } else if (isDispatch) {
-                nodeBg = 'bg-emerald-600';
-                nodeBorder = 'border-emerald-400/50';
-                icon = <Send size={16} />;
-                badgeStyle = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
-              } else if (isResolution) {
-                nodeBg = 'bg-cyan-600';
-                nodeBorder = 'border-cyan-400/50';
-                icon = <CheckCircle2 size={18} />;
-                badgeStyle = 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
-              } else if (isCluster) {
-                nodeBg = 'bg-purple-600';
-                nodeBorder = 'border-purple-400/50';
-                icon = <Zap size={16} />;
-                badgeStyle = 'bg-purple-500/15 text-purple-400 border-purple-500/30';
-              }
+                  let nodeBg = 'bg-slate-800';
+                  let nodeBorder = 'border-[var(--border-medium)]';
+                  let icon = <Activity size={16} />;
+                  let badgeStyle = 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] border-[var(--border-subtle)]';
 
-              return (
-                <div key={log.id} className="relative group">
-                  {/* Node icon */}
-                  <div
-                    className={`timeline-node-icon absolute -left-8 md:-left-10 top-1 w-8 h-8 rounded-full ${nodeBg} border-2 ${nodeBorder} flex items-center justify-center text-white shadow-xs z-10`}
-                  >
-                    {icon}
-                  </div>
+                  if (isSpike) {
+                    nodeBg = 'bg-red-600';
+                    nodeBorder = 'border-red-400/50';
+                    icon = <Flame size={18} />;
+                    badgeStyle = 'bg-red-500/15 text-red-400 border-red-500/30';
+                  } else if (isDispatch) {
+                    nodeBg = 'bg-emerald-600';
+                    nodeBorder = 'border-emerald-400/50';
+                    icon = <Send size={16} />;
+                    badgeStyle = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+                  } else if (isResolution) {
+                    nodeBg = 'bg-cyan-600';
+                    nodeBorder = 'border-cyan-400/50';
+                    icon = <CheckCircle2 size={18} />;
+                    badgeStyle = 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
+                  } else if (isCluster) {
+                    nodeBg = 'bg-purple-600';
+                    nodeBorder = 'border-purple-400/50';
+                    icon = <Zap size={16} />;
+                    badgeStyle = 'bg-purple-500/15 text-purple-400 border-purple-500/30';
+                  }
 
-                  {/* Event Card */}
-                  <div className="bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl p-4 transition-colors shadow-xs">
-                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${badgeStyle}`}>
-                          {log.type.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-xs text-[var(--text-muted)]">
-                          Actor: <strong className="text-[var(--text-primary)] font-semibold">{log.actor}</strong>
-                        </span>
+                  return (
+                    <div key={log.id} className="relative group">
+                      {/* Node icon */}
+                      <div
+                        className={`timeline-node-icon absolute -left-8 md:-left-10 top-1 w-8 h-8 rounded-full ${nodeBg} border-2 ${nodeBorder} flex items-center justify-center text-white shadow-xs z-10`}
+                      >
+                        {icon}
                       </div>
 
-                      <div className="font-mono text-xs text-[var(--text-accent)] font-bold">
-                        ⏱ {log.timeLabel}
+                      {/* Event Card */}
+                      <div className="bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl p-4 transition-colors shadow-xs">
+                        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${badgeStyle}`}>
+                              {log.type.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs text-[var(--text-muted)]">
+                              Actor: <strong className="text-[var(--text-primary)] font-semibold">{log.actor}</strong>
+                            </span>
+                          </div>
+
+                          <div className="font-mono text-xs text-[var(--text-accent)] font-bold">
+                            ⏱ {log.timeLabel}
+                          </div>
+                        </div>
+
+                        <h3 className="text-sm font-headline font-bold text-[var(--text-primary)] mb-1">
+                          {log.title}
+                        </h3>
+
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                          {log.description}
+                        </p>
                       </div>
                     </div>
-
-                    <h3 className="text-sm font-headline font-bold text-[var(--text-primary)] mb-1">
-                      {log.title}
-                    </h3>
-
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {log.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

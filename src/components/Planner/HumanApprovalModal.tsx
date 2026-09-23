@@ -121,14 +121,14 @@ const HumanApprovalModalContent: React.FC<HumanApprovalModalContentProps> = ({
                     fontFamily: 'var(--font-mono)'
                   }}
                 >
-                  Statutory Authorization Order
+                  Human Governance Review
                 </span>
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                  • #{interventionRecord.recommendationId || 'NB-GOV-2025'}
+                  • #{interventionRecord.recommendationId || 'NB-DEC-2025'}
                 </span>
               </div>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                Human Governance Sanction
+                Human Approval & Sanction
               </h2>
             </div>
           </div>
@@ -197,28 +197,40 @@ const HumanApprovalModalContent: React.FC<HumanApprovalModalContentProps> = ({
               <span>{rec?.primaryDepartment || 'Municipal Engineering & Drainage Wing'}</span>
             </div>
 
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
               <div>
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
                   Committed Capital
                 </span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'var(--font-mono)' }}>
-                  ₹{interventionRecord.approvedCapitalLakhs} Lakhs
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1e3a8a', fontFamily: 'var(--font-mono)' }}>
+                  ₹{interventionRecord.approvedCapitalLakhs}L
                 </div>
-                <span style={{ fontSize: '0.62rem', color: '#059669', fontWeight: 700 }}>
-                  [PROJECTED ALLOCATION]
+                <span style={{ fontSize: '0.6rem', color: '#059669', fontWeight: 700 }}>
+                  [PROJECTED]
                 </span>
               </div>
 
               <div>
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                  Target Beneficiaries
+                <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Beneficiaries
                 </span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                  {(rec?.expectedBeneficiaries || 42300).toLocaleString()}
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                  {(rec?.expectedBeneficiaries || Math.round((inc.demographics?.population || 184000) * 0.65)).toLocaleString()}
                 </div>
-                <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                  Citizens Exposed [BASELINE]
+                <span style={{ fontSize: '0.6rem', color: '#2563eb', fontWeight: 700 }}>
+                  [PROJECTED]
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Vulnerable Cohort
+                </span>
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+                  {(inc.demographics?.vulnerablePopulation || 45000).toLocaleString()}
+                </div>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                  [BASELINE]
                 </span>
               </div>
             </div>
@@ -270,8 +282,8 @@ const HumanApprovalModalContent: React.FC<HumanApprovalModalContentProps> = ({
           </div>
 
           <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', display: 'flex', justifyContent: 'space-between' }}>
-            <span>AUTHORIZATION TIER: EXECUTIVE GOVERNANCE</span>
-            <span>AUDIT INTEGRITY: SHA-256 SEALED</span>
+            <span>GOVERNANCE: HUMAN-IN-THE-LOOP APPROVAL</span>
+            <span>AUDIT TRAIL: PENDING RECORD</span>
           </div>
 
         </div>

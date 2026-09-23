@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import {
   Activity,
@@ -125,8 +125,30 @@ export const LiveMap: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedDossier, setSelectedDossier] = useState<InvestmentExplanationDossier | null>(null);
 
+  // Hover-card state — replaces Leaflet bindPopup() for cluster markers
+  const [hoveredIncidentId, setHoveredIncidentId] = useState<string | null>(null);
+  const [lockedIncidentId, setLockedIncidentId] = useState<string | null>(null);
+  const [hoverCardPos, setHoverCardPos] = useState<{ x: number; y: number } | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleClose = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setHoveredIncidentId(null);
+    }, 220);
+  }, [clearCloseTimer]);
+
   const handleOpenDossierFromMap = (incident: ClusteredIncident) => {
     const dossier = buildInvestmentExplanationDossier(incident.category, incidents, signals);
+    setLockedIncidentId(null);
+    setHoveredIncidentId(null);
     setSelectedDossier(dossier);
   };
 
@@ -390,62 +412,40 @@ export const LiveMap: React.FC = () => {
 
       const marker = L.marker([inc.centroid.lat, inc.centroid.lng], { icon: clusterIcon });
 
-      // Interactive Popup
-      marker.bindPopup(`
-        <div style="font-family: var(--font-sans); color: var(--text-primary); min-width: 250px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: ${isCritical ? '#ef4444' : '#0284c7'};">
-              ${inc.category.toUpperCase()} DEMAND HOTSPOT
-            </span>
-            <span style="font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: ${isCritical ? '#b91c1c' : '#0369a1'}; background: ${isCritical ? '#fee2e2' : '#e0f2fe'}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${isCritical ? '#fca5a5' : '#bae6fd'};">
-              PRIORITY ${inc.priority.overallScore}/100
-            </span>
-          </div>
-
-          ${isEmergingNow ? `<div style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #dc2626; font-size: 0.68rem; font-weight: 800; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-            🔥 SURGING CITIZEN DEMAND (+${inc.velocitySurgePercent}%/hr)
-          </div>` : ''}
-
-          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; color: var(--text-primary); line-height: 1.3;">
-            ${inc.title}
-          </div>
-
-          <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.35;">
-            ${inc.auditableInsight.modelInference.summary}
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.72rem; font-family: var(--font-mono); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; color: var(--text-secondary);">
-            <div>Signals: <strong style="color: var(--text-primary);">${inc.signalIds.length}</strong></div>
-            <div>Velocity: <strong style="color: #dc2626;">+${inc.velocitySurgePercent}%/hr</strong></div>
-            ${inc.auditableInsight.calculatedMetrics.nearestSchoolName ? `<div style="grid-column: span 2; color: #7c3aed; font-weight: 600;">🏫 ${inc.auditableInsight.calculatedMetrics.nearestSchoolName} (${inc.auditableInsight.calculatedMetrics.nearestSchoolDistanceMeters}m)</div>` : ''}
-          </div>
-
-          <button
-            id="popup-btn-${inc.id}"
-            style="width: 100%; padding: 7px 10px; background: #2563eb; border: none; border-radius: 6px; color: #fff; font-weight: 700; font-size: 0.76rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25); transition: background 0.15s ease;"
-          >
-            Inspect Demand Intelligence Dossier →
-          </button>
-        </div>
-      `);
-
-      marker.on('click', () => {
-        setSelectedIncidentId(inc.id);
+      // Hover → show card. mouseout → schedule close with hysteresis delay.
+      // Click → lock card open (persistent selection).
+      marker.on('mouseover', () => {
+        clearCloseTimer();
+        setHoveredIncidentId(inc.id);
+        setLockedIncidentId(prev => prev === inc.id ? prev : null); // don't clear a different lock
+        // Compute screen position from map latLng
+        if (mapInstanceRef.current) {
+          const pt = mapInstanceRef.current.latLngToContainerPoint([inc.centroid.lat, inc.centroid.lng]);
+          setHoverCardPos({ x: pt.x, y: pt.y });
+        }
       });
 
-      marker.on('popupopen', () => {
-        const btn = document.getElementById(`popup-btn-${inc.id}`);
-        if (btn) {
-          btn.onclick = () => {
-            setSelectedIncidentId(inc.id);
-            setActiveTab('dossier');
-          };
+      marker.on('mouseout', () => {
+        // Only schedule close if this incident isn't locked
+        if (lockedIncidentId !== inc.id) {
+          scheduleClose();
+        }
+      });
+
+      marker.on('click', () => {
+        clearCloseTimer();
+        setSelectedIncidentId(inc.id);
+        setHoveredIncidentId(inc.id);
+        setLockedIncidentId(inc.id);
+        if (mapInstanceRef.current) {
+          const pt = mapInstanceRef.current.latLngToContainerPoint([inc.centroid.lat, inc.centroid.lng]);
+          setHoverCardPos({ x: pt.x, y: pt.y });
         }
       });
 
       marker.addTo(clusterLayerGroupRef.current!);
     });
-  }, [filteredIncidents, selectedIncidentId, mapMode, setSelectedIncidentId, setActiveTab]);
+  }, [filteredIncidents, selectedIncidentId, lockedIncidentId, mapMode, setSelectedIncidentId, clearCloseTimer, scheduleClose]);
 
   // Selected-incident focus flying camera
   useEffect(() => {
@@ -463,6 +463,109 @@ export const LiveMap: React.FC = () => {
     <div className="map-canvas-wrapper" style={{ display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', height: '100%' }}>
       {/* Main Leaflet Map Canvas (rendered first so overlay controls sit on top) */}
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
+
+      {/* React Hover / Lock Card Overlay — replaces Leaflet bindPopup() */}
+      {(() => {
+        const activeId = lockedIncidentId || hoveredIncidentId;
+        const activeInc = activeId ? filteredIncidents.find(i => i.id === activeId) : null;
+        const isLocked = !!lockedIncidentId && lockedIncidentId === activeId;
+        if (!activeInc || !hoverCardPos) return null;
+        const isCritical = activeInc.priority.overallScore >= 80;
+        const isEmergingNow = activeInc.velocitySurgePercent >= 150 || activeInc.velocityPerHour >= 10;
+
+        // Position card: default above-right of marker. Clamp to viewport.
+        const cardW = 280;
+        const cardOffsetX = 18;
+        const cardOffsetY = -16;
+        const mapContainer = mapContainerRef.current;
+        const containerW = mapContainer?.clientWidth ?? window.innerWidth;
+        const containerH = mapContainer?.clientHeight ?? window.innerHeight;
+        let left = hoverCardPos.x + cardOffsetX;
+        let top = hoverCardPos.y + cardOffsetY;
+        if (left + cardW > containerW - 12) left = hoverCardPos.x - cardW - 12;
+        if (left < 8) left = 8;
+        if (top < 64) top = 64;
+        if (top > containerH - 260) top = containerH - 260;
+
+        return (
+          <div
+            onMouseEnter={clearCloseTimer}
+            onMouseLeave={() => {
+              if (!isLocked) scheduleClose();
+            }}
+            style={{
+              position: 'absolute',
+              left,
+              top,
+              width: cardW,
+              zIndex: 1200,
+              background: 'var(--bg-surface)',
+              border: `1.5px solid ${isLocked ? '#2563eb' : 'var(--border-medium)'}`,
+              borderRadius: 10,
+              boxShadow: '0 8px 28px rgba(15,23,42,0.22)',
+              padding: '0.85rem 1rem',
+              animation: 'mapCardIn 0.15s ease-out',
+              pointerEvents: 'auto'
+            }}
+          >
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.45rem', gap: '0.5rem' }}>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', color: isCritical ? '#dc2626' : '#0284c7', letterSpacing: '0.04em' }}>
+                  {activeInc.category.toUpperCase()} HOTSPOT
+                </span>
+                {isLocked && (
+                  <span style={{ marginLeft: '0.35rem', fontSize: '0.58rem', fontWeight: 800, color: '#2563eb', background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.25)', padding: '0.1rem 0.35rem', borderRadius: 4 }}>
+                    SELECTED
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700, color: isCritical ? '#b91c1c' : '#0369a1', background: isCritical ? '#fee2e2' : '#e0f2fe', padding: '1px 6px', borderRadius: 4, border: `1px solid ${isCritical ? '#fca5a5' : '#bae6fd'}` }}>
+                  P{activeInc.priority.overallScore}/100
+                </span>
+                <button
+                  onClick={() => { clearCloseTimer(); setHoveredIncidentId(null); setLockedIncidentId(null); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                  title="Dismiss"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+
+            {isEmergingNow && (
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', fontSize: '0.62rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, marginBottom: '0.45rem' }}>
+                🔥 SURGING +{activeInc.velocitySurgePercent}%/hr
+              </div>
+            )}
+
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.3, marginBottom: '0.35rem' }}>
+              {activeInc.title}
+            </div>
+
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: '0.6rem' }}>
+              {activeInc.auditableInsight.modelInference.summary}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '5px 7px', borderRadius: 6, marginBottom: '0.65rem', color: 'var(--text-secondary)' }}>
+              <div>Signals: <strong style={{ color: 'var(--text-primary)' }}>{activeInc.signalIds.length}</strong></div>
+              <div>Ward: <strong style={{ color: 'var(--text-primary)' }}>{activeInc.ward}</strong></div>
+            </div>
+
+            {/* Primary CTA */}
+            <button
+              onClick={() => handleOpenDossierFromMap(activeInc)}
+              style={{ width: '100%', padding: '7px 10px', background: '#1e3a8a', border: 'none', borderRadius: 6, color: '#fff', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 8px rgba(30,58,138,0.22)', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#2563eb')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#1e3a8a')}
+            >
+              <FolderOpen size={13} />
+              Open Evidence Dossier
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Top Header Floating Controls Bar (z-index 1100 on top of Leaflet canvas) */}
       <div

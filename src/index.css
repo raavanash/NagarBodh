@@ -875,6 +875,19 @@ body,
   background: var(--bg-surface) !important;
 }
 
+/* Suppress the native Leaflet popup close button — we use our own × */
+.leaflet-popup-close-button {
+  display: none !important;
+}
+
+/* ============================================================
+   Map React Hover Card Overlay — replaces bindPopup()
+   ============================================================ */
+@keyframes mapCardIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Dossier Tabs & 4-Way Fact Separation */
 .dossier-header {
   padding: 1.25rem;

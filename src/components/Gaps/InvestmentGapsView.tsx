@@ -697,7 +697,7 @@ export const InvestmentGapsView: React.FC = () => {
                     }}
                   >
                     <Sparkles size={15} />
-                    <span>Investigate Gap & Evidence Dossier</span>
+                    <span>Open Evidence Dossier</span>
                   </button>
 
                   <button

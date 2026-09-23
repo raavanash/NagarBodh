@@ -128,6 +128,69 @@ export const ResponsePlannerView: React.FC = () => {
     currentIncident?.status === 'resolved' ||
     currentIncident?.status === 'verified';
 
+  const isSector15 = Boolean(
+    currentIncident?.id.includes('ward-15') ||
+    currentIncident?.id.includes('sector-15') ||
+    currentIncident?.category === 'waterlogging'
+  );
+
+  const fundingScheme = isSector15
+    ? 'Urban Flood CapEx'
+    : currentIncident?.category === 'sanitation' || currentIncident?.category === 'garbage'
+    ? 'Municipal Sanitation CapEx'
+    : currentIncident?.category === 'transport' || currentIncident?.category === 'roads' || currentIncident?.category === 'traffic'
+    ? 'Urban Mobility CapEx'
+    : currentIncident?.category === 'healthcare'
+    ? 'Public Health CapEx'
+    : 'Urban Infrastructure CapEx';
+
+  const deliveryHorizon = isSector15
+    ? { days: '120 Days', badge: 'Monsoon Preparedness SLA' }
+    : { days: '90 Days', badge: 'Municipal Target SLA' };
+
+  const totalCapEx = interventionRecord.approvedCapitalLakhs;
+  const phasedDeliverables = isSector15
+    ? [
+        {
+          num: '01',
+          title: 'Sub-surface Pre-Cast Box Drain Alignment',
+          timeline: 'Days 1–45 • ₹210L',
+          description: 'Excavation and installation of twin reinforced concrete box culverts parallel to arterial feeder to relieve hydraulic choking.'
+        },
+        {
+          num: '02',
+          title: 'Automated Dewatering Pumping Substation',
+          timeline: 'Days 45–90 • ₹95L',
+          description: 'Dual 500 HP automated stormwater pumping array with dual-grid backup power to drain low-lying roadway depression.'
+        },
+        {
+          num: '03',
+          title: 'Hydrostatic Telemetry & Outfall Gate Automation',
+          timeline: 'Days 90–120 • ₹45L',
+          description: 'Continuous ultrasonic water level sensors integrated with supervisory control systems to regulate discharge rate.'
+        }
+      ]
+    : [
+        {
+          num: '01',
+          title: rec.implementationConsiderations?.[0] || 'Preliminary Civil & Engineering Alignment',
+          timeline: `Days 1–30 • ₹${Math.round(totalCapEx * 0.6)}L`,
+          description: 'Survey, technical DPR sanction, and preliminary civil works deployment along priority corridor.'
+        },
+        {
+          num: '02',
+          title: rec.implementationConsiderations?.[1] || 'Core Facility Upgrade & Equipment Commissioning',
+          timeline: `Days 30–60 • ₹${Math.round(totalCapEx * 0.28)}L`,
+          description: 'Procurement of specialized equipment, structural installation, and utility grid integration.'
+        },
+        {
+          num: '03',
+          title: rec.implementationConsiderations?.[2] || 'Operational Telemetry & Municipal Handover',
+          timeline: `Days 60–90 • ₹${totalCapEx - Math.round(totalCapEx * 0.6) - Math.round(totalCapEx * 0.28)}L`,
+          description: 'Operational validation, IoT telemetry activation, and handover to zonal municipal division.'
+        }
+      ];
+
   return (
     <div className="planner-container" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '1.25rem', background: 'var(--bg-canvas)' }}>
       <div style={{ maxWidth: '1380px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -188,7 +251,7 @@ export const ResponsePlannerView: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
             <span>MODE: {ingestionMode}</span>
             <span>•</span>
-            <span>DUAL-CUSTODY AUDIT: LEVEL-1</span>
+            <span>GOVERNANCE: HUMAN REVIEW MANDATE</span>
           </div>
         </div>
 
@@ -362,7 +425,7 @@ export const ResponsePlannerView: React.FC = () => {
                     Funding Scheme
                   </span>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.35rem' }}>
-                    Urban Flood CapEx
+                    {fundingScheme}
                   </div>
                   <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                     Infrastructure Pool [BASELINE]
@@ -374,10 +437,10 @@ export const ResponsePlannerView: React.FC = () => {
                     Delivery Horizon
                   </span>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.35rem' }}>
-                    120 Days
+                    {deliveryHorizon.days}
                   </div>
-                  <span style={{ fontSize: '0.65rem', color: '#dc2626', fontWeight: 700 }}>
-                    Monsoon Preparedness SLA
+                  <span style={{ fontSize: '0.65rem', color: deliveryHorizon.badge.includes('Monsoon') ? '#dc2626' : '#2563eb', fontWeight: 700 }}>
+                    {deliveryHorizon.badge}
                   </span>
                 </div>
               </div>
@@ -394,65 +457,51 @@ export const ResponsePlannerView: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {/* Action 1 */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: '#1e3a8a', color: '#fff', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      01
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                          Sub-surface Pre-Cast Box Drain Alignment
-                        </strong>
-                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                          Days 1–45 • ₹210L
-                        </span>
+                  {phasedDeliverables.map((item) => (
+                    <div
+                      key={item.num}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.75rem',
+                        padding: '0.85rem',
+                        background: 'var(--bg-surface-elevated)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-subtle)'
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '6px',
+                          background: '#1e3a8a',
+                          color: '#fff',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}
+                      >
+                        {item.num}
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                        Excavation and installation of twin reinforced concrete box culverts parallel to arterial feeder to relieve hydraulic choking.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Action 2 */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: '#1e3a8a', color: '#fff', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      02
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                          Automated Dewatering Pumping Substation
-                        </strong>
-                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                          Days 45–90 • ₹95L
-                        </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                            {item.title}
+                          </strong>
+                          <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                            {item.timeline}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                          {item.description}
+                        </p>
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                        Dual 500 HP automated stormwater pumping array with dual-grid backup power to drain low-lying roadway depression.
-                      </p>
                     </div>
-                  </div>
-
-                  {/* Action 3 */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '6px', background: '#1e3a8a', color: '#fff', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      03
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                          Hydrostatic Telemetry & Outfall Gate Automation
-                        </strong>
-                        <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                          Days 90–120 • ₹45L
-                        </span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                        Continuous ultrasonic water level sensors integrated with supervisory control systems to regulate discharge rate.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -519,10 +568,10 @@ export const ResponsePlannerView: React.FC = () => {
                     Protected Residents
                   </span>
                   <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.1rem' }}>
-                    {(rec.expectedBeneficiaries || 42300).toLocaleString()}
+                    {(rec.expectedBeneficiaries || Math.round((currentIncident.demographics?.population || 184000) * 0.65)).toLocaleString()}
                   </div>
                   <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
-                    Catchment Flood Basin [BASELINE]
+                    Projected Beneficiaries [PROJECTED]
                   </span>
                 </div>
 
@@ -534,7 +583,7 @@ export const ResponsePlannerView: React.FC = () => {
                     {rec.estimatedImpact.deficitReductionPercent || 65}%
                   </div>
                   <span style={{ fontSize: '0.62rem', color: '#059669', fontWeight: 700 }}>
-                    Projected Hydraulic Gain
+                    Projected Deficit Remediated
                   </span>
                 </div>
               </div>
@@ -552,11 +601,11 @@ export const ResponsePlannerView: React.FC = () => {
               {/* Stat Trace */}
               <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 <span>MODEL: GEMINI PUBLIC SECTOR GROUNDED</span>
-                <span>AUDIT: 0x9f4a...174</span>
+                <span>LINEAGE: CIVIC SIGNAL SYNTHESIS</span>
               </div>
             </article>
 
-            {/* Governance & Statutory Compliance Box */}
+            {/* Governance Review Criteria Box */}
             <article
               style={{
                 background: 'var(--bg-surface)',
@@ -572,10 +621,10 @@ export const ResponsePlannerView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Shield size={15} color="#1e3a8a" />
-                  <span>Governance & Compliance Clearance</span>
+                  <span>Governance Review Criteria</span>
                 </h4>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#166534', background: '#dcfce7', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-                  3 of 3 VERIFIED
+                  3 CRITERIA EVALUATED
                 </span>
               </div>
 
@@ -583,24 +632,30 @@ export const ResponsePlannerView: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
                   <CheckCircle2 size={15} color="#059669" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <strong style={{ color: 'var(--text-primary)' }}>Budgetary Allocation Confirmed</strong>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Earmarked under Urban Infrastructure Capital Pool FY25.</div>
+                    <strong style={{ color: 'var(--text-primary)' }}>Budget Allocation Evaluated</strong>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Earmarked capital allocation of ₹{interventionRecord.approvedCapitalLakhs} Lakhs evaluated against municipal infrastructure deficit.
+                    </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
                   <CheckCircle2 size={15} color="#059669" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <strong style={{ color: 'var(--text-primary)' }}>Topographical & Drainage Deficit Audited</strong>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Low-elevation catchment with 82% feeder obstruction verified.</div>
+                    <strong style={{ color: 'var(--text-primary)' }}>Infrastructure Deficit Assessed</strong>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Targeted {currentIncident.category.toUpperCase()} deficit score evaluated against baseline standard.
+                    </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.55rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px' }}>
                   <CheckCircle2 size={15} color="#059669" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <strong style={{ color: 'var(--text-primary)' }}>Demographic Equity & Vulnerability Weighted</strong>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>45,000 vulnerable residents in adjacent low-lying settlement protected.</div>
+                    <strong style={{ color: 'var(--text-primary)' }}>Demographic Vulnerability Factored</strong>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Demographic equity weighted for {(currentIncident.demographics?.vulnerablePopulation || 45000).toLocaleString()} vulnerable residents.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -624,15 +679,15 @@ export const ResponsePlannerView: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: isApproved ? '#059669' : '#1e3a8a', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase' }}>
                   <Shield size={14} />
-                  <span>{isApproved ? 'Constitutional Authority Sealed' : 'Constitutional Authority Sign-Off'}</span>
+                  <span>{isApproved ? 'Human Governance Approval Confirmed' : 'Human Governance Approval Required'}</span>
                 </div>
                 <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0.2rem 0 0.25rem 0', color: 'var(--text-primary)' }}>
-                  {isApproved ? 'Intervention Formally Authorized' : 'Authorize Capital Intervention'}
+                  {isApproved ? 'Intervention Approved & Recorded' : 'Authorize Capital Intervention'}
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                   {isApproved
-                    ? `Capital allocation of ₹${interventionRecord.approvedCapitalLakhs} Lakhs formally sanctioned. Record is committed to the public civic audit ledger.`
-                    : 'By triggering authorization, you commit municipal funds and issue formal operational sanction under Human-in-the-Loop governance.'}
+                    ? `Capital allocation of ₹${interventionRecord.approvedCapitalLakhs} Lakhs approved by human officer. Record is committed to the NagarBodh operational audit trail.`
+                    : 'By approving this intervention, you confirm human authorization and commit the project to the NagarBodh operational registry under Human-in-the-Loop governance.'}
                 </p>
               </div>
 
@@ -654,7 +709,7 @@ export const ResponsePlannerView: React.FC = () => {
                     }}
                   >
                     <CheckCircle2 size={18} color="#059669" />
-                    <span>Approved by: {interventionRecord.approvedBy || 'Municipal Governance Authority'}</span>
+                    <span>Approved by: {interventionRecord.approvedBy || 'Duty Governance Officer [SIMULATION]'}</span>
                   </div>
 
                   <button
@@ -707,14 +762,14 @@ export const ResponsePlannerView: React.FC = () => {
                   </button>
 
                   <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.35 }}>
-                    Requires formal human officer review. No autonomous execution. Action is permanently recorded to the public ledger.
+                    Requires human officer review. No autonomous AI execution. Decision is recorded in the platform governance log.
                   </p>
                 </div>
               )}
 
               <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                <span>LEDGER INTEGRITY: SHA-256</span>
-                <span>STATUS: {isApproved ? 'COMMITTED' : 'PENDING'}</span>
+                <span>AUDIT TRAIL: {isApproved ? 'RECORDED' : 'PENDING'}</span>
+                <span>STATUS: {isApproved ? 'APPROVED' : 'UNDER REVIEW'}</span>
               </div>
             </article>
 
