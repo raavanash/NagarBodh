@@ -13,7 +13,8 @@ test.describe('Visual Regression Baseline Suite', () => {
     if (await simBtn.isVisible()) {
       await simBtn.click();
     }
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
   });
 
   test('1. Baseline Screenshot — Civic Investment Board (INVEST)', async ({ page }) => {
