@@ -41,7 +41,7 @@ test.describe('Resilience & Failure Handling Suite', () => {
     await page.goto('/');
 
     // Ensure SIM mode button is active or click it
-    const simBtn = page.getByRole('button', { name: /^SIM$/i }).first();
+    const simBtn = page.getByRole('button', { name: /SIM/i }).first();
     await simBtn.click();
 
     // Verify floating Demo Command Center pill appears in SIM mode

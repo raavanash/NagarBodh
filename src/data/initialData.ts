@@ -3,6 +3,7 @@ import { CivicSignal, SimulationStep } from '../types/civic';
 export const BASELINE_SIGNALS: CivicSignal[] = [
   {
     id: 'sig-kb-101',
+    ingestionMode: 'SIMULATION',
     timestamp: '2026-09-02T08:05:00Z',
     simulatedTimeLabel: '08:05 AM',
     channel: 'citizen_app',

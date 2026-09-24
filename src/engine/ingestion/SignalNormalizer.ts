@@ -186,6 +186,8 @@ export class SignalNormalizer {
       ? `bsky-fp-${payload.id.split('/').pop()}`
       : this.generateFingerprintHash(rawText, matchedCoords.lat, matchedCoords.lng);
 
+    const effectiveMode = payload.ingestionMode || (isMockOrReplay ? 'SIMULATION' : 'LIVE');
+
     const sourceMetadata: SourceMetadata = {
       providerId,
       providerType,
@@ -193,13 +195,15 @@ export class SignalNormalizer {
       originalId: payload.id,
       ingestedAt: new Date().toISOString(),
       fingerprintHash,
-      isMockOrReplay
+      isMockOrReplay,
+      mode: effectiveMode
     };
 
     const signal: IngestedCivicSignal = {
       id: payload.id && (payload.id.startsWith('sig-') || payload.id.startsWith('at://'))
         ? payload.id
         : `sig-${providerType}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      ingestionMode: effectiveMode,
       timestamp: isoTimestamp,
       simulatedTimeLabel: payload.simulatedTimeLabel || timeLabel,
       channel,

@@ -5,6 +5,7 @@ export type ProviderType = 'simulation' | 'citizen_app' | 'social_x' | 'social_b
 
 export interface RawSignalPayload {
   id?: string;
+  ingestionMode?: IngestionMode;
   sourceChannel?: string | SignalChannel;
   text?: string;
   body?: string;
@@ -40,6 +41,7 @@ export interface SourceMetadata {
   ingestedAt: string;
   fingerprintHash: string;
   isMockOrReplay: boolean;
+  mode: IngestionMode;
 }
 
 export interface IngestedCivicSignal extends CivicSignal {

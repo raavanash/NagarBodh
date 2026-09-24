@@ -111,6 +111,7 @@ export class SignalIngestionService {
 
     for (const raw of rawPayloads) {
       this.stats.signalsReceived += 1;
+      raw.ingestionMode = raw.ingestionMode || (isMockOrReplay ? 'SIMULATION' : 'LIVE');
 
       // 1. Normalization & Civic Relevance Filter
       const normResult = SignalNormalizer.normalize(raw, providerId, providerType, isMockOrReplay);

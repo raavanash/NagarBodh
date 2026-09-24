@@ -258,7 +258,7 @@ export const Navbar: React.FC = () => {
               title="Live ingestion via OpenWeather and Bluesky Jetstream WebSocket"
             >
               <span className={`w-2 h-2 rounded-full ${ingestionMode === 'LIVE' ? 'bg-white animate-pulse' : 'bg-slate-500'}`} />
-              <span>LIVE</span>
+              <span>● LIVE</span>
             </button>
 
             <button
@@ -269,7 +269,7 @@ export const Navbar: React.FC = () => {
               title="Use deterministic simulation steps and demo dataset"
             >
               <span className={`w-2 h-2 rounded-full ${ingestionMode === 'SIMULATION' ? 'bg-white' : 'bg-slate-500'}`} />
-              <span>SIM</span>
+              <span>◆ SIMULATION</span>
             </button>
           </div>
 

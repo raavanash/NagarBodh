@@ -58,6 +58,7 @@ export type AuditEventType =
 
 export interface CivicSignal {
   id: string;
+  ingestionMode?: 'LIVE' | 'REPLAY' | 'SIMULATION';
   timestamp: string; // ISO string
   simulatedTimeLabel: string; // e.g., "08:15 AM"
   channel: SignalChannel;

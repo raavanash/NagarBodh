@@ -44,8 +44,8 @@ test.describe('NagarBodh Navigation & Controls Suite', () => {
   });
 
   test('Ingestion mode switcher toggles between SIM and LIVE', async ({ page }) => {
-    const liveBtn = page.getByRole('button', { name: /^LIVE$/i }).first();
-    const simBtn = page.getByRole('button', { name: /^SIM$/i }).first();
+    const liveBtn = page.getByRole('button', { name: /LIVE/i }).first();
+    const simBtn = page.getByRole('button', { name: /SIM/i }).first();
 
     await expect(simBtn).toBeVisible();
     await expect(liveBtn).toBeVisible();

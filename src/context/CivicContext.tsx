@@ -171,8 +171,25 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 5 | 10>(1);
 
-  // Active signals accumulated up to current step
-  const [signals, setSignals] = useState<CivicSignal[]>(() => [...SIMULATION_STEPS[0].signalsAdded]);
+  // Single Authoritative Mode State (LIVE vs SIMULATION)
+  const [ingestionMode, setIngestionModeState] = useState<IngestionMode>(() => {
+    try {
+      const saved = localStorage.getItem('nagar_bodh_ingestion_mode') as IngestionMode;
+      if (saved === 'LIVE' || saved === 'SIMULATION' || saved === 'REPLAY') return saved;
+    } catch {}
+    return 'SIMULATION';
+  });
+
+  // Separated Signal Stores (Hard Isolation: LIVE vs SIMULATION)
+  const [liveSignals, setLiveSignals] = useState<CivicSignal[]>([]);
+  const [simulationSignals, setSimulationSignals] = useState<CivicSignal[]>(() =>
+    SIMULATION_STEPS[0].signalsAdded.map(s => ({ ...s, ingestionMode: 'SIMULATION' as const }))
+  );
+
+  // Authoritative Derived Active Signals List (Strictly isolated by active mode)
+  const signals = useMemo(() => {
+    return ingestionMode === 'LIVE' ? liveSignals : simulationSignals;
+  }, [ingestionMode, liveSignals, simulationSignals]);
 
   // Central Repositories instance (Firebase vs In-Memory Fallback)
   const repositories = useMemo(() => createRepositories({ signals }), [signals]);
@@ -460,9 +477,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const nextStep = SIMULATION_STEPS[nextIndex];
     setCurrentStepIndex(nextIndex);
 
-    setSignals(prev => {
+    setSimulationSignals(prev => {
       const existingIds = new Set(prev.map(s => s.id));
-      const newToAdd = nextStep.signalsAdded.filter(s => !existingIds.has(s.id));
+      const newToAdd = nextStep.signalsAdded
+        .map(s => ({ ...s, ingestionMode: 'SIMULATION' as const }))
+        .filter(s => !existingIds.has(s.id));
       return newToAdd.length > 0 ? [...prev, ...newToAdd] : prev;
     });
 
@@ -508,8 +527,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       accumulatedSignals.push(...SIMULATION_STEPS[i].signalsAdded);
     }
     const uniqueMap = new Map<string, CivicSignal>();
-    accumulatedSignals.forEach(s => uniqueMap.set(s.id, s));
-    setSignals(Array.from(uniqueMap.values()));
+    accumulatedSignals.forEach(s => uniqueMap.set(s.id, { ...s, ingestionMode: 'SIMULATION' }));
+    setSimulationSignals(Array.from(uniqueMap.values()));
   }, []);
 
   const triggerSector15Surge = useCallback(() => {
@@ -521,8 +540,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       allSurgeSignals.push(...SIMULATION_STEPS[i].signalsAdded);
     }
     const uniqueMap = new Map<string, CivicSignal>();
-    allSurgeSignals.forEach(s => uniqueMap.set(s.id, s));
-    setSignals(Array.from(uniqueMap.values()));
+    allSurgeSignals.forEach(s => uniqueMap.set(s.id, { ...s, ingestionMode: 'SIMULATION' }));
+    setSimulationSignals(Array.from(uniqueMap.values()));
 
     appendAuditLog({
       timeLabel: '10:15 AM',
@@ -544,7 +563,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resetSimulation = useCallback(() => {
     setIsPlaying(false);
     setCurrentStepIndex(0);
-    setSignals([...SIMULATION_STEPS[0].signalsAdded]);
+    setSimulationSignals([...SIMULATION_STEPS[0].signalsAdded.map(s => ({ ...s, ingestionMode: 'SIMULATION' as const }))]);
     setActionPlans({});
     setLifecycleMap({});
     setActiveInterventionState(null);
@@ -575,7 +594,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resetDemo = useCallback(() => {
     setIsPlaying(false);
     setCurrentStepIndex(0);
-    setSignals([...SIMULATION_STEPS[0].signalsAdded]);
+    setSimulationSignals([...SIMULATION_STEPS[0].signalsAdded.map(s => ({ ...s, ingestionMode: 'SIMULATION' as const }))]);
     setActionPlans({});
     setLifecycleMap({});
     setActiveInterventionState(null);
@@ -617,8 +636,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       allSurgeSignals.push(...(SIMULATION_STEPS[i]?.signalsAdded || []));
     }
     const uniqueMap = new Map<string, CivicSignal>();
-    allSurgeSignals.forEach(s => uniqueMap.set(s.id, s));
-    setSignals(Array.from(uniqueMap.values()));
+    allSurgeSignals.forEach(s => uniqueMap.set(s.id, { ...s, ingestionMode: 'SIMULATION' }));
+    setSimulationSignals(Array.from(uniqueMap.values()));
 
     const targetId = 'incident-ward-15-central-sub-city-waterlogging';
     setSelectedIncidentId(targetId);
@@ -850,9 +869,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const targetId = selectedIncidentId || 'incident-ward-15-central-sub-city-waterlogging';
     if (SIMULATION_STEPS[13]) {
       const posSignals = SIMULATION_STEPS[13].signalsAdded;
-      setSignals(prev => {
+      setSimulationSignals(prev => {
         const map = new Map<string, CivicSignal>(prev.map(s => [s.id, s]));
-        posSignals.forEach(s => map.set(s.id, s));
+        posSignals.forEach(s => map.set(s.id, { ...s, ingestionMode: 'SIMULATION' }));
         return Array.from(map.values());
       });
     }
@@ -963,10 +982,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Ingestion Service Instance
   const ingestionServiceRef = useRef<SignalIngestionService>(new SignalIngestionService(signals as any));
   const [ingestionStats, setIngestionStats] = useState<IngestionStats>(() => ingestionServiceRef.current.getStats());
-  const [ingestionMode, setIngestionModeState] = useState<IngestionMode>(() => {
-    const saved = localStorage.getItem('nagar_bodh_ingestion_mode') as IngestionMode;
-    return saved || 'LIVE';
-  });
 
   const operationalClock = ingestionMode === 'LIVE' ? realTimeClock : currentStep.simulatedTime;
   const [liveWeatherEnvelope, setLiveWeatherEnvelope] = useState<ExternalDataPointEnvelope<any> | null>(null);
@@ -995,9 +1010,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.log(`[Bluesky] Duplicates removed: ${duplicates}`);
 
         if (normalizedSignals.length > 0) {
-          setSignals(prev => {
+          setLiveSignals(prev => {
             const existingIds = new Set(prev.map(s => s.id));
-            const fresh = normalizedSignals.filter(s => !existingIds.has(s.id));
+            const fresh = normalizedSignals
+              .map(s => ({ ...s, ingestionMode: 'LIVE' as const }))
+              .filter(s => !existingIds.has(s.id));
             return fresh.length > 0 ? [...fresh, ...prev] : prev;
           });
         }
@@ -1009,6 +1026,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Mode Switch Handler (LIVE vs SIMULATION)
   const setIngestionMode = useCallback(async (newMode: IngestionMode) => {
+    setIsPlaying(false);
+    setSelectedIncidentId(null);
     setIngestionModeState(newMode);
     localStorage.setItem('nagar_bodh_ingestion_mode', newMode);
     ingestionServiceRef.current.setIngestionMode(newMode);
@@ -1074,11 +1093,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             console.log('[Bluesky Jetstream] Normalized signal accepted');
             console.log(`[Bluesky Jetstream] Adding ${normalizedSignals.length} live signals to CivicContext`);
 
-            setSignals(prev => {
+            setLiveSignals(prev => {
               const existingIds = new Set(prev.map(s => s.id));
-              const fresh = normalizedSignals.filter(s => !existingIds.has(s.id));
+              const fresh = normalizedSignals
+                .map(s => ({ ...s, ingestionMode: 'LIVE' as const }))
+                .filter(s => !existingIds.has(s.id));
               const nextState = fresh.length > 0 ? [...fresh, ...prev] : prev;
-              console.log(`[Bluesky Jetstream] CivicContext signals updated: total ${nextState.length}`);
+              console.log(`[Bluesky Jetstream] CivicContext live signals updated: total ${nextState.length}`);
               return nextState;
             });
           }
@@ -1143,7 +1164,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const ingestFileDataset = useCallback(async (fileContent: string, fileName: string): Promise<number> => {
     const { normalizedSignals } = await ingestionServiceRef.current.ingest('provider-file-import', fileContent);
     if (normalizedSignals.length > 0) {
-      setSignals(prev => [...normalizedSignals, ...prev]);
+      if (ingestionMode === 'LIVE') {
+        setLiveSignals(prev => [...normalizedSignals, ...prev]);
+      } else {
+        setSimulationSignals(prev => [...normalizedSignals, ...prev]);
+      }
       setIngestionMode('REPLAY');
       ingestionServiceRef.current.setIngestionMode('REPLAY');
       setIngestionStats(ingestionServiceRef.current.getStats());
@@ -1158,7 +1183,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     }
     return normalizedSignals.length;
-  }, [currentStep.simulatedTime, appendAuditLog]);
+  }, [currentStep.simulatedTime, appendAuditLog, ingestionMode]);
 
   // Agent Traces History
   const [agentTraces, setAgentTraces] = useState<AgentTrace[]>([]);
@@ -1182,6 +1207,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const rawPayload: RawSignalPayload = {
       text,
+      ingestionMode,
       sourceChannel: channel,
       lat: coords.lat,
       lng: coords.lng,
@@ -1197,8 +1223,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIngestionStats(ingestionServiceRef.current.getStats());
 
     if (normalizedSignals.length > 0) {
-      const newSignal = normalizedSignals[0];
-      setSignals(prev => [newSignal, ...prev]);
+      const newSignal = { ...normalizedSignals[0], ingestionMode };
+      if (ingestionMode === 'LIVE') {
+        setLiveSignals(prev => [newSignal, ...prev]);
+      } else {
+        setSimulationSignals(prev => [newSignal, ...prev]);
+      }
 
       appendAuditLog({
         timeLabel: currentStep.simulatedTime,

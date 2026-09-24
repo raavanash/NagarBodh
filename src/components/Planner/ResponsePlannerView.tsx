@@ -54,9 +54,22 @@ export const ResponsePlannerView: React.FC = () => {
 
   const currentIncident = incidents.find(i => i.id === effectiveIncidentId) || incidents[0];
 
-  const currentDossier = currentIncident
-    ? buildInvestmentExplanationDossier(currentIncident.category, incidents, signals)
-    : null;
+  if (!currentIncident) {
+    return (
+      <main className="main-content flex-1 p-6 overflow-y-auto planner-container">
+        <div className="flex flex-col items-center justify-center h-64 text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800 p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-amber-500 mb-3 animate-pulse" />
+          <h3 className="text-lg font-semibold text-slate-200 mb-1">No Active Incidents in {ingestionMode} Mode</h3>
+          <p className="text-sm max-w-md text-slate-400">
+            There are currently no active civic signals or clustered incidents detected in {ingestionMode} mode.
+            Switch modes or wait for live ingestion to populate signals.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const currentDossier = buildInvestmentExplanationDossier(currentIncident.category, incidents, signals);
 
   // Resolve or generate structured DevelopmentProjectRecommendation for selected item
   const rec: DevelopmentProjectRecommendation = currentIncident?.projectRecommendation || generateDevelopmentProjectRecommendation({

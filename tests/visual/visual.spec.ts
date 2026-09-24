@@ -9,7 +9,7 @@ test.describe('Visual Regression Baseline Suite', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Set SIM mode for deterministic state rendering
-    const simBtn = page.getByRole('button', { name: /^SIM$/i }).first();
+    const simBtn = page.getByRole('button', { name: /SIM/i }).first();
     if (await simBtn.isVisible()) {
       await simBtn.click();
     }
