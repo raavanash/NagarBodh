@@ -22,8 +22,8 @@ test.describe('Resilience & Failure Handling Suite', () => {
   });
 
   test('Graceful degradation when external Citizen Signal API fails', async ({ page }) => {
-    // Intercept Jetstream or external signal API and abort route
-    await page.route('**/xrpc/app.bsky.feed.**', route => route.abort());
+    // Intercept external Bluesky API calls specifically
+    await page.route('https://public.api.bsky.app/**', route => route.abort());
 
     await page.goto('/');
     await expect(page.locator('.app-container')).toBeVisible();

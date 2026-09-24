@@ -15,6 +15,8 @@ import { DemoCommandCenter } from './components/Demo/DemoCommandCenter';
 import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { Activity, AlertTriangle, Building2, CheckCircle2, RotateCcw, ShieldCheck } from 'lucide-react';
 
+import { GuidedTour } from './components/GuidedTour';
+
 const AppContent: React.FC = () => {
   const { activeTab, incidents, ingestionMode, demoResetNotification } = useCivic();
 
@@ -117,6 +119,9 @@ const AppContent: React.FC = () => {
 
       {/* Global Human Approval Modal */}
       <HumanApprovalModal />
+
+      {/* Interactive Guided Product Tour */}
+      <GuidedTour />
     </div>
   );
 };

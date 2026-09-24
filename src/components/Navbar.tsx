@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Database,
   Globe2,
+  HelpCircle,
   MapPin,
   Menu,
   Moon,
@@ -108,7 +109,7 @@ export const Navbar: React.FC = () => {
       <div className="navbar-top-bar flex items-center justify-between w-full gap-4 relative">
         
         {/* Brand Section */}
-        <div className="brand-section flex items-center gap-3 flex-shrink-0">
+        <div className="brand-section flex items-center gap-3 flex-shrink-0" data-tour="brand">
           {/* Hamburger Menu Toggle Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -150,9 +151,15 @@ export const Navbar: React.FC = () => {
               (item.id === 'project_priorities' && (activeTab === 'project_priorities' || activeTab === 'dispatch')) ||
               (item.id === 'impact' && (activeTab === 'impact' || activeTab === 'timeline'));
 
+            let dataTourId = 'nav-invest';
+            if (item.id === 'development_map') dataTourId = 'nav-map';
+            if (item.id === 'project_priorities') dataTourId = 'nav-decide';
+            if (item.id === 'impact') dataTourId = 'nav-impact';
+
             return (
               <button
                 key={item.id}
+                data-tour={dataTourId}
                 className={`nav-tab-btn px-3.5 py-1.5 rounded-md text-xs font-bold tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
                   isActive
                     ? 'active bg-blue-600 text-white shadow-sm ring-1 ring-blue-400 font-extrabold'
@@ -214,6 +221,7 @@ export const Navbar: React.FC = () => {
                     return (
                       <button
                         key={item.id}
+                        data-tour={item.id === 'citizen_signals' ? 'nav-signals' : undefined}
                         onClick={() => {
                           setActiveTab(item.id as any);
                           setIsMoreOpen(false);
@@ -265,22 +273,6 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
 
-          {/* Persistence Layer Status Badge */}
-          <div
-            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold ${
-              persistenceStatus?.isLive
-                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
-                : 'bg-slate-900 border-slate-700 text-slate-300'
-            }`}
-            title={
-              persistenceStatus?.isLive
-                ? 'Firebase Firestore live persistence active'
-                : 'Operating in deterministic Replay/Simulation fallback mode.'
-            }
-          >
-            <Database size={12} className={persistenceStatus?.isLive ? 'text-emerald-400' : 'text-slate-400'} />
-            <span>{persistenceStatus?.isLive ? 'FIREBASE LIVE' : 'DEMO FALLBACK'}</span>
-          </div>
 
           {/* Clock Badge */}
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono font-bold text-slate-300">
@@ -293,6 +285,17 @@ export const Navbar: React.FC = () => {
             <UserCheck size={14} className="text-blue-400" />
             <span className="hidden sm:inline">Decision Authority</span>
           </div>
+
+          {/* Guided Tour Help Button */}
+          <button
+            data-tour="help-btn"
+            className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-blue-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+            onClick={() => window.dispatchEvent(new CustomEvent('nagarbodh:restart-tour'))}
+            title="Restart Guided Tour"
+            aria-label="Restart Guided Tour"
+          >
+            <HelpCircle size={15} />
+          </button>
 
           {/* Theme Switcher Toggle Button */}
           <button

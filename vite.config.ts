@@ -37,6 +37,9 @@ export default defineConfig(({ mode }) => {
   }
   return {
     plugins: [react(), apiProxyPlugin()],
+    test: {
+      exclude: ['tests/**', 'node_modules/**']
+    }
   };
 });
 

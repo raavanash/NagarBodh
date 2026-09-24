@@ -5,6 +5,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowUpRight,
+  Check,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -21,6 +22,7 @@ import {
   Minus,
   Pause,
   Play,
+  Plus,
   RotateCcw,
   Shield,
   SkipForward,
@@ -44,11 +46,31 @@ export const LiveMap: React.FC = () => {
   const signalLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const assetLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const bufferLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const wardLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   const prevSignalsCountRef = useRef<number>(0);
 
+  // Floating Control Overlay States
   const [isLegendMinimized, setIsLegendMinimized] = useState<boolean>(false);
-  const [isTimelineMinimized, setIsTimelineMinimized] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 900);
+  const [isHotspotQueueCollapsed, setIsHotspotQueueCollapsed] = useState<boolean>(false);
+  const [isLayerSwitcherOpen, setIsLayerSwitcherOpen] = useState<boolean>(false);
+  const [selectedCategoryPill, setSelectedCategoryPill] = useState<string>('ALL');
+
+  // Progressive Layer Visibility Switches
+  const [visibleLayers, setVisibleLayers] = useState({
+    hotspots: true,
+    rawSignals: false,
+    criticalAssets: true,
+    wardBoundaries: true,
+    weatherRisk: false,
+    historicalIncidents: false,
+    drainage: false
+  });
+
+  // Timeline Dock Floating Drag & Collapse State
+  const [isTimelineMinimized, setIsTimelineMinimized] = useState<boolean>(
+    () => typeof window !== 'undefined' && window.innerWidth <= 900
+  );
   const [timelinePos, setTimelinePos] = useState<{ x: number; y: number } | null>(null);
   const isDraggingTimelineRef = useRef(false);
   const dragStartRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
@@ -88,7 +110,7 @@ export const LiveMap: React.FC = () => {
       isDraggingTimelineRef.current = false;
       try {
         (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-      } catch { }
+      } catch {}
     }
   };
 
@@ -103,10 +125,10 @@ export const LiveMap: React.FC = () => {
     mapMode,
     setMapMode,
     categoryFilter,
+    setCategoryFilter,
     sourceFilter,
     severityFilter,
     wardFilter,
-    timeRangeFilter,
     minPriorityFilter,
     currentStepIndex,
     currentStep,
@@ -117,7 +139,6 @@ export const LiveMap: React.FC = () => {
     stepForward,
     jumpToStep,
     resetSimulation,
-    triggerSector15Surge,
     setPlaybackSpeed,
     ingestionMode
   } = useCivic();
@@ -125,34 +146,12 @@ export const LiveMap: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedDossier, setSelectedDossier] = useState<InvestmentExplanationDossier | null>(null);
 
-  // Hover-card state — replaces Leaflet bindPopup() for cluster markers
-  const [hoveredIncidentId, setHoveredIncidentId] = useState<string | null>(null);
-  const [lockedIncidentId, setLockedIncidentId] = useState<string | null>(null);
-  const [hoverCardPos, setHoverCardPos] = useState<{ x: number; y: number } | null>(null);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current !== null) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleClose = useCallback(() => {
-    clearCloseTimer();
-    closeTimerRef.current = setTimeout(() => {
-      setHoveredIncidentId(null);
-    }, 220);
-  }, [clearCloseTimer]);
-
   const handleOpenDossierFromMap = (incident: ClusteredIncident) => {
     const dossier = buildInvestmentExplanationDossier(incident.category, incidents, signals);
-    setLockedIncidentId(null);
-    setHoveredIncidentId(null);
     setSelectedDossier(dossier);
   };
 
-  // Initialize Leaflet Map with OpenFreeMap vector layer
+  // Initialize Leaflet Map with OpenStreetMap raster tiles
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -163,7 +162,6 @@ export const LiveMap: React.FC = () => {
       zoomControl: false
     });
 
-    // Reliable, 100% public OpenStreetMap raster tiles with dark theme CSS filter (Zero watermarks, Zero API key errors)
     const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       subdomains: 'abc',
@@ -172,13 +170,13 @@ export const LiveMap: React.FC = () => {
     });
     tileLayer.addTo(map);
 
-    L.control.zoom({ position: 'topright' }).addTo(map);
-
+    const wardGroup = L.layerGroup().addTo(map);
     const bufferGroup = L.layerGroup().addTo(map);
     const assetGroup = L.layerGroup().addTo(map);
     const signalGroup = L.layerGroup().addTo(map);
     const clusterGroup = L.layerGroup().addTo(map);
 
+    wardLayerGroupRef.current = wardGroup;
     bufferLayerGroupRef.current = bufferGroup;
     assetLayerGroupRef.current = assetGroup;
     signalLayerGroupRef.current = signalGroup;
@@ -192,6 +190,69 @@ export const LiveMap: React.FC = () => {
     };
   }, []);
 
+  // Ward Boundaries Rendering Effect
+  useEffect(() => {
+    if (!mapInstanceRef.current || !wardLayerGroupRef.current) return;
+    wardLayerGroupRef.current.clearLayers();
+
+    if (visibleLayers.wardBoundaries) {
+      const wardPolygons = [
+        {
+          name: 'Ward 15 - Sector 15 / Mayur Enclave',
+          color: '#2563eb',
+          coords: [
+            [28.468, 77.030],
+            [28.475, 77.048],
+            [28.460, 77.054],
+            [28.452, 77.035]
+          ] as L.LatLngTuple[]
+        },
+        {
+          name: 'Ward 14 - Karol Bagh Commercial',
+          color: '#d97706',
+          coords: [
+            [28.450, 77.010],
+            [28.462, 77.025],
+            [28.450, 77.035],
+            [28.438, 77.018]
+          ] as L.LatLngTuple[]
+        },
+        {
+          name: 'Ward 22 - Connaught Place & Ring Road',
+          color: '#059669',
+          coords: [
+            [28.435, 77.025],
+            [28.448, 77.042],
+            [28.438, 77.055],
+            [28.425, 77.038]
+          ] as L.LatLngTuple[]
+        },
+        {
+          name: 'Ward 09 - Rohini Sector 7 Residential',
+          color: '#7c3aed',
+          coords: [
+            [28.460, 76.995],
+            [28.472, 77.012],
+            [28.458, 77.022],
+            [28.448, 77.005]
+          ] as L.LatLngTuple[]
+        }
+      ];
+
+      wardPolygons.forEach(w => {
+        const poly = L.polygon(w.coords, {
+          color: w.color,
+          weight: 1.5,
+          dashArray: '5, 5',
+          fillColor: w.color,
+          fillOpacity: 0.06
+        });
+        poly.bindTooltip(w.name, { sticky: true });
+        poly.addTo(wardLayerGroupRef.current!);
+      });
+    }
+  }, [visibleLayers.wardBoundaries]);
+
   // Render Critical Infrastructure POIs & Proximity Buffers
   useEffect(() => {
     if (!mapInstanceRef.current || !assetLayerGroupRef.current || !bufferLayerGroupRef.current) return;
@@ -199,8 +260,9 @@ export const LiveMap: React.FC = () => {
     assetLayerGroupRef.current.clearLayers();
     bufferLayerGroupRef.current.clearLayers();
 
+    if (!visibleLayers.criticalAssets) return;
+
     CRITICAL_ASSETS.forEach(asset => {
-      // Vulnerability Buffer circle
       const bufferCircle = L.circle([asset.coordinates.lat, asset.coordinates.lng], {
         radius: asset.vulnerabilityBufferMeters,
         color: asset.type === 'school' ? '#8b5cf6' : asset.type === 'hospital' ? '#ef4444' : '#06b6d4',
@@ -241,7 +303,7 @@ export const LiveMap: React.FC = () => {
       marker.bindPopup(`
         <div style="font-family: var(--font-sans); color: var(--text-primary); min-width: 220px;">
           <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">
-            Critical Urban Infrastructure • ${asset.type.toUpperCase()}
+            Critical Infrastructure • ${asset.type.toUpperCase()}
           </div>
           <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-primary);">
             ${asset.name}
@@ -260,7 +322,7 @@ export const LiveMap: React.FC = () => {
 
       marker.addTo(assetLayerGroupRef.current!);
     });
-  }, []);
+  }, [visibleLayers.criticalAssets]);
 
   // Filter individual civic signals
   const filteredSignals = signals.filter(sig => {
@@ -271,8 +333,13 @@ export const LiveMap: React.FC = () => {
     return true;
   });
 
-  // Filter clustered incidents
+  // Filter clustered incidents based on global context + category pill filter
   const filteredIncidents = incidents.filter(inc => {
+    if (selectedCategoryPill === 'GARBAGE' && !(inc.category === 'garbage' || inc.category === 'sanitation')) return false;
+    if (selectedCategoryPill === 'WATERLOGGING' && !(inc.category === 'waterlogging' || inc.category === 'drainage')) return false;
+    if (selectedCategoryPill === 'POTHOLE' && !(inc.category === 'road_hazard' || inc.category === 'roads')) return false;
+    if (selectedCategoryPill === 'OTHERS' && !(inc.category === 'electricity' || inc.category === 'traffic')) return false;
+
     if (categoryFilter !== 'all' && inc.category !== categoryFilter) return false;
     if (sourceFilter !== 'all') {
       const incSignals = signals.filter(s => inc.signalIds.includes(s.id));
@@ -288,17 +355,31 @@ export const LiveMap: React.FC = () => {
     return true;
   });
 
-  // Render Individual Civic Signals (when in CIVIC SIGNALS mode or toggled)
+  // Category Pill Counts Helper
+  const getPillCount = (pillId: string) => {
+    if (pillId === 'ALL') return incidents.length;
+    if (pillId === 'GARBAGE') return incidents.filter(i => i.category === 'garbage' || i.category === 'sanitation').length;
+    if (pillId === 'WATERLOGGING') return incidents.filter(i => i.category === 'waterlogging' || i.category === 'drainage').length;
+    if (pillId === 'POTHOLE') return incidents.filter(i => i.category === 'road_hazard' || i.category === 'roads').length;
+    if (pillId === 'OTHERS') return incidents.filter(i => i.category === 'electricity' || i.category === 'traffic').length;
+    return 0;
+  };
+
+  const handlePillClick = (pillId: string) => {
+    setSelectedCategoryPill(pillId);
+  };
+
+  // Render Individual Civic Signals (when in CIVIC SIGNALS mode or toggled ON)
   useEffect(() => {
     if (!mapInstanceRef.current || !signalLayerGroupRef.current) return;
 
     signalLayerGroupRef.current.clearLayers();
 
-    if (mapMode === 'civic_signals') {
+    if (mapMode === 'civic_signals' || visibleLayers.rawSignals) {
       filteredSignals.forEach(sig => {
         let channelIcon = '📱';
         let channelColor = '#06b6d4';
-        if (sig.channel === 'social_x') {
+        if (sig.channel === 'social_x' || sig.channel === 'social_bluesky') {
           channelIcon = '🐦';
           channelColor = '#1d9bf0';
         } else if (sig.channel === 'grievance_portal') {
@@ -366,13 +447,15 @@ export const LiveMap: React.FC = () => {
       }
     }
     prevSignalsCountRef.current = signals.length;
-  }, [signals, mapMode, filteredSignals]);
+  }, [signals, mapMode, visibleLayers.rawSignals, filteredSignals]);
 
-  // Render Clustered Incidents with Dynamic Pulsing Markers & Emerging Now Acceleration Badge
+  // Render Clustered Demand Hotspot Markers with Visual Hierarchy
   useEffect(() => {
     if (!mapInstanceRef.current || !clusterLayerGroupRef.current) return;
 
     clusterLayerGroupRef.current.clearLayers();
+
+    if (!visibleLayers.hotspots) return;
 
     filteredIncidents.forEach(inc => {
       const isCritical = inc.priority.overallScore >= 80;
@@ -394,14 +477,15 @@ export const LiveMap: React.FC = () => {
       // Ring pulse size scales with velocity
       const pulseSize = Math.min(84, Math.max(48, Math.round(inc.velocityPerHour * 3.5)));
       const isSelected = inc.id === selectedIncidentId;
+      const isAnySelected = Boolean(selectedIncidentId);
 
       const clusterIcon = L.divIcon({
         className: 'cluster-custom-div',
         html: `
-          <div class="pulse-cluster-marker ${clusterColorClass}" style="width: ${pulseSize}px; height: ${pulseSize}px;">
+          <div class="pulse-cluster-marker ${clusterColorClass}" style="width: ${pulseSize}px; height: ${pulseSize}px; ${isAnySelected && !isSelected ? 'opacity: 0.55; filter: grayscale(20%);' : ''}">
             ${isEmergingNow && !isResolved ? `<div class="emerging-now-badge">🔥 EMERGING NOW</div><div class="emerging-double-ring" style="width: ${pulseSize * 1.2}px; height: ${pulseSize * 1.2}px;"></div>` : ''}
             ${!isResolved ? `<div class="pulse-ring" style="width: ${pulseSize}px; height: ${pulseSize}px;"></div>` : ''}
-            <div class="cluster-dot" style="${isSelected ? 'transform: scale(1.35); border: 2.5px solid #fff; box-shadow: 0 0 25px rgba(6, 182, 212, 0.95);' : ''}">
+            <div class="cluster-dot" style="${isSelected ? 'transform: scale(1.4); border: 3px solid #ffffff; box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.4), 0 0 25px rgba(37, 99, 235, 0.85); z-index: 1000;' : ''}">
               ${inc.signalIds.length}
             </div>
           </div>
@@ -412,42 +496,22 @@ export const LiveMap: React.FC = () => {
 
       const marker = L.marker([inc.centroid.lat, inc.centroid.lng], { icon: clusterIcon });
 
-      // Hover → show card. mouseout → schedule close with hysteresis delay.
-      // Click → lock card open (persistent selection).
-      marker.on('mouseover', () => {
-        clearCloseTimer();
-        setHoveredIncidentId(inc.id);
-        setLockedIncidentId(prev => prev === inc.id ? prev : null); // don't clear a different lock
-        // Compute screen position from map latLng
-        if (mapInstanceRef.current) {
-          const pt = mapInstanceRef.current.latLngToContainerPoint([inc.centroid.lat, inc.centroid.lng]);
-          setHoverCardPos({ x: pt.x, y: pt.y });
-        }
-      });
-
-      marker.on('mouseout', () => {
-        // Only schedule close if this incident isn't locked
-        if (lockedIncidentId !== inc.id) {
-          scheduleClose();
-        }
-      });
-
       marker.on('click', () => {
-        clearCloseTimer();
         setSelectedIncidentId(inc.id);
-        setHoveredIncidentId(inc.id);
-        setLockedIncidentId(inc.id);
-        if (mapInstanceRef.current) {
-          const pt = mapInstanceRef.current.latLngToContainerPoint([inc.centroid.lat, inc.centroid.lng]);
-          setHoverCardPos({ x: pt.x, y: pt.y });
-        }
       });
 
       marker.addTo(clusterLayerGroupRef.current!);
     });
-  }, [filteredIncidents, selectedIncidentId, lockedIncidentId, mapMode, setSelectedIncidentId, clearCloseTimer, scheduleClose]);
+  }, [filteredIncidents, selectedIncidentId, visibleLayers.hotspots, setSelectedIncidentId]);
 
-  // Selected-incident focus flying camera
+  // Auto-minimize Telemetry Legend when an issue card is selected to prevent overlap
+  useEffect(() => {
+    if (selectedIncidentId) {
+      setIsLegendMinimized(true);
+    }
+  }, [selectedIncidentId]);
+
+  // Selected-incident camera focus flyTo
   useEffect(() => {
     if (!selectedIncidentId || !mapInstanceRef.current) return;
     const selected = incidents.find(i => i.id === selectedIncidentId);
@@ -457,292 +521,504 @@ export const LiveMap: React.FC = () => {
         easeLinearity: 0.25
       });
     }
-  }, [selectedIncidentId]);
+  }, [selectedIncidentId, incidents]);
 
   return (
     <div className="map-canvas-wrapper" style={{ display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', height: '100%' }}>
-      {/* Main Leaflet Map Canvas (rendered first so overlay controls sit on top) */}
+      {/* Dominant Leaflet Map Canvas (80–90% Visual Field) */}
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
 
-      {/* React Hover / Lock Card Overlay — replaces Leaflet bindPopup() */}
-      {(() => {
-        const activeId = lockedIncidentId || hoveredIncidentId;
-        const activeInc = activeId ? filteredIncidents.find(i => i.id === activeId) : null;
-        const isLocked = !!lockedIncidentId && lockedIncidentId === activeId;
-        if (!activeInc || !hoverCardPos) return null;
-        const isCritical = activeInc.priority.overallScore >= 80;
-        const isEmergingNow = activeInc.velocitySurgePercent >= 150 || activeInc.velocityPerHour >= 10;
-
-        // Position card: default above-right of marker. Clamp to viewport.
-        const cardW = 280;
-        const cardOffsetX = 18;
-        const cardOffsetY = -16;
-        const mapContainer = mapContainerRef.current;
-        const containerW = mapContainer?.clientWidth ?? window.innerWidth;
-        const containerH = mapContainer?.clientHeight ?? window.innerHeight;
-        let left = hoverCardPos.x + cardOffsetX;
-        let top = hoverCardPos.y + cardOffsetY;
-        if (left + cardW > containerW - 12) left = hoverCardPos.x - cardW - 12;
-        if (left < 8) left = 8;
-        if (top < 64) top = 64;
-        if (top > containerH - 260) top = containerH - 260;
-
-        return (
-          <div
-            onMouseEnter={clearCloseTimer}
-            onMouseLeave={() => {
-              if (!isLocked) scheduleClose();
-            }}
-            style={{
-              position: 'absolute',
-              left,
-              top,
-              width: cardW,
-              zIndex: 1200,
-              background: 'var(--bg-surface)',
-              border: `1.5px solid ${isLocked ? '#2563eb' : 'var(--border-medium)'}`,
-              borderRadius: 10,
-              boxShadow: '0 8px 28px rgba(15,23,42,0.22)',
-              padding: '0.85rem 1rem',
-              animation: 'mapCardIn 0.15s ease-out',
-              pointerEvents: 'auto'
-            }}
-          >
-            {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.45rem', gap: '0.5rem' }}>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', color: isCritical ? '#dc2626' : '#0284c7', letterSpacing: '0.04em' }}>
-                  {activeInc.category.toUpperCase()} HOTSPOT
-                </span>
-                {isLocked && (
-                  <span style={{ marginLeft: '0.35rem', fontSize: '0.58rem', fontWeight: 800, color: '#2563eb', background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.25)', padding: '0.1rem 0.35rem', borderRadius: 4 }}>
-                    SELECTED
-                  </span>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 700, color: isCritical ? '#b91c1c' : '#0369a1', background: isCritical ? '#fee2e2' : '#e0f2fe', padding: '1px 6px', borderRadius: 4, border: `1px solid ${isCritical ? '#fca5a5' : '#bae6fd'}` }}>
-                  P{activeInc.priority.overallScore}/100
-                </span>
-                <button
-                  onClick={() => { clearCloseTimer(); setHoveredIncidentId(null); setLockedIncidentId(null); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, borderRadius: 4, display: 'flex', alignItems: 'center' }}
-                  title="Dismiss"
-                >
-                  <X size={13} />
-                </button>
-              </div>
-            </div>
-
-            {isEmergingNow && (
-              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', fontSize: '0.62rem', fontWeight: 800, padding: '2px 6px', borderRadius: 4, marginBottom: '0.45rem' }}>
-                🔥 SURGING +{activeInc.velocitySurgePercent}%/hr
-              </div>
-            )}
-
-            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.3, marginBottom: '0.35rem' }}>
-              {activeInc.title}
-            </div>
-
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: '0.6rem' }}>
-              {activeInc.auditableInsight.modelInference.summary}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '5px 7px', borderRadius: 6, marginBottom: '0.65rem', color: 'var(--text-secondary)' }}>
-              <div>Signals: <strong style={{ color: 'var(--text-primary)' }}>{activeInc.signalIds.length}</strong></div>
-              <div>Ward: <strong style={{ color: 'var(--text-primary)' }}>{activeInc.ward}</strong></div>
-            </div>
-
-            {/* Primary CTA */}
-            <button
-              onClick={() => handleOpenDossierFromMap(activeInc)}
-              style={{ width: '100%', padding: '7px 10px', background: '#1e3a8a', border: 'none', borderRadius: 6, color: '#fff', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 8px rgba(30,58,138,0.22)', transition: 'background 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#2563eb')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#1e3a8a')}
-            >
-              <FolderOpen size={13} />
-              Open Evidence Dossier
-            </button>
-          </div>
-        );
-      })()}
-
-      {/* Top Header Floating Controls Bar (z-index 1100 on top of Leaflet canvas) */}
-      <div
-        className="live-map-top-bar"
-        style={{
-          position: 'absolute',
-          top: '0.85rem',
-          left: '0.85rem',
-          right: '0.85rem',
-          zIndex: 1100,
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          pointerEvents: 'none'
-        }}
-      >
-        {/* Left Side: Minimizable Telemetry Legend */}
+      {/* FLOATING CONTROL OVERLAY 1: Telemetry Legend (Upper-Left) */}
+      <div style={{ position: 'absolute', top: '0.85rem', left: '0.85rem', zIndex: 1050, pointerEvents: 'none' }}>
         {isLegendMinimized ? (
           <button
             onClick={() => setIsLegendMinimized(false)}
-            style={{
-              pointerEvents: 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-medium)',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              boxShadow: 'var(--shadow-md)',
-              cursor: 'pointer',
-              backdropFilter: 'blur(12px)',
-              transition: 'all 0.15s ease'
-            }}
+            className="telemetry-collapsed-btn"
             title="Expand Telemetry Legend"
           >
             <Layers size={14} color="#2563eb" />
-            <span>Telemetry Legend</span>
+            <span>Telemetry</span>
             <ChevronDown size={13} color="var(--text-muted)" />
           </button>
         ) : (
-          <div
-            style={{
-              pointerEvents: 'auto',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-medium)',
-              borderRadius: '10px',
-              padding: '0.65rem 0.85rem',
-              backdropFilter: 'blur(16px)',
-              fontSize: '0.72rem',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.35rem',
-              boxShadow: 'var(--shadow-lg)',
-              maxWidth: '260px'
-            }}
-          >
-            <div style={{ fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Layers size={13} color="#2563eb" />
-                <span style={{ fontSize: '0.74rem' }}>Telemetry Legend</span>
+          <div className="telemetry-legend-floating">
+            <div className="telemetry-header">
+              <div className="telemetry-title">
+                <Layers size={14} color="#2563eb" />
+                <span>Telemetry</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ color: '#2563eb', fontSize: '0.62rem', fontWeight: 700, background: 'var(--civic-blue-50)', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
-                  {mapMode === 'ai_priority' ? 'AI PRIORITY' : 'CIVIC SIGNALS'}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span className="telemetry-badge">AI PRIORITY</span>
                 <button
                   onClick={() => setIsLegendMinimized(true)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '2px',
-                    borderRadius: '4px'
-                  }}
-                  title="Minimize Telemetry Legend"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 2 }}
+                  title="Collapse Telemetry Legend"
                 >
                   <ChevronUp size={14} />
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} />
-              <span>Critical P1 (Priority &ge; 80)</span>
+            <div className="telemetry-item">
+              <span className="telemetry-dot" style={{ background: '#ef4444' }} />
+              <span><strong>Critical P1</strong> (Score &ge; 80)</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
-              <span>High P2 (Priority 60 - 79)</span>
+            <div className="telemetry-item">
+              <span className="telemetry-dot" style={{ background: '#f59e0b' }} />
+              <span><strong>High P2</strong> (Score 60 - 79)</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563eb', display: 'inline-block', flexShrink: 0 }} />
-              <span>Standard P3 (Priority &lt; 60)</span>
+            <div className="telemetry-item">
+              <span className="telemetry-dot" style={{ background: '#0284c7' }} />
+              <span><strong>Standard P3</strong> (Score &lt; 60)</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ fontSize: '0.7rem' }}>🔥</span>
-              <span>Emerging Now (Velocity Surge)</span>
+            <div className="telemetry-item">
+              <span>🔥</span>
+              <span><strong>Emerging Now</strong> (Velocity Surge)</span>
             </div>
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.45rem', fontSize: '0.66rem' }}>
+
+            <div className="telemetry-section-divider" />
+
+            <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+              Signal Channels
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', fontSize: '0.68rem' }}>
               <span>📱 App</span>
-              <span>🐦 X</span>
               <span>🏛️ Grievance</span>
-              <span>📞 155304 / 112</span>
+              <span>🐦 Social</span>
+              <span>📞 112 Helpline</span>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.66rem', color: 'var(--text-muted)' }}>
-              <span>🏫 School (250m)</span>
-              <span>🏥 Hospital (400m)</span>
+
+            <div className="telemetry-section-divider" />
+
+            <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+              Infrastructure Context
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+              <span>🏫 School</span>
+              <span>🏥 Hospital</span>
+              <span>⚙️ Infrastructure</span>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Right Side: Map Controls & Hotspot Queue Drawer Trigger */}
-        <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      {/* FLOATING CONTROL OVERLAY 2: Hotspots Queue Control (Upper-Right) */}
+      <div style={{ position: 'absolute', top: '0.85rem', right: '3.6rem', zIndex: 1050, pointerEvents: 'none' }}>
+        {isHotspotQueueCollapsed ? (
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{
+            onClick={() => setIsHotspotQueueCollapsed(false)}
+            className="telemetry-collapsed-btn"
+            style={{ float: 'right' }}
+            title="Expand Hotspots Queue"
+          >
+            <List size={14} color="#1e3a8a" />
+            <span>Hotspots Queue ({filteredIncidents.length})</span>
+            <ChevronDown size={13} color="var(--text-muted)" />
+          </button>
+        ) : (
+          <div className="hotspots-queue-floating">
+            <div className="hotspots-queue-header">
+              <div className="hotspots-queue-title">
+                <List size={15} color="#1e3a8a" />
+                <span>HOTSPOTS QUEUE</span>
+                <span className="hotspots-queue-badge">{filteredIncidents.length}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span className="ai-hotspots-tag">AI HOTSPOTS</span>
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', color: 'var(--text-muted)', padding: '2px 5px', fontSize: '0.66rem', fontWeight: 700 }}
+                  title="Open Search & Ward Drawer"
+                >
+                  <Filter size={11} />
+                </button>
+                <button
+                  onClick={() => setIsHotspotQueueCollapsed(true)}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 2 }}
+                  title="Collapse Hotspots Queue"
+                >
+                  <ChevronUp size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Category Filter Pills */}
+            <div className="category-filter-pills">
+              {[
+                { id: 'ALL', label: 'ALL' },
+                { id: 'GARBAGE', label: 'GARBAGE' },
+                { id: 'WATERLOGGING', label: 'WATERLOGGING' },
+                { id: 'POTHOLE', label: 'POTHOLE' },
+                { id: 'OTHERS', label: 'OTHERS' }
+              ].map(pill => {
+                const count = getPillCount(pill.id);
+                const isActive = selectedCategoryPill === pill.id;
+                return (
+                  <button
+                    key={pill.id}
+                    onClick={() => handlePillClick(pill.id)}
+                    className={`category-pill ${isActive ? 'active' : ''}`}
+                  >
+                    <span>{pill.label}</span>
+                    <span className="category-pill-count">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Scrollable Hotspot Queue List */}
+            <div className="hotspot-queue-list">
+              {filteredIncidents.length === 0 ? (
+                <div style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  No hotspots match selected filter.
+                </div>
+              ) : (
+                filteredIncidents.slice(0, 5).map(inc => {
+                  const isSelected = inc.id === selectedIncidentId;
+                  const isCrit = inc.priority.overallScore >= 80;
+                  return (
+                    <div
+                      key={inc.id}
+                      onClick={() => {
+                        setSelectedIncidentId(inc.id);
+                        if (mapInstanceRef.current && inc.centroid) {
+                          mapInstanceRef.current.flyTo([inc.centroid.lat, inc.centroid.lng], 16);
+                        }
+                      }}
+                      className={`hotspot-queue-item ${isSelected ? 'selected' : ''}`}
+                    >
+                      <div style={{ flex: 1, minWidth: 0, paddingRight: '0.4rem' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {inc.title}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '1px' }}>
+                          <span>📍 {inc.ward.split('-')[0].trim()}</span>
+                          <span>• {inc.signalIds.length} signals</span>
+                          {inc.velocitySurgePercent > 0 && (
+                            <span style={{ color: '#dc2626', fontWeight: 700 }}>+{inc.velocitySurgePercent}%/hr</span>
+                          )}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        color: isCrit ? '#b91c1c' : '#0369a1',
+                        background: isCrit ? '#fee2e2' : '#e0f2fe',
+                        padding: '1px 5px',
+                        borderRadius: 4,
+                        border: `1px solid ${isCrit ? '#fca5a5' : '#bae6fd'}`
+                      }}>
+                        P{inc.priority.overallScore}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FLOATING CONTROL OVERLAY 3: Vertical Map Controls Stack & Layer Switcher (Right Side) */}
+      <div className="map-controls-vertical">
+        <button
+          onClick={() => mapInstanceRef.current?.zoomIn()}
+          className="map-control-btn"
+          title="Zoom In"
+          aria-label="Zoom In"
+        >
+          <Plus size={16} />
+        </button>
+        <button
+          onClick={() => mapInstanceRef.current?.zoomOut()}
+          className="map-control-btn"
+          title="Zoom Out"
+          aria-label="Zoom Out"
+        >
+          <Minus size={16} />
+        </button>
+        <button
+          onClick={() => mapInstanceRef.current?.flyTo([28.4595, 77.0266], 13)}
+          className="map-control-btn"
+          title="Recenter Map View"
+          aria-label="Recenter Map View"
+        >
+          <Compass size={16} />
+        </button>
+        <button
+          onClick={() => setIsLayerSwitcherOpen(!isLayerSwitcherOpen)}
+          className={`map-control-btn ${isLayerSwitcherOpen ? 'active' : ''}`}
+          title="Toggle Map Layers"
+          aria-label="Toggle Map Layers"
+        >
+          <Layers size={16} />
+        </button>
+      </div>
+
+      {/* Floating Progressive Layer Switcher Popover */}
+      {isLayerSwitcherOpen && (
+        <div className="map-layer-popover">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.3rem' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-primary)' }}>
+              Map Layers
+            </span>
+            <button
+              onClick={() => setIsLayerSwitcherOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+            >
+              <X size={13} />
+            </button>
+          </div>
+
+          <div className="layer-group-title">CIVIC SIGNALS</div>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.hotspots}
+              onChange={e => setVisibleLayers(v => ({ ...v, hotspots: e.target.checked }))}
+            />
+            <span>Demand Hotspots</span>
+          </label>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.rawSignals}
+              onChange={e => setVisibleLayers(v => ({ ...v, rawSignals: e.target.checked }))}
+            />
+            <span>Individual Signals</span>
+          </label>
+
+          <div className="layer-group-title">INFRASTRUCTURE</div>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.criticalAssets}
+              onChange={e => setVisibleLayers(v => ({ ...v, criticalAssets: e.target.checked }))}
+            />
+            <span>Critical Assets</span>
+          </label>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.drainage}
+              onChange={e => setVisibleLayers(v => ({ ...v, drainage: e.target.checked }))}
+            />
+            <span>Drainage / Infrastructure</span>
+          </label>
+
+          <div className="layer-group-title">CONTEXT</div>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.wardBoundaries}
+              onChange={e => setVisibleLayers(v => ({ ...v, wardBoundaries: e.target.checked }))}
+            />
+            <span>Ward Boundaries</span>
+          </label>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.weatherRisk}
+              onChange={e => setVisibleLayers(v => ({ ...v, weatherRisk: e.target.checked }))}
+            />
+            <span>Weather Risk Layer</span>
+          </label>
+          <label className="layer-checkbox-item">
+            <input
+              type="checkbox"
+              checked={visibleLayers.historicalIncidents}
+              onChange={e => setVisibleLayers(v => ({ ...v, historicalIncidents: e.target.checked }))}
+            />
+            <span>Historical Incidents</span>
+          </label>
+        </div>
+      )}
+
+      {/* FLOATING CONTROL OVERLAY 4: Selected Civic Issue Decision Card (Lower-Left) */}
+      {selectedIncident && (
+        <div className="map-floating-context-card">
+          {/* Card Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, background: '#1e3a8a', color: '#ffffff', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                  {selectedIncident.category.toUpperCase()}
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  📍 {selectedIncident.ward}
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                {selectedIncident.title}
+              </h3>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                background: selectedIncident.priority.overallScore >= 80 ? '#fee2e2' : '#fef3c7',
+                color: selectedIncident.priority.overallScore >= 80 ? '#dc2626' : '#b45309',
+                border: `1px solid ${selectedIncident.priority.overallScore >= 80 ? '#fca5a5' : '#fcd34d'}`,
+                padding: '0.2rem 0.5rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)'
+              }}>
+                {selectedIncident.priority.overallScore >= 80 && (
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#dc2626' }} />
+                )}
+                <span>P {selectedIncident.priority.overallScore}/100</span>
+              </div>
+              <button
+                onClick={() => setSelectedIncidentId(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '4px'
+                }}
+                title="Dismiss Card"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Quantitative Telemetry Metrics Row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '0.5rem',
+            background: 'var(--bg-surface-elevated)',
+            padding: '0.65rem 0.85rem',
+            borderRadius: '8px',
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>CITIZEN SIGNALS</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.1rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                  {selectedIncident.signalIds.length}
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>reports</span>
+              </div>
+              <span className="provenance-tag-observed" style={{ fontSize: '0.58rem' }}>[OBSERVED]</span>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>SIGNAL VELOCITY</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.1rem' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
+                  +{selectedIncident.velocitySurgePercent}%
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>/hr</span>
+              </div>
+              <span style={{ fontSize: '0.58rem', color: '#dc2626', fontWeight: 800, background: '#fee2e2', border: '1px solid #fca5a5', padding: '1px 5px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>[TELEMETRY]</span>
+            </div>
+          </div>
+
+          {/* Impacted Infrastructure */}
+          {selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolName && (
+            <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem',
-              background: isSidebarOpen ? '#1e3a8a' : 'var(--bg-surface)',
-              color: isSidebarOpen ? '#ffffff' : 'var(--text-primary)',
-              border: '1px solid var(--border-medium)',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '8px',
+              padding: '0.5rem 0.75rem',
+              background: 'rgba(124, 58, 237, 0.08)',
+              border: '1px solid rgba(124, 58, 237, 0.2)',
+              borderRadius: '6px',
               fontSize: '0.74rem',
-              fontWeight: 700,
-              boxShadow: 'var(--shadow-md)',
-              cursor: 'pointer',
-              backdropFilter: 'blur(12px)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <List size={14} color={isSidebarOpen ? '#ffffff' : '#1e3a8a'} />
-            <span>Hotspots Queue</span>
-            <span style={{
-              background: isSidebarOpen ? 'rgba(255,255,255,0.2)' : 'var(--bg-surface-elevated)',
-              padding: '0.1rem 0.4rem',
-              borderRadius: '999px',
-              fontSize: '0.68rem',
-              fontFamily: 'var(--font-mono)'
+              color: '#6d28d9',
+              fontWeight: 600
             }}>
-              {filteredIncidents.length}
-            </span>
-          </button>
+              <span>🏫</span>
+              <span>
+                {selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolName} ({selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolDistanceMeters}m away)
+              </span>
+            </div>
+          )}
 
-          <button
-            onClick={() => setMapMode(mapMode === 'ai_priority' ? 'civic_signals' : 'ai_priority')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-medium)',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              boxShadow: 'var(--shadow-md)',
-              cursor: 'pointer',
-              backdropFilter: 'blur(12px)',
-              transition: 'all 0.15s ease'
-            }}
-            title="Toggle between AI Clustered Demand Hotspots and Raw Civic Signals"
-          >
-            <Zap size={14} color="#0284c7" />
-            <span>{mapMode === 'ai_priority' ? 'AI Hotspots' : 'Raw Signals'}</span>
-          </button>
+          {/* AI Synthesis Summary */}
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+            {selectedIncident.auditableInsight.modelInference.summary}
+          </div>
+
+          {/* Action CTAs — MAP -> EVIDENCE -> INVESTMENT */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', paddingTop: '0.2rem' }}>
+            <button
+              data-tour="open-dossier-btn"
+              onClick={() => handleOpenDossierFromMap(selectedIncident)}
+              style={{
+                flex: 1,
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 2px 6px rgba(30, 58, 138, 0.25)'
+              }}
+            >
+              <FolderOpen size={13} />
+              <span>OPEN EVIDENCE DOSSIER</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('investment_gaps')}
+              style={{
+                background: 'var(--bg-surface-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: '6px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              <span>INVESTMENT BOARD</span>
+            </button>
+
+            <button
+              onClick={() => prioritizeRecommendationInPipeline(selectedIncident.id)}
+              style={{
+                background: '#eff6ff',
+                color: '#1e3a8a',
+                border: '1px solid #bfdbfe',
+                borderRadius: '6px',
+                padding: '0.55rem 0.85rem',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+              title="Prioritize this recommendation in the Capital Pipeline"
+            >
+              <span>PRIORITIZE</span>
+              <ArrowUpRight size={13} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Floating Replay & Time Slider Control Bar (Visible only in SIMULATION mode) */}
       {ingestionMode === 'SIMULATION' && (
@@ -771,7 +1047,6 @@ export const LiveMap: React.FC = () => {
           }}
         >
           {isTimelineMinimized ? (
-            /* Minimized Compact Timeline Bar */
             <div
               onPointerDown={handleTimelinePointerDown}
               onPointerMove={handleTimelinePointerMove}
@@ -823,9 +1098,7 @@ export const LiveMap: React.FC = () => {
               </button>
             </div>
           ) : (
-            /* Expanded Timeline Control Bar */
             <>
-              {/* Drag Handle & Status Header */}
               <div
                 onPointerDown={handleTimelinePointerDown}
                 onPointerMove={handleTimelinePointerMove}
@@ -870,7 +1143,6 @@ export const LiveMap: React.FC = () => {
                 </div>
               </div>
 
-              {/* Scrubber controls & Speed selection */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                 <button
                   onClick={isPlaying ? pause : play}
@@ -892,56 +1164,27 @@ export const LiveMap: React.FC = () => {
                   <span>Step</span>
                 </button>
 
-                {/* Speed buttons */}
                 <div style={{ display: 'flex', background: 'var(--bg-surface-elevated)', borderRadius: '6px', border: '1px solid var(--border-subtle)', padding: '2px', gap: '2px' }}>
-                  <button
-                    onClick={() => setPlaybackSpeed(1)}
-                    style={{
-                      border: 'none',
-                      background: playbackSpeed === 1 ? 'var(--cyan-500)' : 'transparent',
-                      color: playbackSpeed === 1 ? 'var(--outer-950)' : 'var(--text-secondary)',
-                      borderRadius: '4px',
-                      padding: '0.15rem 0.4rem',
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    1x
-                  </button>
-                  <button
-                    onClick={() => setPlaybackSpeed(5)}
-                    style={{
-                      border: 'none',
-                      background: playbackSpeed === 5 ? 'var(--cyan-500)' : 'transparent',
-                      color: playbackSpeed === 5 ? 'var(--outer-950)' : 'var(--text-secondary)',
-                      borderRadius: '4px',
-                      padding: '0.15rem 0.4rem',
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    5x
-                  </button>
-                  <button
-                    onClick={() => setPlaybackSpeed(10)}
-                    style={{
-                      border: 'none',
-                      background: playbackSpeed === 10 ? 'var(--cyan-500)' : 'transparent',
-                      color: playbackSpeed === 10 ? 'var(--outer-950)' : 'var(--text-secondary)',
-                      borderRadius: '4px',
-                      padding: '0.15rem 0.4rem',
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    10x
-                  </button>
+                  {[1, 5, 10].map(speed => (
+                    <button
+                      key={speed}
+                      onClick={() => setPlaybackSpeed(speed as 1 | 5 | 10)}
+                      style={{
+                        border: 'none',
+                        background: playbackSpeed === speed ? '#2563eb' : 'transparent',
+                        color: playbackSpeed === speed ? '#ffffff' : 'var(--text-secondary)',
+                        borderRadius: '4px',
+                        padding: '0.15rem 0.4rem',
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
                 </div>
 
-                {/* Scrubber Track */}
                 <input
                   type="range"
                   min={0}
@@ -958,13 +1201,7 @@ export const LiveMap: React.FC = () => {
                 <button
                   onClick={resetSimulation}
                   className="sim-btn"
-                  style={{
-                    padding: '0.35rem 0.55rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.2rem',
-                    fontSize: '0.72rem'
-                  }}
+                  style={{ padding: '0.35rem 0.55rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.72rem' }}
                   title="Reset simulation to initial baseline"
                 >
                   <RotateCcw size={12} />
@@ -975,209 +1212,7 @@ export const LiveMap: React.FC = () => {
         </div>
       )}
 
-      {/* FLOATING CONTEXT CARD (Docked Bottom-Left on Marker Selection) */}
-      {selectedIncident && (
-        <div
-          className="map-floating-context-card"
-          style={{
-            position: 'absolute',
-            bottom: '1.25rem',
-            left: '1.25rem',
-            zIndex: 1080,
-            width: '100%',
-            maxWidth: '430px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-medium)',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            boxShadow: 'var(--shadow-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.85rem',
-            animation: 'fadeIn 0.2s ease-out'
-          }}
-        >
-          {/* Card Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, background: 'var(--bg-surface-elevated)', color: 'var(--text-secondary)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-                  {selectedIncident.ward.toUpperCase()}
-                </span>
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  {selectedIncident.category.toUpperCase()}
-                </span>
-              </div>
-              <h3 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-                {selectedIncident.title}
-              </h3>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                background: selectedIncident.priority.overallScore >= 80 ? '#fee2e2' : '#fef3c7',
-                color: selectedIncident.priority.overallScore >= 80 ? '#dc2626' : '#b45309',
-                border: `1px solid ${selectedIncident.priority.overallScore >= 80 ? '#fca5a5' : '#fcd34d'}`,
-                padding: '0.2rem 0.5rem',
-                borderRadius: '6px',
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                fontFamily: 'var(--font-mono)'
-              }}>
-                {selectedIncident.priority.overallScore >= 80 && (
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#dc2626' }} />
-                )}
-                <span>{selectedIncident.priority.overallScore}/100</span>
-              </div>
-              <button
-                onClick={() => setSelectedIncidentId(null)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
-                  padding: '2px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  borderRadius: '4px'
-                }}
-                title="Dismiss Card"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Quantitative Metrics Row */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: '0.5rem',
-            background: 'var(--bg-surface-elevated)',
-            padding: '0.65rem 0.85rem',
-            borderRadius: '8px'
-          }}>
-            <div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Citizen Signals</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.1rem' }}>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-                  {selectedIncident.signalIds.length}
-                </span>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>reports</span>
-              </div>
-              <span style={{ fontSize: '0.62rem', color: '#1e40af', fontWeight: 700 }}>[OBSERVED]</span>
-            </div>
-
-            <div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Signal Velocity</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.1rem' }}>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#dc2626', fontFamily: 'var(--font-mono)' }}>
-                  +{selectedIncident.velocitySurgePercent}%
-                </span>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>/hr</span>
-              </div>
-              <span style={{ fontSize: '0.62rem', color: '#dc2626', fontWeight: 700 }}>[TELEMETRY]</span>
-            </div>
-          </div>
-
-          {/* Impacted Infrastructure */}
-          {selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolName && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.5rem 0.75rem',
-              background: 'rgba(124, 58, 237, 0.08)',
-              border: '1px solid rgba(124, 58, 237, 0.2)',
-              borderRadius: '6px',
-              fontSize: '0.74rem',
-              color: '#6d28d9',
-              fontWeight: 600
-            }}>
-              <span>🏫</span>
-              <span>
-                {selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolName} ({selectedIncident.auditableInsight.calculatedMetrics.nearestSchoolDistanceMeters}m away)
-              </span>
-            </div>
-          )}
-
-          {/* AI Synthesis Summary */}
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-            {selectedIncident.auditableInsight.modelInference.summary}
-          </div>
-
-          {/* Action CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.2rem' }}>
-            <button
-              onClick={() => handleOpenDossierFromMap(selectedIncident)}
-              style={{
-                flex: 1,
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '0.55rem 0.85rem',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 2px 6px rgba(30, 58, 138, 0.25)'
-              }}
-            >
-              <Sparkles size={13} />
-              <span>Open Evidence Dossier</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('investment_gaps')}
-              style={{
-                background: 'var(--bg-surface-elevated)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-medium)',
-                borderRadius: '6px',
-                padding: '0.55rem 0.85rem',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem'
-              }}
-            >
-              <span>Invest Board</span>
-            </button>
-
-            <button
-              onClick={() => prioritizeRecommendationInPipeline(selectedIncident.id)}
-              style={{
-                background: '#eff6ff',
-                color: '#1e3a8a',
-                border: '1px solid #bfdbfe',
-                borderRadius: '6px',
-                padding: '0.55rem 0.85rem',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem'
-              }}
-              title="Prioritize this recommendation in the Capital Pipeline"
-            >
-              <span>Prioritize</span>
-              <ArrowUpRight size={13} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* On-demand Hotspot Queue & Spatial Filters Slide-out Drawer */}
+      {/* On-demand Hotspot Queue & Search Slide-out Drawer */}
       {isSidebarOpen && (
         <div
           style={{
@@ -1191,7 +1226,6 @@ export const LiveMap: React.FC = () => {
             animation: 'fadeIn 0.15s ease-out'
           }}
         >
-          {/* Drawer Canvas */}
           <div
             style={{
               width: '380px',
@@ -1216,7 +1250,7 @@ export const LiveMap: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <List size={15} color="#1e3a8a" />
                 <span style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Hotspot Queue & Filters
+                  Hotspot Search & Ward Filters
                 </span>
               </div>
               <button
@@ -1240,7 +1274,6 @@ export const LiveMap: React.FC = () => {
             </div>
           </div>
 
-          {/* Backdrop Click to close */}
           <div
             onClick={() => setIsSidebarOpen(false)}
             style={{

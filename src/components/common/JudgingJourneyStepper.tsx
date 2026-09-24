@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCivic } from '../../context/CivicContext';
 
 export type JudgingStep = 'INVEST' | 'EVIDENCE' | 'EXPLAIN' | 'DECIDE' | 'APPROVE' | 'MEASURE';
 
@@ -19,13 +20,13 @@ interface Props {
   className?: string;
 }
 
-const STEPS: Array<{ key: JudgingStep; label: string; num: number }> = [
-  { key: 'INVEST', label: '1. INVEST', num: 1 },
-  { key: 'EVIDENCE', label: '2. EVIDENCE', num: 2 },
-  { key: 'EXPLAIN', label: '3. EXPLAIN', num: 3 },
-  { key: 'DECIDE', label: '4. DECIDE', num: 4 },
-  { key: 'APPROVE', label: '5. APPROVE', num: 5 },
-  { key: 'MEASURE', label: '6. MEASURE', num: 6 }
+const STEPS: Array<{ key: JudgingStep; label: string; num: number; targetTab: string }> = [
+  { key: 'INVEST', label: '1. INVEST', num: 1, targetTab: 'investment_gaps' },
+  { key: 'EVIDENCE', label: '2. EVIDENCE', num: 2, targetTab: 'development_map' },
+  { key: 'EXPLAIN', label: '3. EXPLAIN', num: 3, targetTab: 'demand_intelligence' },
+  { key: 'DECIDE', label: '4. DECIDE', num: 4, targetTab: 'project_priorities' },
+  { key: 'APPROVE', label: '5. APPROVE', num: 5, targetTab: 'project_priorities' },
+  { key: 'MEASURE', label: '6. MEASURE', num: 6, targetTab: 'impact' }
 ];
 
 export const JudgingJourneyStepper: React.FC<Props> = ({
@@ -34,6 +35,7 @@ export const JudgingJourneyStepper: React.FC<Props> = ({
   intervention,
   className = ''
 }) => {
+  const { setActiveTab } = useCivic();
   const currentIndex = STEPS.findIndex(s => s.key === currentStep);
 
   return (
@@ -49,7 +51,7 @@ export const JudgingJourneyStepper: React.FC<Props> = ({
         gap: '0.5rem'
       }}
     >
-      {/* Optional Persistent Context Strip */}
+      {/* Persistent Intervention Context Strip */}
       {intervention && intervention.projectTitle && (
         <div
           style={{
@@ -59,42 +61,30 @@ export const JudgingJourneyStepper: React.FC<Props> = ({
             flexWrap: 'wrap',
             gap: '0.5rem',
             paddingBottom: '0.45rem',
-            borderBottom: '1px solid var(--border-subtle)',
+            borderBottom: '1px dashed var(--border-subtle)',
             fontSize: '0.74rem'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span
-              style={{
-                background: 'rgba(37, 99, 235, 0.15)',
-                color: '#60a5fa',
-                border: '1px solid rgba(96, 165, 250, 0.3)',
-                padding: '0.1rem 0.45rem',
-                borderRadius: '4px',
-                fontWeight: 800,
-                fontSize: '0.65rem',
-                fontFamily: 'var(--font-mono)'
-              }}
-            >
-              ACTIVE INTERVENTION
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
+              ACTIVE INTERVENTION:
             </span>
-            <strong style={{ color: 'var(--text-primary)' }}>{intervention.projectTitle}</strong>
+            <span style={{ color: 'var(--cyan-400)', fontWeight: 700 }}>
+              {intervention.projectTitle}
+            </span>
             {intervention.locationName && (
-              <span style={{ color: 'var(--text-muted)' }}>• {intervention.locationName}</span>
-            )}
-            {intervention.approvedCapitalLakhs !== undefined && (
-              <span style={{ color: '#10b981', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                • ₹{intervention.approvedCapitalLakhs}L
-              </span>
-            )}
-            {intervention.priorityScore !== undefined && (
-              <span style={{ color: '#f59e0b', fontWeight: 700 }}>
-                • Priority {intervention.priorityScore}/100
+              <span style={{ color: 'var(--text-muted)' }}>
+                ({intervention.locationName})
               </span>
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            {intervention.approvedCapitalLakhs !== undefined && (
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text-primary)' }}>
+                ₹{intervention.approvedCapitalLakhs} Lakhs
+              </span>
+            )}
             {intervention.status && (
               <span
                 style={{
@@ -143,7 +133,7 @@ export const JudgingJourneyStepper: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 6-Stage Linear Stepper */}
+      {/* 6-Stage Linear Interactive Stepper */}
       <div
         style={{
           display: 'flex',
@@ -160,7 +150,8 @@ export const JudgingJourneyStepper: React.FC<Props> = ({
 
           return (
             <React.Fragment key={step.key}>
-              <div
+              <button
+                onClick={() => setActiveTab(step.targetTab as any)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -179,17 +170,38 @@ export const JudgingJourneyStepper: React.FC<Props> = ({
                   border: isActive
                     ? '1px solid rgba(6, 182, 212, 0.35)'
                     : '1px solid transparent',
-                  transition: 'all 0.2s ease'
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease-in-out'
                 }}
+                title={`Navigate to Stage ${step.num}: ${step.label}`}
               >
-                <span>
-                  {isCompleted ? '✓ ' : isActive ? '● ' : '○ '}
-                  {step.label}
-                  {isActive ? ' [ACTIVE]' : ''}
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    background: isActive
+                      ? '#0284c7'
+                      : isCompleted
+                      ? '#10b981'
+                      : 'var(--bg-surface-elevated)',
+                    color: isActive || isCompleted ? '#ffffff' : 'var(--text-muted)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.62rem',
+                    fontWeight: 800
+                  }}
+                >
+                  {step.num}
                 </span>
-              </div>
+                <span>{step.label}</span>
+              </button>
+
               {idx < STEPS.length - 1 && (
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', opacity: 0.6 }}>➔</span>
+                <span style={{ color: 'var(--border-medium)', fontSize: '0.7rem' }}>
+                  →
+                </span>
               )}
             </React.Fragment>
           );

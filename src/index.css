@@ -200,6 +200,110 @@
   background-color: #090d16 !important;
 }
 
+/* ==========================================================================
+   UI/UX Pro Max Accessibility & Institutional Design System Rules
+   ========================================================================== */
+/* 1. Global Focus State & Cursor Pointer Rules */
+button, a, select, input, textarea, [role="button"], [tabindex="0"] {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 3px solid var(--border-accent, #38bdf8) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* 2. Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 3. Evidence Provenance & Provenance Badge Hierarchy */
+.provenance-tag-observed {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.35);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+[data-theme="dark"] .provenance-tag-observed {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.provenance-tag-derived {
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+[data-theme="dark"] .provenance-tag-derived {
+  background: rgba(167, 139, 250, 0.15);
+  color: #c4b5fd;
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
+.provenance-tag-ai {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+[data-theme="dark"] .provenance-tag-ai {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fde047;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.provenance-tag-human {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+[data-theme="dark"] .provenance-tag-human {
+  background: rgba(52, 211, 153, 0.15);
+  color: #6ee7b7;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+
 [data-theme="dark"] ::-webkit-scrollbar-track {
   background: #090d16;
 }
@@ -1873,3 +1977,389 @@ body,
     padding: 0.65rem !important;
   }
 }
+
+/* ==========================================================================
+   NAGARBODH MAP EXPERIENCE REDESIGN — COMMAND CENTER SPATIAL INTELLIGENCE
+   ========================================================================== */
+
+/* Floating Telemetry Legend (Upper-Left) - Symmetrical with Hotspots Queue */
+.telemetry-legend-floating {
+  pointer-events: auto;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  width: 300px;
+  font-size: 0.74rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.telemetry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.telemetry-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.telemetry-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: var(--civic-blue-50);
+  border: 1px solid var(--border-subtle);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.telemetry-section-divider {
+  border-top: 1px solid var(--border-subtle);
+  margin: 0.45rem 0;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.73rem;
+  font-weight: 500;
+}
+
+.telemetry-item strong {
+  color: var(--text-primary);
+}
+
+.telemetry-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.telemetry-collapsed-btn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: all 0.15s ease;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.telemetry-collapsed-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-accent);
+}
+
+/* Floating Hotspots Queue (Upper-Right) - Symmetrical with Telemetry Legend */
+.hotspots-queue-floating {
+  pointer-events: auto;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  width: 300px;
+  max-width: calc(100vw - 4.5rem);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.hotspots-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hotspots-queue-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hotspots-queue-badge {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+.ai-hotspots-tag {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #0284c7;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+/* Category Filter Pills */
+.category-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.category-filter-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.category-pill {
+  border: 1px solid var(--border-medium);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.28rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.category-pill:hover {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+.category-pill.active {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(30, 58, 138, 0.25);
+}
+
+.category-pill-count {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  opacity: 0.85;
+}
+
+/* Hotspot List Items inside Queue Card */
+.hotspot-queue-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-right: 2px;
+}
+
+.hotspot-queue-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hotspot-queue-item:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-medium);
+  transform: translateX(2px);
+}
+
+.hotspot-queue-item.selected {
+  border: 1.5px solid #2563eb;
+  background: var(--civic-blue-50);
+}
+
+/* Vertical Map Controls Stack (Right Side) */
+.map-controls-vertical {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  pointer-events: auto;
+}
+
+.map-control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: all 0.15s ease;
+}
+
+.map-control-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: #2563eb;
+  color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.map-control-btn.active {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+  color: #ffffff;
+}
+
+/* Progressive Layer Switcher Popover */
+.map-layer-popover {
+  position: absolute;
+  top: 0.85rem;
+  right: 3.4rem;
+  z-index: 1100;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  padding: 0.75rem 0.95rem;
+  box-shadow: var(--shadow-lg);
+  width: 240px;
+  backdrop-filter: blur(16px);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.layer-group-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.layer-group-title:first-child {
+  margin-top: 0;
+}
+
+.layer-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.74rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+
+.layer-checkbox-item input {
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+/* Floating Selected Civic Issue Card (Lower-Left) - Non-overlapping */
+.map-floating-context-card {
+  pointer-events: auto;
+  position: absolute;
+  bottom: 0.85rem;
+  left: 0.85rem;
+  z-index: 1080;
+  width: 340px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(16px);
+}
+
+/* Mobile responsive bottom sheet adjustments */
+@media (max-width: 768px) {
+  .map-floating-context-card {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-width: none;
+    padding: 0.9rem;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .hotspots-queue-floating {
+    width: calc(100vw - 1rem);
+    right: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .telemetry-legend-floating {
+    max-width: calc(100vw - 4rem);
+  }
+
+  .map-controls-vertical {
+    top: 3.5rem;
+    right: 0.5rem;
+  }
+
+  .map-layer-popover {
+    right: 3rem;
+    top: 3.5rem;
+    width: 210px;
+  }
+}
