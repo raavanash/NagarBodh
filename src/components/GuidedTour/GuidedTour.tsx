@@ -27,7 +27,8 @@ export const GuidedTour: React.FC = () => {
   // Initial load: Check localStorage on mount
   useEffect(() => {
     const state = getTourState();
-    if (!state.isCompleted && !state.dontShowAgain && !state.isSkipped) {
+    const isAutomatedTest = typeof window !== 'undefined' && (window.navigator?.webdriver || window.location.search.includes('no-tour'));
+    if (!state.isCompleted && !state.dontShowAgain && !state.isSkipped && !isAutomatedTest) {
       // Delay slightly for initial render
       const timer = setTimeout(() => setShowWelcome(true), 600);
       return () => clearTimeout(timer);
