@@ -46,6 +46,7 @@ console.log('[ NAGARBODH SERVER ] GOOGLE_WEATHER_API_KEY configured:', Boolean(p
 console.log('[ NAGARBODH SERVER ] OPENWEATHER_API_KEY configured:', Boolean(process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY));
 console.log('[ NAGARBODH SERVER ] X_BEARER_TOKEN configured:', Boolean(process.env.X_BEARER_TOKEN || process.env.VITE_X_BEARER_TOKEN));
 console.log('[ NAGARBODH SERVER ] GEMINI_API_KEY configured:', Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY));
+console.log('[ NAGARBODH SERVER ] DATAGOVINDIA_API_KEY configured:', Boolean(process.env.DATAGOVINDIA_API_KEY || process.env.VITE_DATAGOVINDIA_API_KEY || process.env.OGD_API_KEY));
 
 function fetchUrl(url: string, options: { method?: string; headers?: Record<string, string>; body?: any; timeoutMs?: number } = {}): Promise<FetchResult> {
   return new Promise((resolve, reject) => {
@@ -366,6 +367,80 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
     } catch (err: any) {
       res.statusCode = 200;
       res.end(JSON.stringify({ ok: false, fallback: true, error: `Gemini network request failed: ${err.message}` }));
+      return true;
+    }
+  }
+
+  // 4. OGD Facilities Route (data.gov.in): Delhi Government Hospitals & Health Facilities
+  if (pathname === '/api/ogd/facilities' || pathname === '/api/ogd/hospitals' || pathname === '/api/ogd') {
+    const limit = reqUrl.searchParams.get('limit') || '25';
+    const state = reqUrl.searchParams.get('state') || 'Delhi';
+    const apiKey = (process.env.DATAGOVINDIA_API_KEY || process.env.VITE_DATAGOVINDIA_API_KEY || process.env.OGD_API_KEY || '').trim();
+
+    res.setHeader('Content-Type', 'application/json');
+
+    if (!apiKey || apiKey === 'your_datagovindia_api_key_here') {
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        ok: false,
+        mode: 'REPLAY',
+        fallback: true,
+        message: 'DATAGOVINDIA_API_KEY not configured on backend server. Operating in deterministic replay fixture mode.',
+        dataset: 'Directory of Hospitals and Health Facilities in Delhi',
+        source: 'Open Government Data (OGD) Platform India — data.gov.in [REPLAY]'
+      }));
+      return true;
+    }
+
+    const resourceId = (process.env.OGD_HOSPITALS_RESOURCE_ID || 'b9eaefa5-ogd-delhi-hospitals').trim();
+    const ogdUrl = `https://api.data.gov.in/resource/${resourceId}?api-key=${encodeURIComponent(apiKey)}&format=json&limit=${encodeURIComponent(limit)}&filters[state]=${encodeURIComponent(state)}`;
+
+    try {
+      const ogdRes = await fetchUrl(ogdUrl, {
+        timeoutMs: 4000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'NagarBodh-Civic-Platform/1.0'
+        }
+      });
+
+      if (!ogdRes.ok) {
+        res.statusCode = 200;
+        res.end(JSON.stringify({
+          ok: false,
+          mode: 'REPLAY',
+          fallback: true,
+          status: ogdRes.status,
+          message: `OGD API returned HTTP ${ogdRes.status}. Using replay fallback.`,
+          dataset: 'Directory of Hospitals and Health Facilities in Delhi',
+          source: 'Open Government Data (OGD) Platform India — data.gov.in [REPLAY]'
+        }));
+        return true;
+      }
+
+      const records = ogdRes.data?.records || ogdRes.data?.data || [];
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        ok: true,
+        mode: 'LIVE',
+        fallback: false,
+        source: 'Open Government Data (OGD) Platform India — data.gov.in',
+        dataset: 'Directory of Hospitals and Health Facilities in Delhi (Live Stream)',
+        records,
+        totalCount: records.length,
+        retrievedAt: new Date().toISOString()
+      }));
+      return true;
+    } catch (err: any) {
+      res.statusCode = 200;
+      res.end(JSON.stringify({
+        ok: false,
+        mode: 'REPLAY',
+        fallback: true,
+        message: `OGD API request timed out or failed: ${err.message}. Using replay fallback.`,
+        dataset: 'Directory of Hospitals and Health Facilities in Delhi',
+        source: 'Open Government Data (OGD) Platform India — data.gov.in [REPLAY]'
+      }));
       return true;
     }
   }

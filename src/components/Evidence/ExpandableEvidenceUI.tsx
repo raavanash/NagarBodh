@@ -32,7 +32,8 @@ export type ProvenanceBadgeType =
   | 'projected'
   | 'simulation'
   | 'live'
-  | 'replay';
+  | 'replay'
+  | 'external_public';
 
 // Reusable Presentation Components
 export const ProvenanceBadge: React.FC<{
@@ -42,6 +43,7 @@ export const ProvenanceBadge: React.FC<{
   const resolveType = (): ProvenanceBadgeType => {
     if (type) return type;
     const clean = label.replace(/[\[\]]/g, '').trim().toUpperCase();
+    if (clean.includes('EXTERNAL PUBLIC') || clean.includes('EXTERNAL_PUBLIC') || clean.includes('PUBLIC EXTERNAL') || clean.includes('PUBLIC SIGNAL')) return 'external_public';
     if (clean.includes('OBSERVED')) return 'observed';
     if (clean.includes('CALCULATED')) return 'calculated';
     if (clean.includes('BASELINE')) return 'baseline';
@@ -64,6 +66,8 @@ export const ProvenanceBadge: React.FC<{
         return { bg: '#d1fae5', color: '#059669', border: '1px solid #a7f3d0' };
       case 'baseline':
         return { bg: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' };
+      case 'external_public':
+        return { bg: '#fdf2f8', color: '#be185d', border: '1px solid #fbcfe8' };
       case 'inference':
         return { bg: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe' };
       case 'recommended':

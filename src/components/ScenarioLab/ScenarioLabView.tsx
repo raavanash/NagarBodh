@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import {
   Activity,
-  AlertCircle,
   AlertTriangle,
   ArrowRight,
   Building2,
   CheckCircle2,
-  Compass,
   Database,
+  Eye,
   FlaskConical,
+  Globe,
   Info,
-  RefreshCw,
+  Layers,
+  Minus,
+  Plus,
+  Radio,
   RotateCcw,
   ShieldAlert,
   Sliders,
@@ -24,19 +27,24 @@ import {
   runSimulationScenario,
   getBaselineSectorContext
 } from '../../engine/simulationScenarioEngine';
-import { ScenarioChange, SimulationScenario } from '../../types/simulationScenario';
+import { ScenarioChange, SimulationScenario, ScenarioAnalysisResult } from '../../types/simulationScenario';
+import { ProvenanceBadge } from '../Evidence/ExpandableEvidenceUI';
 
 export const ScenarioLabView: React.FC = () => {
-  const { ingestionMode, incidents } = useCivic();
+  const { ingestionMode, incidents, signals, currentWeather, liveWeatherEnvelope } = useCivic();
 
-  // Selected Target Sector
+  // 1. Target Sector Selection (Sector 15 Water is primary demo focus)
   const [targetSectorId, setTargetSectorId] = useState<string>('WATER');
 
-  // Scenario Slider/Input States
+  // 2. What-If Assumption Input Sliders/Steppers
   const [popPercent, setPopPercent] = useState<number>(15);
   const [vulnPopPercent, setVulnPopPercent] = useState<number>(10);
   const [signalVolPercent, setSignalVolPercent] = useState<number>(25);
   const [infraPts, setInfraPts] = useState<number>(-10);
+
+  // 3. Calculation State (explicit Calculate Scenario execution)
+  const [hasCalculated, setHasCalculated] = useState<boolean>(true);
+  const [lastCalculatedAt, setLastCalculatedAt] = useState<string>(() => new Date().toLocaleTimeString());
 
   // Construct active SimulationScenario definition
   const currentScenario: SimulationScenario = useMemo(() => {
@@ -65,9 +73,15 @@ export const ScenarioLabView: React.FC = () => {
   }, [targetSectorId, popPercent, vulnPopPercent, signalVolPercent, infraPts]);
 
   // Execute scenario analysis immutably via simulationScenarioEngine
-  const analysisResult = useMemo(() => {
+  const analysisResult: ScenarioAnalysisResult = useMemo(() => {
     return runSimulationScenario(currentScenario, ingestionMode, incidents);
   }, [currentScenario, ingestionMode, incidents]);
+
+  // Handle Calculate Action
+  const handleCalculate = () => {
+    setHasCalculated(true);
+    setLastCalculatedAt(new Date().toLocaleTimeString());
+  };
 
   // Reset helper
   const handleReset = () => {
@@ -75,13 +89,17 @@ export const ScenarioLabView: React.FC = () => {
     setVulnPopPercent(0);
     setSignalVolPercent(0);
     setInfraPts(0);
+    setHasCalculated(false);
   };
 
+  // Stress-Test Presets
   const handleApplyMonsoonSurgePreset = () => {
     setPopPercent(0);
     setVulnPopPercent(5);
     setSignalVolPercent(35);
     setInfraPts(-15);
+    setHasCalculated(true);
+    setLastCalculatedAt(new Date().toLocaleTimeString());
   };
 
   const handleApplyDemographicGrowthPreset = () => {
@@ -89,13 +107,26 @@ export const ScenarioLabView: React.FC = () => {
     setVulnPopPercent(15);
     setSignalVolPercent(10);
     setInfraPts(-5);
+    setHasCalculated(true);
+    setLastCalculatedAt(new Date().toLocaleTimeString());
   };
+
+  const handleApplyModernizationPreset = () => {
+    setPopPercent(0);
+    setVulnPopPercent(-10);
+    setSignalVolPercent(-20);
+    setInfraPts(25);
+    setHasCalculated(true);
+    setLastCalculatedAt(new Date().toLocaleTimeString());
+  };
+
+  const isLiveWeather = Boolean(liveWeatherEnvelope && ingestionMode === 'LIVE');
 
   return (
     <div className="scenario-lab-view-container w-full h-full flex-1 overflow-y-auto bg-[var(--bg-canvas)] text-[var(--text-primary)] font-body p-4 md:p-6 space-y-6">
       <div className="w-full max-w-7xl mx-auto space-y-6 pb-16">
 
-        {/* Header Banner & Provenance Notification */}
+        {/* 1. Header Banner & Mode Indicator */}
         <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-5 shadow-xs relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
             <div>
@@ -105,71 +136,81 @@ export const ScenarioLabView: React.FC = () => {
                 </span>
                 <div>
                   <h1 className="text-lg md:text-xl font-headline font-extrabold text-[var(--text-primary)] tracking-tight">
-                    Scenario Lab — What-If Analytical Sandbox
+                    Scenario Lab
                   </h1>
                   <span className="text-[11px] font-mono text-[var(--text-muted)] font-medium">
-                    Civic Assumptions & Sensitivity Testing Utility
+                    Sandboxed What-If Analytical Workspace
                   </span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-[var(--civic-blue-100)] text-[var(--text-accent)] border border-[var(--border-accent)]">
-                  ANALYTICAL SANDBOX
-                </span>
+                <ProvenanceBadge label="[SANDBOXED SCENARIO]" type="simulation" />
                 <span className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold border ${
-                  ingestionMode === 'LIVE' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                  ingestionMode === 'LIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-blue-500/10 text-blue-600 border-blue-500/30'
                 }`}>
-                  ● {ingestionMode} MODE
+                  ● {ingestionMode} BASELINE
                 </span>
               </div>
               <p className="text-xs text-[var(--text-secondary)] mt-2 font-medium max-w-3xl leading-relaxed">
-                Explore how changes in civic assumptions (demographics, demand volume, infrastructure adequacy) affect NagarBodh's projected investment and impact outputs.
+                Explore how changing civic assumptions could affect projected investment outcomes.
               </p>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
+                onClick={handleCalculate}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                title="Execute scenario calculations against deterministic engines"
+              >
+                <Sparkles size={14} />
+                <span>Calculate Scenario</span>
+              </button>
+
+              <button
                 onClick={handleReset}
-                className="px-3.5 py-2 rounded-lg bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-medium)] text-xs font-bold text-[var(--text-primary)] flex items-center gap-2 transition-colors cursor-pointer"
+                className="px-3 py-2 rounded-lg bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-medium)] text-xs font-bold text-[var(--text-primary)] flex items-center gap-2 transition-colors cursor-pointer"
                 title="Reset all scenario parameters to baseline"
               >
                 <RotateCcw size={14} className="text-[var(--text-muted)]" />
-                <span>Reset to Baseline</span>
+                <span>Reset Scenario</span>
               </button>
             </div>
           </div>
 
-          {/* Hard Isolation Guarantee Callout */}
+          {/* Hard Isolation Notice */}
           <div className="mt-4 p-3 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex items-start gap-3 text-xs text-[var(--text-secondary)]">
             <ShieldAlert size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
             <div className="leading-relaxed">
-              <strong className="text-[var(--text-primary)] font-semibold">Strict Analytical Isolation:</strong> Scenario Lab calculations run exclusively on temporary, in-memory overlays. Authoritative NagarBodh state, canonical priority scores, intervention lifecycles, baseline datasets, and simulation steps remain <span className="font-extrabold text-[var(--text-accent)]">100% untouched</span>.
+              <strong className="text-[var(--text-primary)] font-semibold">Sandboxed analysis:</strong> Scenario changes are temporary and do not modify NagarBodh's live data, simulation state, investment recommendations, or intervention records.
             </div>
           </div>
         </div>
 
-        {/* Main Grid: Sector Selector & Controls + Comparison Matrix */}
+        {/* 2. Main Workspace Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* Left Column: Target Sector & Scenario Controls (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
+          {/* LEFT COLUMN: Target Sector & What-If Controls (5 cols) */}
+          <div className="lg:col-span-5 space-y-5">
 
-            {/* 1. Target Sector Selection */}
+            {/* Sector Context Snapshot */}
             <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 md:p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between text-xs font-mono font-bold uppercase text-[var(--text-muted)] tracking-wider">
-                <span>1. Target District Sector</span>
+                <span>Selected Sector</span>
                 <span className="text-[var(--text-accent)] font-semibold">{analysisResult.wardName}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'WATER', label: 'Sector 15 (Water)', desc: 'Waterlogging & Drainage' },
+                  { id: 'WATER', label: 'Sector 15 (Water)', desc: 'Water / Stormwater' },
                   { id: 'HEALTHCARE', label: 'Seelampur (Health)', desc: 'Primary Healthcare' },
                   { id: 'TRANSPORT', label: 'Rohini (Transit)', desc: 'Feeder Bus & Transit' },
                   { id: 'EDUCATION', label: 'Dwarka (Schools)', desc: 'Primary Schools' }
                 ].map(sec => (
                   <button
                     key={sec.id}
-                    onClick={() => setTargetSectorId(sec.id)}
-                    className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col ${
+                    onClick={() => {
+                      setTargetSectorId(sec.id);
+                      setHasCalculated(true);
+                    }}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col ${
                       targetSectorId === sec.id
                         ? 'bg-[var(--civic-blue-50)] border-[var(--border-accent)] text-[var(--text-accent)] font-bold shadow-xs'
                         : 'bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
@@ -182,30 +223,84 @@ export const ScenarioLabView: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Scenario Parameter Controls */}
-            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 md:p-5 shadow-xs space-y-5">
+            {/* Authoritative Canonical Baseline Card */}
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 md:p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database size={15} className="text-slate-600" />
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                    Authoritative Baseline Context
+                  </h3>
+                </div>
+                <ProvenanceBadge label="[BASELINE CONTEXT]" type="baseline" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-[var(--bg-surface-elevated)] rounded-lg border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Priority Score</div>
+                  <div className="text-base font-black font-mono text-[var(--text-primary)]">
+                    {analysisResult.baseline.priorityScore}
+                    <span className="text-[10px] font-normal text-[var(--text-muted)]">/100</span>
+                  </div>
+                  <div className="text-[9px] text-rose-600 font-bold mt-0.5">{analysisResult.baseline.priorityLevel}</div>
+                </div>
+
+                <div className="p-2.5 bg-[var(--bg-surface-elevated)] rounded-lg border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Population</div>
+                  <div className="text-base font-black font-mono text-[var(--text-primary)]">
+                    {analysisResult.baseline.population.toLocaleString()}
+                  </div>
+                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{analysisResult.baseline.vulnerablePopulation.toLocaleString()} vuln</div>
+                </div>
+
+                <div className="p-2.5 bg-[var(--bg-surface-elevated)] rounded-lg border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Capital Gap</div>
+                  <div className="text-base font-black font-mono text-[var(--text-primary)]">
+                    ₹{analysisResult.baseline.investmentGapLakhs}L
+                  </div>
+                  <div className="text-[9px] text-emerald-600 font-bold mt-0.5">{analysisResult.baseline.projectedImpactScore}/100 impact</div>
+                </div>
+              </div>
+            </div>
+
+            {/* What-If Assumption Controls */}
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 md:p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sliders size={16} className="text-[var(--text-accent)]" />
                   <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                    2. Scenario What-If Adjustments
+                    What-If Civic Assumptions
                   </h3>
                 </div>
-                <span className="text-[10px] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] px-2 py-0.5 rounded font-mono font-bold border border-[var(--border-subtle)]">
-                  {currentScenario.changes.length} ACTIVE {currentScenario.changes.length === 1 ? 'CHANGE' : 'CHANGES'}
-                </span>
+                <ProvenanceBadge label="[SIMULATION]" type="simulation" />
               </div>
 
-              {/* Parameter 1: POPULATION_PERCENT */}
+              {/* Control 1: Population Percentage */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-medium">
                   <label className="text-[var(--text-primary)] font-semibold flex items-center gap-1.5">
                     <Users size={14} className="text-sky-500" />
-                    <span>Sector Population Change</span>
+                    <span>Population Adjustment</span>
                   </label>
-                  <span className="font-mono font-bold text-sky-600 dark:text-sky-400">
-                    {popPercent > 0 ? `+${popPercent}%` : `${popPercent}%`}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setPopPercent(p => Math.max(-50, p - 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Decrease by 5%"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <span className="font-mono font-bold text-sky-600 w-12 text-center text-xs">
+                      {popPercent > 0 ? `+${popPercent}%` : `${popPercent}%`}
+                    </span>
+                    <button
+                      onClick={() => setPopPercent(p => Math.min(50, p + 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Increase by 5%"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -216,23 +311,34 @@ export const ScenarioLabView: React.FC = () => {
                   onChange={e => setPopPercent(Number(e.target.value))}
                   className="w-full h-1.5 bg-[var(--bg-surface-elevated)] rounded-lg appearance-none cursor-pointer accent-sky-600"
                 />
-                <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
-                  <span>-50%</span>
-                  <span>Baseline (0%)</span>
-                  <span>+50%</span>
-                </div>
               </div>
 
-              {/* Parameter 2: VULNERABLE_POPULATION_PERCENT */}
+              {/* Control 2: Vulnerable Population Percentage */}
               <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
                 <div className="flex items-center justify-between text-xs font-medium">
                   <label className="text-[var(--text-primary)] font-semibold flex items-center gap-1.5">
                     <AlertTriangle size={14} className="text-amber-500" />
-                    <span>Vulnerable Population Change</span>
+                    <span>Vulnerable Population</span>
                   </label>
-                  <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                    {vulnPopPercent > 0 ? `+${vulnPopPercent}%` : `${vulnPopPercent}%`}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setVulnPopPercent(p => Math.max(-50, p - 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Decrease by 5%"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <span className="font-mono font-bold text-amber-600 w-12 text-center text-xs">
+                      {vulnPopPercent > 0 ? `+${vulnPopPercent}%` : `${vulnPopPercent}%`}
+                    </span>
+                    <button
+                      onClick={() => setVulnPopPercent(p => Math.min(50, p + 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Increase by 5%"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -243,23 +349,34 @@ export const ScenarioLabView: React.FC = () => {
                   onChange={e => setVulnPopPercent(Number(e.target.value))}
                   className="w-full h-1.5 bg-[var(--bg-surface-elevated)] rounded-lg appearance-none cursor-pointer accent-amber-600"
                 />
-                <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
-                  <span>-50%</span>
-                  <span>Baseline (0%)</span>
-                  <span>+50%</span>
-                </div>
               </div>
 
-              {/* Parameter 3: SIGNAL_VOLUME_PERCENT */}
+              {/* Control 3: Demand Signal Volume */}
               <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
                 <div className="flex items-center justify-between text-xs font-medium">
                   <label className="text-[var(--text-primary)] font-semibold flex items-center gap-1.5">
                     <Activity size={14} className="text-emerald-500" />
-                    <span>Demand Signal Volume Change</span>
+                    <span>Signal Volume</span>
                   </label>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {signalVolPercent > 0 ? `+${signalVolPercent}%` : `${signalVolPercent}%`}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSignalVolPercent(p => Math.max(-50, p - 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Decrease by 5%"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <span className="font-mono font-bold text-emerald-600 w-12 text-center text-xs">
+                      {signalVolPercent > 0 ? `+${signalVolPercent}%` : `${signalVolPercent}%`}
+                    </span>
+                    <button
+                      onClick={() => setSignalVolPercent(p => Math.min(100, p + 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Increase by 5%"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -270,23 +387,34 @@ export const ScenarioLabView: React.FC = () => {
                   onChange={e => setSignalVolPercent(Number(e.target.value))}
                   className="w-full h-1.5 bg-[var(--bg-surface-elevated)] rounded-lg appearance-none cursor-pointer accent-emerald-600"
                 />
-                <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
-                  <span>-50%</span>
-                  <span>Baseline (0%)</span>
-                  <span>+100%</span>
-                </div>
               </div>
 
-              {/* Parameter 4: INFRASTRUCTURE_INDEX_POINTS */}
+              {/* Control 4: Infrastructure Index */}
               <div className="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
                 <div className="flex items-center justify-between text-xs font-medium">
                   <label className="text-[var(--text-primary)] font-semibold flex items-center gap-1.5">
                     <Building2 size={14} className="text-indigo-500" />
-                    <span>Infrastructure Index Change</span>
+                    <span>Infrastructure Index</span>
                   </label>
-                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                    {infraPts > 0 ? `+${infraPts} pts` : `${infraPts} pts`}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setInfraPts(p => Math.max(-40, p - 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Decrease by 5 pts"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <span className="font-mono font-bold text-indigo-600 w-14 text-center text-xs">
+                      {infraPts > 0 ? `+${infraPts} pts` : `${infraPts} pts`}
+                    </span>
+                    <button
+                      onClick={() => setInfraPts(p => Math.min(40, p + 5))}
+                      className="p-1 rounded bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]"
+                      title="Increase by 5 pts"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -297,48 +425,82 @@ export const ScenarioLabView: React.FC = () => {
                   onChange={e => setInfraPts(Number(e.target.value))}
                   className="w-full h-1.5 bg-[var(--bg-surface-elevated)] rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
-                <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
-                  <span>-40 pts (Worse)</span>
-                  <span>Baseline (0)</span>
-                  <span>+40 pts (Better)</span>
-                </div>
               </div>
 
-              {/* Presets */}
-              <div className="pt-3 border-t border-[var(--border-subtle)] flex flex-col gap-2">
+              {/* Presets Row */}
+              <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
                 <span className="text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] tracking-wider">
-                  Quick Stress Test Presets:
+                  Quick What-If Presets:
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={handleApplyMonsoonSurgePreset}
-                    className="flex-1 py-1.5 px-2.5 bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] rounded-lg text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors cursor-pointer"
+                    className="flex-1 py-1 px-2 bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] rounded-md text-[11px] font-semibold text-[var(--text-primary)] border border-[var(--border-subtle)] cursor-pointer"
                   >
                     ⚡ Monsoon Surge
                   </button>
                   <button
                     onClick={handleApplyDemographicGrowthPreset}
-                    className="flex-1 py-1.5 px-2.5 bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] rounded-lg text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors cursor-pointer"
+                    className="flex-1 py-1 px-2 bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] rounded-md text-[11px] font-semibold text-[var(--text-primary)] border border-[var(--border-subtle)] cursor-pointer"
                   >
-                    👥 Population Influx
+                    👥 Growth (+20%)
                   </button>
+                  <button
+                    onClick={handleApplyModernizationPreset}
+                    className="flex-1 py-1 px-2 bg-[var(--bg-surface-elevated)] hover:bg-[var(--bg-card-hover)] rounded-md text-[11px] font-semibold text-[var(--text-primary)] border border-[var(--border-subtle)] cursor-pointer"
+                  >
+                    🛠️ Upgrade (+25 pts)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Evidence Context Summary (Non-blocking contextual reference) */}
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono font-bold uppercase text-[var(--text-muted)]">
+                <span className="flex items-center gap-1.5 text-[var(--text-primary)]">
+                  <Eye size={13} className="text-blue-600" />
+                  Evidence Context Baseline
+                </span>
+                <span className="text-[10px] text-[var(--text-muted)]">Reference Only</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 bg-[var(--bg-surface-elevated)] rounded-md border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)]">Citizen Grievances</div>
+                  <div className="font-bold text-[var(--text-primary)] font-mono">32 Signals</div>
+                  <div className="text-[9px] text-blue-600 font-bold">[OBSERVED]</div>
+                </div>
+                <div className="p-2 bg-[var(--bg-surface-elevated)] rounded-md border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)]">Rainfall Telemetry</div>
+                  <div className="font-bold text-[var(--text-primary)] font-mono">{currentWeather?.rainfallMmPerHour ?? 42} mm/hr</div>
+                  <div className="text-[9px] text-cyan-600 font-bold">[{isLiveWeather ? 'LIVE' : 'REPLAY'}]</div>
+                </div>
+                <div className="p-2 bg-[var(--bg-surface-elevated)] rounded-md border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)]">Government Facility</div>
+                  <div className="font-bold text-[var(--text-primary)] truncate">OGD Hospitals</div>
+                  <div className="text-[9px] text-slate-600 font-bold">[BASELINE CONTEXT]</div>
+                </div>
+                <div className="p-2 bg-[var(--bg-surface-elevated)] rounded-md border border-[var(--border-subtle)]">
+                  <div className="text-[10px] text-[var(--text-muted)]">Public Stream</div>
+                  <div className="font-bold text-[var(--text-primary)] truncate">Bluesky AppView</div>
+                  <div className="text-[9px] text-pink-600 font-bold">[EXTERNAL PUBLIC]</div>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* Right Column: Comparative Analytical Results Matrix (7 cols) */}
+          {/* RIGHT COLUMN: Scenario Result & Sensitivity Matrix (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
 
-            {/* Headline Sensitivity Comparison Cards */}
+            {/* Top Comparative Result Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               
-              {/* Priority Score Summary */}
+              {/* 1. Priority Score */}
               <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs relative overflow-hidden">
                 <div className="text-[10px] font-mono font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center justify-between">
                   <span>Priority Score</span>
-                  <span className="text-[9px] bg-[var(--civic-blue-50)] text-[var(--text-accent)] px-1.5 py-0.2 rounded font-bold border border-[var(--border-accent)]">[CALCULATED]</span>
+                  <ProvenanceBadge label="[CALCULATED]" type="calculated" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <div className="text-2xl font-headline font-black text-[var(--text-primary)]">
@@ -351,11 +513,11 @@ export const ScenarioLabView: React.FC = () => {
                 </div>
                 <div className="mt-2 text-[11px] font-bold flex items-center gap-1">
                   {analysisResult.deltas.priorityScoreDelta > 0 ? (
-                    <span className="text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
+                    <span className="text-rose-600 flex items-center gap-0.5">
                       <TrendingUp size={13} /> +{analysisResult.deltas.priorityScoreDelta} pts (Higher Urgency)
                     </span>
                   ) : analysisResult.deltas.priorityScoreDelta < 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                    <span className="text-emerald-600 flex items-center gap-0.5">
                       <TrendingDown size={13} /> {analysisResult.deltas.priorityScoreDelta} pts (Lower Urgency)
                     </span>
                   ) : (
@@ -364,11 +526,11 @@ export const ScenarioLabView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Required CapEx Investment Summary */}
+              {/* 2. Required CapEx */}
               <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs relative overflow-hidden">
                 <div className="text-[10px] font-mono font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center justify-between">
                   <span>Required CapEx</span>
-                  <span className="text-[9px] bg-[var(--civic-blue-50)] text-[var(--text-accent)] px-1.5 py-0.2 rounded font-bold border border-[var(--border-accent)]">[CALCULATED]</span>
+                  <ProvenanceBadge label="[CALCULATED]" type="calculated" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <div className="text-2xl font-headline font-black text-[var(--text-primary)]">
@@ -380,11 +542,11 @@ export const ScenarioLabView: React.FC = () => {
                 </div>
                 <div className="mt-2 text-[11px] font-bold flex items-center gap-1">
                   {analysisResult.deltas.investmentGapDeltaLakhs > 0 ? (
-                    <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                    <span className="text-amber-600 flex items-center gap-0.5">
                       <TrendingUp size={13} /> +₹{analysisResult.deltas.investmentGapDeltaLakhs}L Gap Increase
                     </span>
                   ) : analysisResult.deltas.investmentGapDeltaLakhs < 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                    <span className="text-emerald-600 flex items-center gap-0.5">
                       <TrendingDown size={13} /> ₹{analysisResult.deltas.investmentGapDeltaLakhs}L Gap Reduction
                     </span>
                   ) : (
@@ -393,14 +555,14 @@ export const ScenarioLabView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Projected Impact Score Summary */}
+              {/* 3. Projected Impact */}
               <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs relative overflow-hidden">
                 <div className="text-[10px] font-mono font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center justify-between">
                   <span>Projected Impact</span>
-                  <span className="text-[9px] bg-[var(--civic-blue-50)] text-[var(--text-accent)] px-1.5 py-0.2 rounded font-bold border border-[var(--border-accent)]">[PROJECTED]</span>
+                  <ProvenanceBadge label="[PROJECTED]" type="projected" />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <div className="text-2xl font-headline font-black text-emerald-600 dark:text-emerald-400">
+                  <div className="text-2xl font-headline font-black text-emerald-600">
                     {analysisResult.scenarioResult.projectedImpactScore}
                     <span className="text-xs font-normal text-[var(--text-muted)]">/100</span>
                   </div>
@@ -410,11 +572,11 @@ export const ScenarioLabView: React.FC = () => {
                 </div>
                 <div className="mt-2 text-[11px] font-bold flex items-center gap-1">
                   {analysisResult.deltas.projectedImpactScoreDelta > 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                    <span className="text-emerald-600 flex items-center gap-0.5">
                       <TrendingUp size={13} /> +{analysisResult.deltas.projectedImpactScoreDelta} Impact Gain
                     </span>
                   ) : analysisResult.deltas.projectedImpactScoreDelta < 0 ? (
-                    <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                    <span className="text-amber-600 flex items-center gap-0.5">
                       <TrendingDown size={13} /> {analysisResult.deltas.projectedImpactScoreDelta} Impact Drop
                     </span>
                   ) : (
@@ -425,15 +587,20 @@ export const ScenarioLabView: React.FC = () => {
 
             </div>
 
-            {/* Full Metric Comparison Matrix */}
+            {/* Scenario Result Comparison Table */}
             <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-4 md:p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--text-primary)] flex items-center gap-2">
-                  <Database size={15} className="text-[var(--text-accent)]" />
-                  <span>Analytical Metric Sensitivity Matrix</span>
-                </h3>
+                <div>
+                  <h2 className="text-sm font-headline font-bold text-[var(--text-primary)] flex items-center gap-2">
+                    <Database size={16} className="text-blue-600" />
+                    <span>Scenario Result & Sensitivity Matrix</span>
+                  </h2>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                    Deterministic before-and-after comparison generated by NagarBodh's frozen scoring engines.
+                  </p>
+                </div>
                 <span className="text-[10px] text-[var(--text-muted)] font-mono hidden sm:inline">
-                  Source: {analysisResult.provenance.source}
+                  Calculated: {lastCalculatedAt}
                 </span>
               </div>
 
@@ -441,10 +608,10 @@ export const ScenarioLabView: React.FC = () => {
                 <table className="w-full text-left text-xs min-w-[500px]">
                   <thead>
                     <tr className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
-                      <th className="py-2.5 px-3">Metric Name</th>
-                      <th className="py-2.5 px-3 text-right">Authoritative Baseline</th>
-                      <th className="py-2.5 px-3 text-right">Scenario Result</th>
-                      <th className="py-2.5 px-3 text-right">Delta</th>
+                      <th className="py-2.5 px-3">Metric</th>
+                      <th className="py-2.5 px-3 text-right">Baseline</th>
+                      <th className="py-2.5 px-3 text-right">Scenario</th>
+                      <th className="py-2.5 px-3 text-right">Change</th>
                       <th className="py-2.5 px-3 text-center">Provenance</th>
                     </tr>
                   </thead>
@@ -464,17 +631,15 @@ export const ScenarioLabView: React.FC = () => {
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold">
                           {item.delta > 0 ? (
-                            <span className="text-amber-600 dark:text-amber-400">+{item.delta.toLocaleString()}</span>
+                            <span className="text-amber-600">+{item.delta.toLocaleString()}</span>
                           ) : item.delta < 0 ? (
-                            <span className="text-emerald-600 dark:text-emerald-400">{item.delta.toLocaleString()}</span>
+                            <span className="text-emerald-600">{item.delta.toLocaleString()}</span>
                           ) : (
                             <span className="text-[var(--text-muted)]">0</span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono text-[9px]">
-                          <span className="bg-[var(--civic-blue-50)] text-[var(--text-accent)] px-1.5 py-0.5 rounded border border-[var(--border-accent)] font-bold">
-                            {item.provenance}
-                          </span>
+                        <td className="py-2.5 px-3 text-center">
+                          <ProvenanceBadge label={item.provenance} />
                         </td>
                       </tr>
                     ))}
@@ -483,14 +648,14 @@ export const ScenarioLabView: React.FC = () => {
               </div>
             </div>
 
-            {/* Canonical Baseline Verification & Regression Safeguard Card */}
+            {/* Regression Invariance Assurance Card */}
             <div className="bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] rounded-xl p-4 space-y-2 text-xs">
-              <div className="flex items-center gap-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+              <div className="flex items-center gap-2 font-mono font-bold text-emerald-600 uppercase tracking-wider">
                 <CheckCircle2 size={16} />
-                <span>Canonical Baseline Regression Safeguard</span>
+                <span>Canonical Invariance Guarantee</span>
               </div>
               <p className="text-[var(--text-secondary)] leading-relaxed text-[11px]">
-                Sector 15 baseline metrics are strictly preserved in application state: Priority <strong className="text-[var(--text-primary)]">94/100 P1</strong>, Population <strong className="text-[var(--text-primary)]">184,000</strong>, Vulnerable Population <strong className="text-[var(--text-primary)]">45,000 (24.5%)</strong>, Vulnerability Index <strong className="text-[var(--text-primary)]">91/100</strong>, Signals <strong className="text-[var(--text-primary)]">32</strong>, CapEx <strong className="text-[var(--text-primary)]">₹350L</strong>, Projected Impact <strong className="text-[var(--text-primary)]">84/100</strong>.
+                NagarBodh canonical outputs remain frozen: Priority <strong className="text-[var(--text-primary)]">94/100 P1</strong>, Population <strong className="text-[var(--text-primary)]">184,000</strong>, Vulnerable Population <strong className="text-[var(--text-primary)]">45,000 (24.5%)</strong>, Vulnerability Index <strong className="text-[var(--text-primary)]">91/100</strong>, Signals <strong className="text-[var(--text-primary)]">32</strong>, Investment Gap <strong className="text-[var(--text-primary)]">₹350L</strong>, Projected Impact <strong className="text-[var(--text-primary)]">84/100</strong>.
               </p>
             </div>
 

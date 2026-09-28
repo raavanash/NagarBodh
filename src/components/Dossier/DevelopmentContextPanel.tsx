@@ -6,7 +6,7 @@ import {
   Calculator,
   CloudRain,
   Database,
-  DollarSign,
+  IndianRupee,
   Layers,
   MapPin,
   Shield,
@@ -212,7 +212,7 @@ export const DevelopmentContextPanel: React.FC<Props> = ({
         <div className="bg-[var(--bg-surface-elevated)] p-3 rounded-lg border border-[var(--border-subtle)]">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] font-bold uppercase text-amber-400 flex items-center gap-1">
-              <DollarSign size={12} />
+              <IndianRupee size={12} />
               4. Public Investment
             </span>
             <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400">BUDGET</span>

@@ -6,7 +6,7 @@ import {
   BarChart3,
   Building2,
   CheckCircle2,
-  DollarSign,
+  IndianRupee,
   Filter,
   Layers,
   MapPin,
@@ -241,7 +241,7 @@ export const InvestmentGapsView: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={17} color="#1e3a8a" />
+              <IndianRupee size={17} color="#1e3a8a" />
             </div>
             <div>
               <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Municipal Infrastructure Deficit Portfolio</div>

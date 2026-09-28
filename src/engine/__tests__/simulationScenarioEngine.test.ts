@@ -216,4 +216,81 @@ describe('Scenario Lab: Pass 1 — Isolated What-If Foundation Engine', () => {
     });
   });
 
+  describe('5. Pass 3 Sandboxed Lifecycle: Before -> Scenario -> Reset', () => {
+    it('executes full analytical cycle with zero mutation to baseline state', () => {
+      // Step 1: Baseline Before
+      const baselineBefore = getBaselineSectorContext('WATER');
+      expect(baselineBefore.demographics.population).toBe(184000);
+      expect(baselineBefore.demographics.vulnerablePopulation).toBe(45000);
+      expect(baselineBefore.demographics.vulnerabilityIndex).toBe(91);
+      expect(baselineBefore.demandInput.requestCount).toBe(32);
+      expect(baselineBefore.investment.investmentGapLakhs).toBe(350);
+
+      // Step 2: Apply Scenario (+15% Population, +10% Vulnerable Pop, +25% Signals, -10 pts Infra)
+      const activeScenario: SimulationScenario = {
+        id: 'pass3-full-cycle',
+        targetSectorId: 'WATER',
+        changes: [
+          { type: 'POPULATION_PERCENT', value: 15 },
+          { type: 'VULNERABLE_POPULATION_PERCENT', value: 10 },
+          { type: 'SIGNAL_VOLUME_PERCENT', value: 25 },
+          { type: 'INFRASTRUCTURE_INDEX_POINTS', value: -10 }
+        ]
+      };
+
+      const scenarioRun = runSimulationScenario(activeScenario, 'SIMULATION');
+
+      // Verify scenario computed temporary changes
+      expect(scenarioRun.scenarioResult.population).toBe(211600); // 184,000 * 1.15
+      expect(scenarioRun.scenarioResult.requestCount).toBe(40); // 32 * 1.25
+      expect(scenarioRun.scenarioResult.infraIndex).toBe(25); // 35 - 10
+      expect(scenarioRun.deltas.populationDelta).toBe(27600);
+      expect(scenarioRun.deltas.requestCountDelta).toBe(8);
+
+      // Step 3: Baseline After Scenario Run remains strictly equal to baseline before
+      const baselineAfterRun = getBaselineSectorContext('WATER');
+      expect(baselineAfterRun.demographics.population).toBe(184000);
+      expect(baselineAfterRun.demographics.vulnerablePopulation).toBe(45000);
+      expect(baselineAfterRun.demographics.vulnerabilityIndex).toBe(91);
+      expect(baselineAfterRun.demandInput.requestCount).toBe(32);
+      expect(baselineAfterRun.investment.investmentGapLakhs).toBe(350);
+      expect(baselineAfterRun).toEqual(baselineBefore);
+
+      // Step 4: Reset Scenario
+      const resetScenario: SimulationScenario = {
+        id: 'pass3-reset',
+        targetSectorId: 'WATER',
+        changes: []
+      };
+
+      const resetRun = runSimulationScenario(resetScenario, 'SIMULATION');
+
+      // Verify reset state equals baseline exactly
+      expect(resetRun.scenarioResult.population).toBe(184000);
+      expect(resetRun.scenarioResult.vulnerablePopulation).toBe(45000);
+      expect(resetRun.scenarioResult.priorityScore).toBe(94);
+      expect(resetRun.scenarioResult.investmentGapLakhs).toBe(350);
+      expect(resetRun.scenarioResult.projectedImpactScore).toBe(84);
+      expect(resetRun.deltas.populationDelta).toBe(0);
+      expect(resetRun.deltas.priorityScoreDelta).toBe(0);
+    });
+
+    it('works seamlessly across LIVE and SIMULATION modes without leaking state', () => {
+      const scenario: SimulationScenario = {
+        id: 'mode-invariance-test',
+        targetSectorId: 'WATER',
+        changes: [{ type: 'SIGNAL_VOLUME_PERCENT', value: 20 }]
+      };
+
+      const liveResult = runSimulationScenario(scenario, 'LIVE');
+      const simResult = runSimulationScenario(scenario, 'SIMULATION');
+
+      expect(liveResult.mode).toBe('LIVE');
+      expect(simResult.mode).toBe('SIMULATION');
+      expect(liveResult.scenarioResult.priorityScore).toBe(simResult.scenarioResult.priorityScore);
+      expect(liveResult.baseline.priorityScore).toBe(94);
+      expect(simResult.baseline.priorityScore).toBe(94);
+    });
+  });
+
 });
