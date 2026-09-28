@@ -353,5 +353,26 @@ export function clusterSignals(
     return incident;
   });
 
-  return { incidents, transitions };
+  // Post-processing: deduplicate by incident ID.
+  // When two spatial clusters are assigned the same canonical ID (e.g., both groups
+  // match the Sector 15 demo pattern), keep the larger cluster and union their signal IDs
+  // to avoid React duplicate-key warnings and ensure the dossier shows all evidence.
+  const incidentById = new Map<string, ClusteredIncident>();
+  for (const inc of incidents) {
+    const existing = incidentById.get(inc.id);
+    if (!existing) {
+      incidentById.set(inc.id, inc);
+    } else {
+      // Merge: keep the incident with more signals as the base, union signal IDs
+      const mergedSignalIds = Array.from(new Set([...existing.signalIds, ...inc.signalIds]));
+      const base = existing.signalIds.length >= inc.signalIds.length ? existing : inc;
+      incidentById.set(inc.id, {
+        ...base,
+        signalIds: mergedSignalIds
+      });
+    }
+  }
+  const deduplicatedIncidents = Array.from(incidentById.values());
+
+  return { incidents: deduplicatedIncidents, transitions };
 }
