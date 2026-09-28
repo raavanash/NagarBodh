@@ -14,12 +14,12 @@ describe('BlueskySocialProvider & Integration (Resilient Health State)', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('1. provider defaults to LIVE mode & uses public.api.bsky.app endpoint', () => {
+  it('1. provider defaults to LIVE mode & uses api.bsky.app endpoint', () => {
     const provider = new BlueskySocialProvider();
     expect(provider.id).toBe('provider-social-bluesky');
     expect(provider.type).toBe('social_bluesky');
     expect(provider.mode).toBe('LIVE');
-    expect(provider.endpoint).toBe('https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts');
+    expect(provider.endpoint).toBe('https://api.bsky.app/xrpc/app.bsky.feed.searchPosts');
   });
 
   it('2. simulation mode still returns simulation signals', async () => {
@@ -105,7 +105,7 @@ describe('BlueskySocialProvider & Integration (Resilient Health State)', () => {
         status: 403,
         errorCode: 'UPSTREAM_FORBIDDEN',
         message: 'Bluesky API returned HTTP 403: Request forbidden by administrative rules.',
-        endpoint: 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts'
+        endpoint: 'https://api.bsky.app/xrpc/app.bsky.feed.searchPosts'
       })
     } as Response);
 
@@ -119,7 +119,7 @@ describe('BlueskySocialProvider & Integration (Resilient Health State)', () => {
     expect(health.isAvailable).toBe(false);
     expect(health.lastStatus).toBe(403);
     expect(health.lastError).toContain('HTTP 403');
-    expect(health.endpoint).toContain('public.api.bsky.app');
+    expect(health.endpoint).toContain('api.bsky.app');
   });
 
   it('8. network failure does NOT create fake signals and records failure', async () => {

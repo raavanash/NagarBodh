@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Activity,
@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Database,
+  FlaskConical,
   Globe2,
   HelpCircle,
   MapPin,
@@ -37,6 +38,38 @@ export const Navbar: React.FC = () => {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const [moreCoords, setMoreCoords] = useState<{ top: number; right: number } | null>(null);
+
+  const updateMoreCoords = () => {
+    if (moreButtonRef.current) {
+      const rect = moreButtonRef.current.getBoundingClientRect();
+      setMoreCoords({
+        top: rect.bottom + 6,
+        right: Math.max(12, window.innerWidth - rect.right)
+      });
+    }
+  };
+
+  const handleToggleMore = () => {
+    if (!isMoreOpen) {
+      updateMoreCoords();
+    }
+    setIsMoreOpen(prev => !prev);
+  };
+
+  useEffect(() => {
+    if (!isMoreOpen) return;
+    const handleResizeOrScroll = () => {
+      updateMoreCoords();
+    };
+    window.addEventListener('resize', handleResizeOrScroll);
+    window.addEventListener('scroll', handleResizeOrScroll, true);
+    return () => {
+      window.removeEventListener('resize', handleResizeOrScroll);
+      window.removeEventListener('scroll', handleResizeOrScroll, true);
+    };
+  }, [isMoreOpen]);
 
   const criticalCount = incidents.filter(i => i.priority.overallScore >= 80).length;
   const pendingDispatchCount = incidents.filter(i => i.actionPlan?.status === 'pending_review' && i.priority.overallScore >= 70).length;
@@ -96,13 +129,20 @@ export const Navbar: React.FC = () => {
       label: 'Historical Incident Dossiers',
       sublabel: 'Diagnostic archives & raw incident telemetry',
       icon: ShieldAlert
+    },
+    {
+      id: 'scenario_lab',
+      label: 'Scenario Lab (What-If Sandbox)',
+      sublabel: 'Isolated what-if baseline sensitivity analysis',
+      icon: FlaskConical
     }
   ];
 
   const isMoreActive =
     activeTab === 'citizen_signals' || activeTab === 'signals' ||
     activeTab === 'policy_board' || activeTab === 'authority' ||
-    activeTab === 'demand_intelligence' || activeTab === 'dossier';
+    activeTab === 'demand_intelligence' || activeTab === 'dossier' ||
+    activeTab === 'scenario_lab';
 
   return (
     <header className="navbar bg-[#0f172a] text-white px-4 h-14 flex items-center justify-between sticky top-0 z-50 shadow-md border-b border-slate-800">
@@ -187,7 +227,8 @@ export const Navbar: React.FC = () => {
           {/* MORE Dropdown Menu */}
           <div className="relative">
             <button
-              onClick={() => setIsMoreOpen(!isMoreOpen)}
+              ref={moreButtonRef}
+              onClick={handleToggleMore}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                 isMoreActive
                   ? 'bg-blue-900/70 text-blue-200 border border-blue-600/50'
@@ -202,46 +243,58 @@ export const Navbar: React.FC = () => {
               )}
             </button>
 
-            {isMoreOpen && (
-              <>
+            {isMoreOpen && moreCoords && typeof document !== 'undefined' && createPortal(
+              <div className="fixed inset-0 z-[999999]" style={{ pointerEvents: 'none' }}>
                 <div
-                  className="fixed inset-0 z-40"
+                  className="fixed inset-0 bg-black/20 backdrop-blur-[1px]"
+                  style={{ pointerEvents: 'auto' }}
                   onClick={() => setIsMoreOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 text-white rounded-lg shadow-2xl border border-slate-700 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold border-b border-slate-800">
-                    Advanced Capabilities
+                <div
+                  className="fixed w-72 bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 py-2 z-[1000000] animate-in fade-in slide-in-from-top-1 duration-150"
+                  style={{
+                    top: `${moreCoords.top}px`,
+                    right: `${moreCoords.right}px`,
+                    pointerEvents: 'auto'
+                  }}
+                >
+                  <div className="px-3.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-extrabold border-b border-slate-800 flex items-center justify-between">
+                    <span>Advanced Capabilities</span>
+                    <span className="bg-blue-900/50 text-blue-300 px-1.5 py-0.5 rounded text-[9px] font-bold">3 MODULES</span>
                   </div>
-                  {secondaryNavItems.map(item => {
-                    const Icon = item.icon;
-                    const isActive =
-                      (item.id === 'citizen_signals' && (activeTab === 'citizen_signals' || activeTab === 'signals')) ||
-                      (item.id === 'policy_board' && (activeTab === 'policy_board' || activeTab === 'authority')) ||
-                      (item.id === 'demand_intelligence' && (activeTab === 'demand_intelligence' || activeTab === 'dossier'));
-                    return (
-                      <button
-                        key={item.id}
-                        data-tour={item.id === 'citizen_signals' ? 'nav-signals' : undefined}
-                        onClick={() => {
-                          setActiveTab(item.id as any);
-                          setIsMoreOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 flex items-start gap-2.5 transition-colors cursor-pointer ${
-                          isActive
-                            ? 'bg-blue-900/60 text-blue-200'
-                            : 'hover:bg-slate-800 text-slate-300 hover:text-white'
-                        }`}
-                      >
-                        <Icon size={16} className={isActive ? 'text-blue-400 mt-0.5' : 'text-slate-400 mt-0.5'} />
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold">{item.label}</span>
-                          <span className="text-[10px] text-slate-400 leading-tight">{item.sublabel}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  <div className="py-1">
+                    {secondaryNavItems.map(item => {
+                      const Icon = item.icon;
+                      const isActive =
+                        (item.id === 'citizen_signals' && (activeTab === 'citizen_signals' || activeTab === 'signals')) ||
+                        (item.id === 'policy_board' && (activeTab === 'policy_board' || activeTab === 'authority')) ||
+                        (item.id === 'demand_intelligence' && (activeTab === 'demand_intelligence' || activeTab === 'dossier'));
+                      return (
+                        <button
+                          key={item.id}
+                          data-tour={item.id === 'citizen_signals' ? 'nav-signals' : undefined}
+                          onClick={() => {
+                            setActiveTab(item.id as any);
+                            setIsMoreOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2.5 flex items-start gap-3 transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-900/70 text-blue-200 border-l-2 border-blue-400'
+                              : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <Icon size={18} className={isActive ? 'text-blue-400 mt-0.5 flex-shrink-0' : 'text-slate-400 mt-0.5 flex-shrink-0'} />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold leading-tight">{item.label}</span>
+                            <span className="text-[11px] text-slate-400 leading-tight mt-0.5">{item.sublabel}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </>
+              </div>,
+              document.body
             )}
           </div>
         </nav>

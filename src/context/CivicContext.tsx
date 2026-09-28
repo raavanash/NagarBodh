@@ -48,7 +48,7 @@ interface CivicContextType {
   incidents: ClusteredIncident[];
   selectedIncident: ClusteredIncident | null;
   selectedIncidentId: string | null;
-  activeTab: 'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline';
+  activeTab: 'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'scenario_lab' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline';
   currentStepIndex: number;
   currentStep: SimulationStep;
   currentWeather: SimulationStep['weatherCondition'];
@@ -76,7 +76,7 @@ interface CivicContextType {
   // Setters & Actions
   setMapMode: (mode: 'civic_signals' | 'ai_priority') => void;
   setSelectedIncidentId: (id: string | null) => void;
-  setActiveTab: (tab: 'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline') => void;
+  setActiveTab: (tab: 'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'scenario_lab' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline') => void;
   setCategoryFilter: (cat: string) => void;
   setSourceFilter: (source: string) => void;
   setSeverityFilter: (sev: string) => void;
@@ -221,7 +221,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Selected incident & active navigation tab
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline'>('investment_gaps');
+  const [activeTab, setActiveTab] = useState<'development_map' | 'demand_intelligence' | 'citizen_signals' | 'investment_gaps' | 'project_priorities' | 'policy_board' | 'impact' | 'scenario_lab' | 'live_map' | 'dossier' | 'signals' | 'dispatch' | 'authority' | 'timeline'>('investment_gaps');
 
   // Map Mode & Extended Incident Filters
   const [mapMode, setMapMode] = useState<'civic_signals' | 'ai_priority'>('ai_priority');
@@ -997,22 +997,41 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [ingestionMode]);
 
-  // Bluesky Live Ingestion & Polling Handler
+  // Bluesky Live Ingestion & Polling Handler (REST Initial Backfill + Jetstream Stream)
   const fetchBlueskyLiveSignals = useCallback(async () => {
     try {
+      // 1. Ensure Jetstream WebSocket provider is set to LIVE mode
       const bskyProvider = ingestionServiceRef.current.getProvider('provider-social-bluesky') as any;
       if (bskyProvider) {
         bskyProvider.setMode('LIVE');
-        const { normalizedSignals, results } = await ingestionServiceRef.current.ingest('provider-social-bluesky');
-        const duplicates = results.filter(r => r.isDuplicate).length;
+      }
 
-        console.log(`[Bluesky] Normalized signals: ${normalizedSignals.length}`);
-        console.log(`[Bluesky] Duplicates removed: ${duplicates}`);
+      // 2. Perform initial REST search backfill using existing provider-social-bluesky-legacy
+      const legacyProvider = ingestionServiceRef.current.getProvider('provider-social-bluesky-legacy') as any;
+      if (legacyProvider) {
+        legacyProvider.setMode('LIVE');
+        console.log('[Bluesky REST Backfill] Querying initial live signals via search API...');
+        const { normalizedSignals: backfillSignals } = await ingestionServiceRef.current.ingest('provider-social-bluesky-legacy');
 
-        if (normalizedSignals.length > 0) {
+        if (backfillSignals.length > 0) {
+          console.log(`[Bluesky REST Backfill] Populated ${backfillSignals.length} initial live signals`);
           setLiveSignals(prev => {
             const existingIds = new Set(prev.map(s => s.id));
-            const fresh = normalizedSignals
+            const fresh = backfillSignals
+              .map(s => ({ ...s, ingestionMode: 'LIVE' as const }))
+              .filter(s => !existingIds.has(s.id));
+            return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          });
+        }
+      }
+
+      // 3. Flush any buffered signals from Jetstream
+      if (bskyProvider) {
+        const { normalizedSignals: streamSignals } = await ingestionServiceRef.current.ingest('provider-social-bluesky');
+        if (streamSignals.length > 0) {
+          setLiveSignals(prev => {
+            const existingIds = new Set(prev.map(s => s.id));
+            const fresh = streamSignals
               .map(s => ({ ...s, ingestionMode: 'LIVE' as const }))
               .filter(s => !existingIds.has(s.id));
             return fresh.length > 0 ? [...fresh, ...prev] : prev;

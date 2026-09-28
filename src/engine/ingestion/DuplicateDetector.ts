@@ -57,6 +57,19 @@ export class DuplicateDetector {
       }
 
       // 3. Spatial-Temporal & Category Proximity Check
+      const isCandidateUnresolved =
+        ('locationName' in candidate && candidate.locationName?.toLowerCase().includes('unresolved')) ||
+        ('ward' in candidate && candidate.ward?.toLowerCase().includes('unassigned'));
+
+      const isExistingUnresolved =
+        ('locationName' in existing && existing.locationName?.toLowerCase().includes('unresolved')) ||
+        ('ward' in existing && existing.ward?.toLowerCase().includes('unassigned'));
+
+      // Unresolved/approximate locations are not sufficient evidence for spatial deduplication without content match
+      if (isCandidateUnresolved || isExistingUnresolved) {
+        continue;
+      }
+
       let candidateLat: number | undefined;
       let candidateLng: number | undefined;
       let existingLat: number | undefined;

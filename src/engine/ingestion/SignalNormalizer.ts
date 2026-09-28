@@ -98,6 +98,28 @@ export class SignalNormalizer {
   }
 
   /**
+   * Deterministically derive a bounded approximate coordinate within Delhi NCR for unresolved signals,
+   * avoiding single-point spatial collapse without pretending the location is precisely verified.
+   */
+  public static deriveUnresolvedDeterministicCoords(identifier: string, text: string): { lat: number; lng: number } {
+    const key = `${identifier}:${text}`;
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash << 5) - hash + key.charCodeAt(i);
+      hash |= 0;
+    }
+    const absHash = Math.abs(hash);
+
+    // Bounded distribution across Delhi NCR bounds [lat: 28.47 to 28.73, lng: 77.07 to 77.33]
+    const latOffset = ((absHash % 1000) / 1000) * 0.26 - 0.13;
+    const lngOffset = (((Math.floor(absHash / 1000)) % 1000) / 1000) * 0.26 - 0.13;
+
+    const lat = parseFloat((28.6000 + latOffset).toFixed(5));
+    const lng = parseFloat((77.2000 + lngOffset).toFixed(5));
+    return { lat, lng };
+  }
+
+  /**
    * Main normalization function
    */
   public static normalize(
@@ -121,10 +143,10 @@ export class SignalNormalizer {
       };
     }
 
-    // Coordinates normalization
-    const coords = this.normalizeCoordinates(
-      payload.lat || payload.latitude || payload.coordinates?.lat,
-      payload.lng || payload.longitude || payload.coordinates?.lng
+    const hasExplicitPayloadCoords = Boolean(
+      (payload.lat != null && !isNaN(parseFloat(String(payload.lat)))) ||
+      (payload.latitude != null && !isNaN(parseFloat(String(payload.latitude)))) ||
+      (payload.coordinates?.lat != null && !isNaN(parseFloat(String(payload.coordinates.lat))))
     );
 
     // Timestamp normalization
@@ -141,10 +163,13 @@ export class SignalNormalizer {
     // Textual Locality & Ward Resolution
     let matchedLocationName = payload.locationName || payload.location;
     let matchedWard = payload.ward;
-    let matchedCoords = this.normalizeCoordinates(
-      payload.lat || payload.latitude || payload.coordinates?.lat,
-      payload.lng || payload.longitude || payload.coordinates?.lng
-    );
+    let locationMatched = false;
+    let matchedCoords = hasExplicitPayloadCoords
+      ? this.normalizeCoordinates(
+          payload.lat || payload.latitude || payload.coordinates?.lat,
+          payload.lng || payload.longitude || payload.coordinates?.lng
+        )
+      : { lat: DELHI_BOUNDS.defaultLat, lng: DELHI_BOUNDS.defaultLng };
 
     const lowerText = rawText.toLowerCase();
     const KNOWN_NCR_LOCATIONS: Array<{ keywords: string[]; name: string; ward: string; coords: { lat: number; lng: number } }> = [
@@ -165,13 +190,14 @@ export class SignalNormalizer {
 
     for (const loc of KNOWN_NCR_LOCATIONS) {
       if (loc.keywords.some(kw => lowerText.includes(kw))) {
+        locationMatched = true;
         if (!matchedLocationName || matchedLocationName === 'Reported Field Location') {
           matchedLocationName = loc.name;
         }
         if (!matchedWard || matchedWard === 'Ward 15 - Central Sub-city') {
           matchedWard = loc.ward;
         }
-        if (!payload.lat && !payload.latitude && !payload.coordinates?.lat) {
+        if (!hasExplicitPayloadCoords) {
           matchedCoords = loc.coords;
         }
         break;
@@ -180,6 +206,18 @@ export class SignalNormalizer {
 
     // Parse NLP metadata
     const parsedNLP = parseCivicSignalText(rawText);
+
+    // Handle unresolved location coordinates deterministically without spatial collapse
+    if (!hasExplicitPayloadCoords && !locationMatched) {
+      const signalIdStr = payload.id || rawText;
+      matchedCoords = this.deriveUnresolvedDeterministicCoords(signalIdStr, rawText);
+      if (!matchedLocationName) {
+        matchedLocationName = parsedNLP.extractedLocationName || 'Location unresolved (General NCR)';
+      }
+      if (!matchedWard) {
+        matchedWard = 'Unassigned Ward (General NCR)';
+      }
+    }
 
     // Fingerprint generation (Use exact payload.id URI if available to guarantee deduplication)
     const fingerprintHash = payload.id && payload.id.startsWith('at://')
@@ -214,7 +252,7 @@ export class SignalNormalizer {
       reportedSeverity: (payload.severity as SeverityLevel) || parsedNLP.reportedSeverity,
       confidenceScore: payload.confidenceScore || parsedNLP.confidenceScore,
       coordinates: matchedCoords,
-      locationName: matchedLocationName || parsedNLP.extractedLocationName || 'Location unresolved',
+      locationName: matchedLocationName || parsedNLP.extractedLocationName || 'Location unresolved (General NCR)',
       ward: matchedWard || 'Unassigned Ward (General NCR)',
       authorHandle: payload.authorHandle || payload.author || '@CitizenReporter',
       upvotes: payload.upvotes || 1,

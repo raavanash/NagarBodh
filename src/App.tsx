@@ -11,6 +11,7 @@ import { ResponsePlannerView } from './components/Planner/ResponsePlannerView';
 import { HumanApprovalModal } from './components/Planner/HumanApprovalModal';
 import { AuthorityDashboard } from './components/Authority/AuthorityDashboard';
 import { ResolutionTimeline } from './components/Timeline/ResolutionTimeline';
+import { ScenarioLabView } from './components/ScenarioLab/ScenarioLabView';
 import { DemoCommandCenter } from './components/Demo/DemoCommandCenter';
 import { MobileBottomNav } from './components/common/MobileBottomNav';
 import { Activity, AlertTriangle, Building2, CheckCircle2, RotateCcw, ShieldCheck } from 'lucide-react';
@@ -81,6 +82,8 @@ const AppContent: React.FC = () => {
         {(activeTab === 'policy_board' || activeTab === 'authority') && <AuthorityDashboard />}
 
         {(activeTab === 'impact' || activeTab === 'timeline') && <ResolutionTimeline />}
+
+        {activeTab === 'scenario_lab' && <ScenarioLabView />}
       </main>
 
       {/* Responsive Mobile Bottom Navigation Dock */}

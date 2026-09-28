@@ -33,7 +33,7 @@ export class BlueskySocialProvider implements SignalProvider {
   public type = 'social_bluesky' as const;
   public mode: IngestionMode;
 
-  public endpoint = 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts';
+  public endpoint = 'https://api.bsky.app/xrpc/app.bsky.feed.searchPosts';
 
   private currentQueryIndex = 0;
   private isAvailableState = true;

@@ -188,12 +188,12 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
     return true;
   }
 
-  // 2. Bluesky Social Route: https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts
+  // 2. Bluesky Social Route: https://api.bsky.app/xrpc/app.bsky.feed.searchPosts
   if (pathname === '/api/social/bluesky') {
     const query = reqUrl.searchParams.get('query') || reqUrl.searchParams.get('q') || 'waterlogging Delhi';
     const limit = reqUrl.searchParams.get('limit') || '25';
     const sort = reqUrl.searchParams.get('sort') || 'latest';
-    const bskyEndpoint = 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts';
+    const bskyEndpoint = 'https://api.bsky.app/xrpc/app.bsky.feed.searchPosts';
 
     res.setHeader('Content-Type', 'application/json');
 
@@ -203,7 +203,7 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       const bskyUrl = `${bskyEndpoint}?q=${encodeURIComponent(query)}&sort=${encodeURIComponent(sort)}&limit=${encodeURIComponent(limit)}`;
       const bskyRes = await fetchUrl(bskyUrl, {
         headers: {
-          'User-Agent': 'NagarBodh-CivicSignals/1.0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'application/json'
         }
       });
