@@ -61,19 +61,18 @@ if (typeof globalThis.window === 'undefined') {
 }
 
 describe('Guided Tour Specifications & Configuration', () => {
-  it('defines exactly 8 guided tour steps in correct chronological order', () => {
-    expect(GUIDED_TOUR_STEPS).toHaveLength(8);
+  it('defines exactly 7 guided tour steps in correct chronological order', () => {
+    expect(GUIDED_TOUR_STEPS).toHaveLength(7);
 
     const stepIds = GUIDED_TOUR_STEPS.map((s) => s.id);
     expect(stepIds).toEqual([
       'welcome',
-      'signals',
+      'invest',
       'map',
-      'hotspot',
       'dossier',
-      'investment',
       'human_decision',
-      'impact'
+      'impact',
+      'scenario_lab'
     ]);
   });
 
@@ -81,7 +80,7 @@ describe('Guided Tour Specifications & Configuration', () => {
     GUIDED_TOUR_STEPS.forEach((step, index) => {
       expect(step.id).toBeDefined();
       expect(step.stepNumber).toBe(index + 1);
-      expect(step.totalSteps).toBe(8);
+      expect(step.totalSteps).toBe(7);
       expect(step.title).toBeTruthy();
       expect(step.description).toBeTruthy();
       expect(step.targetSelector).toBeTruthy();
@@ -91,14 +90,13 @@ describe('Guided Tour Specifications & Configuration', () => {
   });
 
   it('maps tour steps to correct navigation tabs', () => {
-    expect(GUIDED_TOUR_STEPS[0].targetTab).toBe('development_map');
-    expect(GUIDED_TOUR_STEPS[1].targetTab).toBe('citizen_signals');
+    expect(GUIDED_TOUR_STEPS[0].targetTab).toBe('investment_gaps');
+    expect(GUIDED_TOUR_STEPS[1].targetTab).toBe('investment_gaps');
     expect(GUIDED_TOUR_STEPS[2].targetTab).toBe('development_map');
-    expect(GUIDED_TOUR_STEPS[3].targetTab).toBe('development_map');
-    expect(GUIDED_TOUR_STEPS[4].targetTab).toBe('development_map');
-    expect(GUIDED_TOUR_STEPS[5].targetTab).toBe('investment_gaps');
-    expect(GUIDED_TOUR_STEPS[6].targetTab).toBe('project_priorities');
-    expect(GUIDED_TOUR_STEPS[7].targetTab).toBe('impact');
+    expect(GUIDED_TOUR_STEPS[3].targetTab).toBe('project_priorities');
+    expect(GUIDED_TOUR_STEPS[4].targetTab).toBe('project_priorities');
+    expect(GUIDED_TOUR_STEPS[5].targetTab).toBe('impact');
+    expect(GUIDED_TOUR_STEPS[6].targetTab).toBe('scenario_lab');
   });
 });
 

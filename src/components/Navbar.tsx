@@ -228,6 +228,7 @@ export const Navbar: React.FC = () => {
           <div className="relative">
             <button
               ref={moreButtonRef}
+              data-tour="nav-more"
               onClick={handleToggleMore}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                 isMoreActive

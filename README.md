@@ -1,134 +1,239 @@
-# NagarBodh (नगर बोध) — AI-Powered Municipal Intelligence & Response Platform
+# NagarBodh (नगर बोध)
+## Municipal Intelligence for Explainable Public Investment Decisions
 
 > **Code for Communities 2.0 Hackathon Submission**  
-> *Category: AI for Digital Public Infrastructure & Governance — Leverage Artificial Intelligence to improve public services, governance systems, citizen experiences, and digital infrastructure efficiency.*
+> **Category:** AI for Digital Public Infrastructure & Governance
+
+NagarBodh turns fragmented citizen signals and public context into **explainable municipal investment decisions with projected impact**.
+
+It is designed around a simple decision flow:
+
+**City Signals → Civic Intelligence → Government Decision → Intervention → Projected Impact**
+
+Unlike a conventional complaint dashboard, NagarBodh does not stop at recording what citizens report. It connects signals to spatial and public-context evidence, calculates explainable intervention priorities, generates an AI-assisted decision brief, keeps the final intervention under human authority, and models the expected impact of that intervention.
 
 ---
 
-## 🏛️ Core Product Statement
+# 🏛️ Core Product Statement
 
-> **“A complaint system records what citizens report. NagarBodh determines what those signals collectively mean, how urgent they are, why they deserve that priority, what response is appropriate, and whether the response actually resolved the problem.”**
+> **NagarBodh turns fragmented citizen signals and public context into explainable investment decisions with projected impact.**
 
-NagarBodh transforms chaotic citizen grievances and multi-channel telemetry into explainable, prioritized municipal intelligence with human-in-the-loop operational response and closed-loop AI resolution verification.
+The system helps answer five practical municipal questions:
 
----
+| Stage | Question |
+|---|---|
+| **INVEST** | Where does intervention matter most? |
+| **MAP** | Where is the problem occurring and what surrounds it? |
+| **DECIDE** | What evidence supports the intervention decision? |
+| **IMPACT** | What outcome does the proposed intervention project? |
 
-## 📚 Complete Submission Documentation Suite
-
-| Document | Purpose |
-| :--- | :--- |
-| **[HACKATHON_ALIGNMENT.md](file:///c:/ManiBeast/NagarBodh/HACKATHON_ALIGNMENT.md)** | Direct mapping to Code for Communities 2.0 governance problem statement |
-| **[ARCHITECTURE.md](file:///c:/ManiBeast/NagarBodh/ARCHITECTURE.md)** | Full technical system architecture, data flow, and component breakdown |
-| **[AI_SYSTEM.md](file:///c:/ManiBeast/NagarBodh/AI_SYSTEM.md)** | Gemini 2.0 Flash integration, 3-Tier Fact Separation, and fallback guardrails |
-| **[DATA_PROVENANCE.md](file:///c:/ManiBeast/NagarBodh/DATA_PROVENANCE.md)** | Honest provenance: OBSERVED vs CALCULATED vs INFERRED vs RECOMMENDED |
-| **[DEMO_GUIDE.md](file:///c:/ManiBeast/NagarBodh/DEMO_GUIDE.md)** | 5-minute flagship judging walkthrough of Urban Waterlogging scenario |
-| **[LIMITATIONS.md](file:///c:/ManiBeast/NagarBodh/LIMITATIONS.md)** | Transparent scope boundaries, IMD authorization notice, and future roadmap |
-| **[SECURITY.md](file:///c:/ManiBeast/NagarBodh/SECURITY.md)** | Zero-client-secret policy, server proxying, and key rotation advisory |
+The final decision remains under **human authority**. NagarBodh organizes evidence, calculates deterministic intelligence, and explains the recommendation; it does not autonomously allocate public funds.
 
 ---
 
-## 🔒 Security Architecture & Zero-Client-Secret Policy
+# 🧭 Product Flow
 
-> [!CAUTION]
-> **Production Key Rotation Requirement**:
-> If any developer or team member previously tested with personal API keys, rotate them in your provider consoles (Google AI Studio, OpenWeather, X).
-> NagarBodh uses server-side proxy architecture (`server/apiProxy.ts` & Vercel serverless `api/*.ts`) ensuring production secrets remain strictly on the backend and are **never bundled into client JavaScript**.
+```text
+Citizen & Public Signals
+          ↓
+   Civic Intelligence
+          ↓
+ Spatial + Contextual Evidence
+          ↓
+ Explainable Priority & Investment Gap
+          ↓
+     Human Decision
+          ↓
+   Intervention Record
+          ↓
+ Projected / Modelled Impact
+           ↓
 
----
+The primary application experience follows:
 
-## ⚙️ Environment Variables Configuration
+**INVEST → MAP → DECIDE → IMPACT**
 
-Create a `.env.local` file in the root directory for live external integrations:
-
-```ini
-# Server-Side API Credentials (Kept securely on backend, never exposed to client)
-GOOGLE_WEATHER_API_KEY=your_google_weather_or_maps_demo_key_here
-OPENWEATHER_API_KEY=your_openweather_api_key_here
-X_BEARER_TOKEN=your_x_bearer_token_here
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-*Note: The application operates completely out of the box in **Simulation / Replay Mode** without any API keys required.*
-
----
-
-## 🚀 Quickstart & Verification
-
-### 1. Install Dependencies
-```bash
-npm install
-```
-
-### 2. Run Automated Verification Test Suite
-```bash
-npm test
-```
-*Executes all 59 unit tests across 12 test files with 100% pass rate.*
-
-### 3. Build for Production
-```bash
-npm run build
-```
-*Compiles TypeScript and builds minified assets to `dist/`.*
-
-### 4. Run Code Linter
-```bash
-npm run lint
-```
-*Ensures 0 errors across all code files.*
-
-### 5. Launch Development Server
-```bash
-npm run dev
-```
-*Starts local Vite dev server with integrated API proxy at `http://localhost:5173`.*
+Additional analytical tools are available under **MORE**, including Citizen Signals & Telemetry, Policy Intelligence, Historical Dossiers, and Scenario Lab.
 
 ---
 
-## 🌐 Ingestion Modes: LIVE vs REPLAY vs SIMULATION
+# 💡 What NagarBodh Actually Does
 
-- **`LIVE` Mode**:
-  - Connects to live OpenWeatherMap or Google Weather via `/api/weather`.
-  - Ingests live keyword tweets from X API v2 via `/api/social`.
-  - Routes multilingual citizen reports to Google Gemini 2.0 Flash via `/api/gemini`.
-  - If keys are unconfigured, exposes explicit fallback notices; **never masquerades simulated data as live.**
+### 1. Collects fragmented signals
 
-- **`REPLAY` Mode**:
-  - Delivers a deterministic, calibrated historical monsoon event sequence across 14 timeline steps.
-  - Ideal for offline evaluation, judging demos, and automated testing.
+NagarBodh can work with citizen reports, public social signals, weather telemetry, and other contextual inputs.
 
-- **`SIMULATION` Mode**:
-  - Provides synthetic baseline models for Delhi NCR administrative boundaries, topography, and critical infrastructure registers.
+Signals can originate from multiple channels and are kept distinguishable by provenance rather than being treated as interchangeable ground truth.
+
+### 2. Converts signals into civic intelligence
+
+Deterministic engines evaluate factors such as:
+
+- citizen demand pressure
+- infrastructure deficit
+- vulnerability
+- population exposure
+- contextual evidence
+- investment requirements
+
+The resulting priority is explainable and inspectable rather than generated as an opaque AI score.
+
+### 3. Connects intelligence to investment
+
+NagarBodh translates identified civic gaps into an investment-oriented decision view, including:
+
+- priority score
+- intervention priority
+- infrastructure context
+- estimated investment gap
+- vulnerable population
+- projected beneficiaries
+- supporting evidence
+
+### 4. Keeps humans in control
+
+NagarBodh recommends and explains.
+
+A human decision-maker remains responsible for approving an intervention.
+
+> **The system recommends. The human authorizes.**
+
+### 5. Projects the expected impact
+
+After an intervention is authorized in the demonstration workflow, NagarBodh models the expected outcome using its deterministic impact engine.
+
+These values are explicitly presented as:
+
+**PROJECTED / MODELLED**
+
+They are not represented as measured real-world government outcomes.
 
 ---
 
-## 📊 Feature & Integration Status Matrix
+# 🧠 AI Architecture
 
-| Capability / Integration | Implementation Status | Data Mode | Live Endpoint |
-| :--- | :---: | :---: | :--- |
-| **Multilingual NLP Fact Extraction** | **IMPLEMENTED** | `LIVE` / `REPLAY` | `/api/gemini` (Gemini 2.0 Flash) |
-| **Deterministic Clustering Engine** | **IMPLEMENTED** | `DETERMINISTIC` | Local Spatio-Temporal Haversine Engine |
-| **6-Factor Explainable Priority** | **IMPLEMENTED** | `CALCULATED` | Local Deterministic Formula (0–100) |
-| **Single Canonical 9-State Lifecycle** | **IMPLEMENTED** | `CANONICAL` | Single Source of Truth in `CivicContext` |
-| **Human-in-the-Loop Approval Modal** | **IMPLEMENTED** | `OPERATIONAL` | Officer Review, Edit, Approve, Reject |
-| **Closed-Loop Resolution Verification**| **IMPLEMENTED** | `INFERRED` | Post-Incident Signal Drop & Verification |
-| **OpenWeatherMap Integration** | **IMPLEMENTED** | `LIVE` / `REPLAY` | `/api/weather?provider=openweather` |
-| **Google Weather Provider** | **IMPLEMENTED** | `LIVE` / `REPLAY` | `/api/weather?provider=google` |
-| **X (Twitter) API v2 Integration** | **IMPLEMENTED** | `LIVE` / `REPLAY` | `/api/social` |
-| **Interactive Map (Leaflet + OSM)** | **IMPLEMENTED** | `LIVE OSM` | Public OSM Tiles (Zero API key required) |
-| **Admin Ward Boundaries & GIS** | **IMPLEMENTED** | `SIMULATION` | Calibrated Delhi Wards 14, 15, and 22 |
-| **Critical Infrastructure Registry** | **IMPLEMENTED** | `SIMULATION` | Delhi NCR Schools, Hospitals, Metros |
-| **Official IMD Radar Integration** | **FUTURE INTEGRATION** | *None* | Requires formal government authorization |
+NagarBodh deliberately separates **deterministic civic intelligence** from **AI-generated explanation**.
+
+### Deterministic Layer
+
+Core civic calculations are performed by local deterministic engines.
+
+These include:
+
+- development gap analysis
+- development priority scoring
+- investment recommendations
+- decision brief inputs
+- impact modelling
+- response planning
+- scenario calculations
+
+The deterministic layer establishes the canonical numerical values used by the application.
+
+### Gemini Explanation Layer
+
+Gemini is used to transform the established evidence and calculated recommendation into an understandable decision brief.
+
+Gemini does **not**:
+
+- override the canonical priority score
+- recalculate the investment gap
+- invent evidence
+- replace deterministic scoring
+- change projected impact values
+
+This separation makes the AI layer explainable and auditable.
 
 ---
 
-## 🗺️ Visual Architecture: The Six Command Views
+# 🔎 Evidence & Data Provenance
 
-Each major screen in NagarBodh is purpose-built to answer a single critical operational question:
+NagarBodh explicitly distinguishes different kinds of information.
 
-1. **Live Map** (`/`): *“What’s happening?”* — Geospatial situational awareness with pulsating incident clusters and hazard buffers.
-2. **Incident Intelligence** (`/dossier`): *“Why does it matter?”* — 6-factor deterministic priority scoring and asset vulnerability links.
-3. **Signal Explorer** (`/signals`): *“What evidence supports it?”* — Multi-channel citizen reports with 3-tier fact separation (`[OBSERVED]`, `[INFERRED]`, `[RECOMMENDED]`).
-4. **Response Planner** (`/dispatch`): *“What should we do?”* — Standard Operating Procedure matching with mandatory human approval.
-5. **Authority Board** (`/authority`): *“Where should we focus resources?”* — Cross-ward readiness metrics and inter-agency resource coordination.
-6. **Resolution Verification** (`/timeline`): *“Did it work?”* — Closed-loop post-dispatch signal reduction telemetry and verification audit.
+| Label | Meaning |
+|---|---|
+| **[OBSERVED]** | Directly observed citizen or system signal |
+| **[EXTERNAL PUBLIC SIGNAL]** | Public external signal such as Bluesky activity |
+| **[BASELINE CONTEXT]** | Official or contextual public information used to understand the situation |
+| **[CALCULATED]** | Deterministic value calculated by NagarBodh |
+| **[PROJECTED]** | Modelled future outcome |
+| **[SIMULATION]** | Temporary synthetic or operational demonstration state |
+| **[LIVE STREAM]** | Incoming live provider telemetry |
+| **[REPLAY]** | Deterministic replay/fallback data |
+
+This provenance is surfaced directly in the evidence interface so users can distinguish:
+
+**what was observed → what was sourced → what was calculated → what was projected.**
+
+---
+
+# 🌐 External Evidence Integrations
+
+## Delhi Government / OGD Context
+
+NagarBodh integrates contextual government data through the Open Government Data ecosystem.
+
+The current integration includes Delhi government hospital/facility information used as:
+
+> **[BASELINE CONTEXT]**
+
+This contextual evidence helps enrich an investment dossier without artificially attributing facilities to a specific hotspot when the underlying source does not provide that level of spatial precision.
+
+The OGD API credential is kept server-side.
+
+---
+
+## Bluesky Public Signals
+
+NagarBodh can consume public Bluesky activity as:
+
+> **[EXTERNAL PUBLIC SIGNAL]**
+
+These signals provide corroborative public context around civic issues such as waterlogging.
+
+Bluesky signals are **not treated as canonical citizen complaints or ground truth**, and they do not directly alter the canonical priority calculation.
+
+---
+
+## Weather Telemetry
+
+Weather context can be obtained through the existing weather provider chain:
+
+- Google Weather
+- OpenWeatherMap
+- deterministic replay fallback
+
+Provider availability is surfaced explicitly rather than presenting replay data as live telemetry.
+
+---
+
+# 🧪 Scenario Lab
+
+NagarBodh includes a sandboxed **Scenario Lab** for bounded what-if analysis.
+
+Users can vary assumptions such as:
+
+- population
+- vulnerable population
+- signal volume
+- infrastructure index
+
+It also includes predefined stress scenarios such as:
+
+- **Monsoon Inflow Surge**
+- **Rapid Sector Growth**
+- **Pre-emptive Drainage Upgrade**
+
+Scenario calculations reuse NagarBodh's existing deterministic engines.
+
+### Scenario Provenance
+
+```text
+Scenario Inputs
+    [SIMULATION]
+         ↓
+Deterministic Calculations
+    [CALCULATED]
+         ↓
+Projected Outcomes
+    [PROJECTED]
