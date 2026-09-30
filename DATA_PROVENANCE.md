@@ -57,7 +57,6 @@ NagarBodh categorizes every analytical finding into one of four standardized evi
 
 | Provider | Supported Mode | Actual Live Endpoint | Replay / Simulation Fallback Behavior |
 | :--- | :---: | :--- | :--- |
-| **Google Weather API** | `LIVE` / `REPLAY` | `https://weather.googleapis.com/v1/currentConditions:lookup` | If unconfigured or quota exceeded, falls back to OpenWeatherMap or Replay. Labeled `[REPLAY]` if key is missing. |
 | **OpenWeatherMap** | `LIVE` / `REPLAY` | `https://api.openweathermap.org/data/2.5/weather` | If `OPENWEATHER_API_KEY` is missing, returns explicit `fallbackUsed: true` and labeled `[REPLAY]`. |
 | **X (Twitter) API v2** | `LIVE` / `REPLAY` | `https://api.twitter.com/2/tweets/search/recent` | If `X_BEARER_TOKEN` is missing, delivers calibrated scenario tweets labeled `[REPLAY]`. |
 | **India Meteorological Department (IMD)** | `NOT CONNECTED` | *None* | **Formal notice**: Real-time official IMD radar telemetry requires government departmental authorization not available for this prototype. Non-IMD data is never disguised as IMD. |

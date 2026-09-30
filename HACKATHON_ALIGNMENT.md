@@ -70,7 +70,7 @@ Fragmented Civic Signals (Social X, Citizen App, 155304 / 112 Helpline, Portal)
 - **Traceable Evidence Provenance**: Every metric shown on an officer's screen links to traceable evidence categorized as `[OBSERVED]`, `[CALCULATED]`, `[INFERRED]`, or `[RECOMMENDED]`.
 
 ### Pillar 3: Digital Public Infrastructure (DPI) Efficiency
-- **Interoperable Provider Abstraction**: Built to sit on top of existing open protocols, OpenStreetMap, OpenWeather, Google Weather, and open municipal data exchanges without vendor lock-in.
+- **Interoperable Provider Abstraction**: Built to sit on top of existing open protocols, OpenStreetMap, OpenWeather, and open municipal data exchanges without vendor lock-in.
 - **Closed-Loop Resolution**: Validates public infrastructure functionality before closing incidents, preventing recurrent drainage failures from being swept under the rug.
 
 ---

@@ -58,7 +58,7 @@ NagarBodh is constructed on a hybrid architecture combining a high-performance R
 
 ### B. Backend & Deployment Layer
 - **Vercel Serverless Architecture**:
-  - `api/weather.ts`: Proxies weather requests to Google Weather or OpenWeatherMap, keeping keys on the server.
+  - `api/weather.ts`: Proxies weather requests to OpenWeatherMap, keeping keys on the server.
   - `api/social.ts`: Proxies social signal searches to X API v2.
   - `api/gemini.ts`: Proxies prompt payloads to Google Gemini 2.0 Flash without client-side key transmission.
   - `vercel.json`: Handles API routes and SPA rewrites (`/(.*) -> /index.html`).
@@ -69,11 +69,10 @@ NagarBodh is constructed on a hybrid architecture combining a high-performance R
 ### C. Weather Provider Abstraction
 ```
 WeatherProvider (Orchestrator)
-├── GoogleWeatherProvider   (Live Hyperlocal Grid via Google Weather API / Maps Demo Key)
 ├── OpenWeatherProvider     (Live Regional Telemetry via OpenWeatherMap)
 └── ReplayWeatherProvider   (Deterministic Historical Calibrated Simulation Baseline)
 ```
-- Fallback hierarchy: `Google Weather` ──► `OpenWeatherMap` ──► `ReplayWeatherProvider`.
+- Fallback hierarchy: `OpenWeatherMap` ──► `ReplayWeatherProvider`.
 - If server keys are unconfigured, the system never fabricates live data; it returns explicit fallback markers and honest replay data.
 
 ### D. Incident Clustering & Priority Engine
@@ -96,7 +95,6 @@ WeatherProvider (Orchestrator)
 | **Resolution Verification Engine** | **IMPLEMENTED** | Signal reduction delta & sentiment verification |
 | **OpenWeatherMap Integration** | **LIVE / IMPLEMENTED** | Live API when `OPENWEATHER_API_KEY` configured; Replay fallback |
 | **X (Twitter) API Integration** | **LIVE / IMPLEMENTED** | Live API v2 when `X_BEARER_TOKEN` configured; Replay fallback |
-| **Google Weather Integration** | **IMPLEMENTED** | Supports Google Weather API / Maps Demo Key via `/api/weather?provider=google` |
 | **Administrative Ward Boundaries** | **SIMULATION** | High-fidelity polygon boundaries for Delhi Wards 14, 15, and 22 |
 | **Critical Asset GIS Proximity** | **SIMULATION** | Delhi NCR schools, hospitals, and transit hubs registry |
 | **Historical Recurrence Logs** | **SIMULATION / REPLAY**| 90-day municipal recurrence baseline model |

@@ -10,7 +10,7 @@ NagarBodh was designed and engineered as a high-fidelity **prototype and demonst
 
 ### A. Weather Data Sources & IMD Authorization
 - **Official IMD Radar Access**: The India Meteorological Department (IMD) operates Doppler Weather Radars across Delhi NCR. However, real-time automated API integration requires formal government inter-departmental authorization and credentials that are not accessible for public hackathon prototypes.
-- **Provider Status**: NagarBodh integrates with OpenWeatherMap and Google Weather (via Maps Demo Key or standard key) for live feeds, and provides a calibrated historical replay engine for demonstrations. **Non-IMD data is never misrepresented as official IMD telemetry.**
+- **Provider Status**: NagarBodh integrates with OpenWeatherMap for live feeds, and provides a calibrated historical replay engine for demonstrations. **Non-IMD data is never misrepresented as official IMD telemetry.**
 
 ### B. Emergency Vehicle Dispatch
 - **Simulation Boundary**: The Response Planner and Human Approval Modal simulate dispatch orders, telemetry tracking, and crew updates. The system does not dispatch real physical vehicles, pumps, or municipal personnel onto public roads.
@@ -21,8 +21,6 @@ NagarBodh was designed and engineered as a high-fidelity **prototype and demonst
 - **Expansion Requirements**: Scaling to nationwide or metropolitan-wide coverage requires ingesting localized GIS shapefiles, administrative ward boundaries, and elevation models from respective state urban local bodies (ULBs).
 
 ### D. External API Quotas & Rate Limits
-- **X (Twitter) API v2**: The Free and Basic access tiers impose strict monthly read caps and recent search limits.
-- **Google Weather API / Maps Demo Key**: The Maps Demo Key provides free prototyping access but is subject to daily project request limits.
 - **Graceful Degradation**: NagarBodh is architected with deterministic fallbacks so that if any external provider rate-limits or fails, the application automatically preserves full demo functionality without crashing or stalling.
 
 ---

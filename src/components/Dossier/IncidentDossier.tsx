@@ -276,7 +276,7 @@ export const IncidentDossier: React.FC<Props> = ({ incident: propIncident, stand
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', borderTop: '1px dashed var(--border-subtle)', paddingTop: '0.4rem' }}>
             <span>Location: <strong>{incident.ward || 'Central Delhi'}</strong></span>
-            <span>Source: <strong>{ingestionMode === 'LIVE' ? 'Google Weather API (Hyperlocal Grid)' : 'Google Weather Deterministic Engine'}</strong></span>
+            <span>Source: <strong>{ingestionMode === 'LIVE' ? 'OpenWeatherMap Live API' : 'Deterministic Replay Baseline'}</strong></span>
           </div>
           <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '0.25rem' }}>
             * Contextual Evidence Only — Weather does not independently determine project priority score.

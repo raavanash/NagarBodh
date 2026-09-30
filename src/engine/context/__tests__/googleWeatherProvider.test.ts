@@ -1,40 +1,36 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  GoogleWeatherProvider,
+  OpenWeatherProvider,
   ReplayWeatherProvider,
   WeatherContextProvider,
 } from '../providers/WeatherContextProvider';
 
-describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', () => {
-  it('1. GoogleWeatherProvider fetches live weather via backend /api/weather proxy when configured', async () => {
+describe('OpenWeather Provider & Weather Provider Orchestrator', () => {
+  it('1. OpenWeatherProvider fetches live weather via backend /api/weather proxy when configured', async () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         ok: true,
-        provider: 'google',
-        source: 'Google Weather API (Hyperlocal Grid)',
+        provider: 'openweather',
+        source: 'OpenWeatherMap Live API',
         data: {
-          currentConditions: {
-            temperature: { degrees: 29.5 },
-            feelsLikeTemperature: { degrees: 33.0 },
-            relativeHumidity: 84,
-            airPressure: { value: 1009 },
-            wind: { speed: { value: 18 }, direction: { degrees: 110 } },
-            weatherCondition: { description: { text: 'Heavy Monsoon Rain' } },
-            precipitation: { qpf: { value: 35.0 } },
-          },
+          main: { temp: 29.5, feels_like: 33.0, humidity: 84, pressure: 1009 },
+          wind: { speed: 5.0, deg: 110 },
+          weather: [{ main: 'Rain', description: 'heavy monsoon rain' }],
+          rain: { '1h': 35.0 },
+          name: 'NCR Region',
         },
       }),
     }) as any;
 
     try {
-      const googleProvider = new GoogleWeatherProvider();
-      const weatherEnv = await googleProvider.getWeather(28.5832, 77.3188);
+      const owProvider = new OpenWeatherProvider();
+      const weatherEnv = await owProvider.getWeather(28.5832, 77.3188);
 
       expect(weatherEnv).not.toBeNull();
       expect(weatherEnv?.mode).toBe('live');
-      expect(weatherEnv?.source).toBe('Google Weather API (Hyperlocal Grid)');
+      expect(weatherEnv?.source).toContain('OpenWeatherMap');
       expect(weatherEnv?.data.temperatureCelsius).toBe(29.5);
       expect(weatherEnv?.data.precipitationMmPerHour).toBe(35.0);
       expect(weatherEnv?.data.alertLevel).toBe('orange');
@@ -43,20 +39,20 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     }
   });
 
-  it('2. GoogleWeatherProvider handles malformed JSON response gracefully', async () => {
+  it('2. OpenWeatherProvider handles malformed JSON response gracefully', async () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         ok: true,
-        provider: 'google',
-        data: { invalidSchema: true },
+        provider: 'openweather',
+        data: null,
       }),
     }) as any;
 
     try {
-      const googleProvider = new GoogleWeatherProvider();
-      const weatherEnv = await googleProvider.getWeather(28.5832, 77.3188);
+      const owProvider = new OpenWeatherProvider();
+      const weatherEnv = await owProvider.getWeather(28.5832, 77.3188);
 
       expect(weatherEnv).toBeNull();
     } finally {
@@ -64,7 +60,7 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     }
   });
 
-  it('3. GoogleWeatherProvider handles HTTP 403 / 500 errors gracefully', async () => {
+  it('3. OpenWeatherProvider handles HTTP 403 / 500 errors gracefully', async () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
@@ -73,8 +69,8 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     }) as any;
 
     try {
-      const googleProvider = new GoogleWeatherProvider();
-      const weatherEnv = await googleProvider.getWeather(28.5832, 77.3188);
+      const owProvider = new OpenWeatherProvider();
+      const weatherEnv = await owProvider.getWeather(28.5832, 77.3188);
 
       expect(weatherEnv).toBeNull();
     } finally {
@@ -82,13 +78,13 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     }
   });
 
-  it('4. GoogleWeatherProvider handles timeout and network drops', async () => {
+  it('4. OpenWeatherProvider handles timeout and network drops', async () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockRejectedValue(new Error('Network timeout')) as any;
 
     try {
-      const googleProvider = new GoogleWeatherProvider();
-      const weatherEnv = await googleProvider.getWeather(28.5832, 77.3188);
+      const owProvider = new OpenWeatherProvider();
+      const weatherEnv = await owProvider.getWeather(28.5832, 77.3188);
 
       expect(weatherEnv).toBeNull();
     } finally {
@@ -96,44 +92,12 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     }
   });
 
-  it('5. Orchestrator prioritizes Google Weather -> OpenWeather -> Replay -> Simulation', async () => {
+  it('5. Orchestrator prioritizes OpenWeather -> Replay -> Simulation', async () => {
     const provider = new WeatherContextProvider('live');
 
-    // Scenario A: Google Weather available
+    // Scenario A: OpenWeather succeeds
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('provider=google')) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            ok: true,
-            provider: 'google',
-            data: {
-              currentConditions: {
-                temperature: { degrees: 30.0 },
-                relativeHumidity: 80,
-                weatherCondition: { description: { text: 'Scattered Rain' } },
-              },
-            },
-          }),
-        });
-      }
-      return Promise.resolve({ ok: false });
-    }) as any;
-
-    try {
-      const envA = await provider.getWeather(28.5832, 77.3188);
-      expect(envA.source).toContain('Google Weather');
-      expect(envA.mode).toBe('live');
-    } finally {
-      global.fetch = originalFetch;
-    }
-
-    // Scenario B: Google Weather fails, OpenWeather succeeds
-    global.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('provider=google')) {
-        return Promise.resolve({ ok: false });
-      }
       if (url.includes('provider=openweather')) {
         return Promise.resolve({
           ok: true,
@@ -151,21 +115,21 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     }) as any;
 
     try {
-      const envB = await provider.getWeather(28.5832, 77.3188);
-      expect(envB.source).toContain('OpenWeatherMap');
-      expect(envB.mode).toBe('live');
+      const envA = await provider.getWeather(28.5832, 77.3188);
+      expect(envA.source).toContain('OpenWeatherMap');
+      expect(envA.mode).toBe('live');
     } finally {
       global.fetch = originalFetch;
     }
 
-    // Scenario C: Both live providers fail -> Fallback to Replay
+    // Scenario B: Live provider fails -> Fallback to Replay with error envelope
     global.fetch = vi.fn().mockResolvedValue({ ok: false }) as any;
 
     try {
-      const envC = await provider.getWeather(28.5832, 77.3188);
-      expect(envC.fallbackUsed).toBe(true);
-      expect(envC.mode).toBe('error');
-      expect(envC.data).toBeDefined(); // Application continues working without UI break
+      const envB = await provider.getWeather(28.5832, 77.3188);
+      expect(envB.fallbackUsed).toBe(true);
+      expect(envB.mode).toBe('error');
+      expect(envB.data).toBeDefined(); // Application continues working without UI break
     } finally {
       global.fetch = originalFetch;
     }
@@ -191,3 +155,4 @@ describe('Google Weather Provider & Multi-Tier Weather Provider Orchestrator', (
     expect(env.location.lng).toBe(77.1906);
   });
 });
+

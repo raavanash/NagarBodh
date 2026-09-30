@@ -42,7 +42,6 @@ interface FetchResult {
 }
 
 // Startup environment configuration check (never prints key strings)
-console.log('[ NAGARBODH SERVER ] GOOGLE_WEATHER_API_KEY configured:', Boolean(process.env.GOOGLE_WEATHER_API_KEY));
 console.log('[ NAGARBODH SERVER ] OPENWEATHER_API_KEY configured:', Boolean(process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY));
 console.log('[ NAGARBODH SERVER ] X_BEARER_TOKEN configured:', Boolean(process.env.X_BEARER_TOKEN || process.env.VITE_X_BEARER_TOKEN));
 console.log('[ NAGARBODH SERVER ] GEMINI_API_KEY configured:', Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY));
@@ -121,43 +120,16 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
     return true;
   }
 
-  // 1. Weather Route: Google Weather -> OpenWeatherMap -> Replay Fallback
+  // 1. Weather Route: OpenWeatherMap -> Replay Fallback
   if (pathname === '/api/weather') {
     const lat = reqUrl.searchParams.get('lat') || '28.583';
     const lng = reqUrl.searchParams.get('lng') || '77.318';
-    const requestedProvider = reqUrl.searchParams.get('provider') || 'auto';
 
-    const googleKey = (process.env.GOOGLE_WEATHER_API_KEY || '').trim();
     const openweatherKey = (process.env.OPENWEATHER_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || '').trim();
 
     res.setHeader('Content-Type', 'application/json');
 
-    // (A) Attempt Google Weather if key configured and not explicitly set to openweather
-    if (
-      (requestedProvider === 'google' || requestedProvider === 'auto') &&
-      googleKey &&
-      googleKey !== 'your_google_weather_api_key_here'
-    ) {
-      try {
-        const gwRes = await fetchUrl(
-          `https://weather.googleapis.com/v1/currentConditions:lookup?key=${googleKey}&location.latitude=${lat}&location.longitude=${lng}`
-        );
-        if (gwRes.ok && gwRes.data?.currentConditions) {
-          res.statusCode = 200;
-          res.end(JSON.stringify({
-            ok: true,
-            provider: 'google',
-            source: 'Google Weather API (Hyperlocal Grid)',
-            data: gwRes.data
-          }));
-          return true;
-        }
-      } catch (err: any) {
-        console.warn('[ NAGARBODH SERVER ] Google Weather request failed, attempting OpenWeather fallback:', err.message);
-      }
-    }
-
-    // (B) Attempt OpenWeatherMap if configured
+    // Attempt OpenWeatherMap if configured
     if (openweatherKey && openweatherKey !== 'your_openweather_api_key_here') {
       try {
         const owRes = await fetchUrl(
@@ -178,13 +150,13 @@ export async function handleApiRequest(req: http.IncomingMessage, res: http.Serv
       }
     }
 
-    // (C) Honest Fallback: Inform client that live weather keys are unconfigured
+    // Honest Fallback: Inform client that live weather key is unconfigured
     res.statusCode = 200;
     res.end(JSON.stringify({
       ok: false,
       provider: 'replay_fallback',
-      message: 'Live weather API keys unconfigured or unreachable. Using deterministic replay simulation.',
-      supportedProviders: ['google', 'openweather', 'replay']
+      message: 'Live weather API key unconfigured or unreachable. Using deterministic replay simulation.',
+      supportedProviders: ['openweather', 'replay']
     }));
     return true;
   }

@@ -110,7 +110,7 @@ export const WeatherBanner: React.FC = () => {
         >
           {isLiveMode && liveModeStatus === 'live' ? (
             <>
-              <Radio size={10} className="pulse" /> {liveWeatherEnvelope?.source?.includes('Google') ? 'LIVE GOOGLE WEATHER' : 'LIVE OPENWEATHER'}
+              <Radio size={10} className="pulse" /> LIVE OPENWEATHER
             </>
           ) : hasError ? (
             <>
